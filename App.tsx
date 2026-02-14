@@ -10,11 +10,16 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Button, HeroUINativeProvider } from 'heroui-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useTranslation } from 'react-i18next';
+
+import './src/i18n/i18n-setup';
+import type { TranslationKey } from './src/i18n/translation-data';
 
 import './global.css';
 
 const App = () => {
-  const [notice, setNotice] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const [noticeKey, setNoticeKey] = useState<TranslationKey | null>(null);
   const heroOpacity = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const heroTranslate = useRef(new Animated.Value(16)).current;
@@ -50,12 +55,12 @@ const App = () => {
   }, [cardOpacity, cardTranslate, heroOpacity, heroTranslate]);
 
   const handleSignIn = useCallback(() => {
-    setNotice('OAuth sign-in will land here next.');
+    setNoticeKey('noticeSignIn');
   }, []);
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <HeroUINativeProvider>
+      <HeroUINativeProvider config={{ devInfo: { stylingPrinciples: false } }}>
         <SafeAreaProvider>
           <SafeAreaView
             style={styles.safeArea}
@@ -76,14 +81,9 @@ const App = () => {
                   },
                 ]}
               >
-                <Text style={styles.overline}>Fanfou</Text>
-                <Text style={styles.title}>
-                  A calmer way to read the timeline.
-                </Text>
-                <Text style={styles.subtitle}>
-                  Built for focus, crafted for speed, and ready for iOS and
-                  Android.
-                </Text>
+                <Text style={styles.overline}>{t('brandName')}</Text>
+                <Text style={styles.title}>{t('heroTitle')}</Text>
+                <Text style={styles.subtitle}>{t('heroSubtitle')}</Text>
               </Animated.View>
 
               <Animated.View
@@ -95,28 +95,27 @@ const App = () => {
                   },
                 ]}
               >
-                <Text style={styles.cardTitle}>Coming online soon</Text>
-                <Text style={styles.cardCopy}>
-                  We&apos;re stitching the essentials: login, timeline, and
-                  posting.
-                </Text>
+                <Text style={styles.cardTitle}>{t('cardTitle')}</Text>
+                <Text style={styles.cardCopy}>{t('cardCopy')}</Text>
                 <View style={styles.chips}>
                   <View style={styles.chip}>
-                    <Text style={styles.chipText}>Chronological timeline</Text>
+                    <Text style={styles.chipText}>{t('chipTimeline')}</Text>
                   </View>
                   <View style={styles.chip}>
-                    <Text style={styles.chipText}>Smart mentions</Text>
+                    <Text style={styles.chipText}>{t('chipMentions')}</Text>
                   </View>
                   <View style={styles.chip}>
-                    <Text style={styles.chipText}>Photo-first posting</Text>
+                    <Text style={styles.chipText}>{t('chipPhotoPosting')}</Text>
                   </View>
                 </View>
                 <View style={styles.ctaRow}>
                   <View style={styles.cta}>
-                    <Button onPress={handleSignIn}>Sign in with Fanfou</Button>
+                    <Button onPress={handleSignIn}>{t('ctaSignIn')}</Button>
                   </View>
                 </View>
-                {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+                {noticeKey ? (
+                  <Text style={styles.notice}>{t(noticeKey)}</Text>
+                ) : null}
               </Animated.View>
             </ScrollView>
           </SafeAreaView>
