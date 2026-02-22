@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -11,22 +12,27 @@ import {
 import { useThemeColor } from 'heroui-native';
 
 import { Text } from '@/components/app-text';
+import {
+  pickImageFromLibrary,
+  type PickedImage,
+} from '@/utils/pick-image-from-library';
+
+export type ComposerModalSubmitPayload = {
+  text: string;
+  photo: PickedImage | null;
+};
 
 type ComposerModalProps = {
   visible: boolean;
   title: string;
   placeholder: string;
   submitLabel: string;
-  value: string;
-  isSubmitting: boolean;
   topInset: number;
-  photoUri?: string | null;
-  isPhotoPicking?: boolean;
-  onChangeText: (text: string) => void;
+  initialText?: string;
+  resetKey?: string | null;
+  enablePhoto?: boolean;
   onCancel: () => void;
-  onSubmit: () => void;
-  onPickPhoto?: () => void;
-  onRemovePhoto?: () => void;
+  onSubmit: (payload: ComposerModalSubmitPayload) => Promise<void> | void;
 };
 
 const ComposerModal = ({
@@ -34,23 +40,76 @@ const ComposerModal = ({
   title,
   placeholder,
   submitLabel,
-  value,
-  isSubmitting,
   topInset,
-  photoUri,
-  isPhotoPicking = false,
-  onChangeText,
+  initialText = '',
+  resetKey = null,
+  enablePhoto = false,
   onCancel,
   onSubmit,
-  onPickPhoto,
-  onRemovePhoto,
 }: ComposerModalProps) => {
   const [placeholderColor] = useThemeColor(['muted']);
+  const [value, setValue] = useState(initialText);
+  const [photo, setPhoto] = useState<PickedImage | null>(null);
+  const [isPhotoPicking, setIsPhotoPicking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const canDismiss = !isSubmitting && !isPhotoPicking;
   const containerStyle = useMemo(
     () => ({ marginTop: Math.max(topInset + 20, 40) }),
     [topInset],
   );
+  const photoUri = photo?.uri ?? null;
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    setValue(initialText);
+    setPhoto(null);
+    setIsPhotoPicking(false);
+    setIsSubmitting(false);
+  }, [initialText, resetKey, visible]);
+
+  const handlePickPhoto = useCallback(async () => {
+    if (!enablePhoto || !canDismiss) {
+      return;
+    }
+    setIsPhotoPicking(true);
+    try {
+      const pickedPhoto = await pickImageFromLibrary();
+      if (pickedPhoto) {
+        setPhoto(pickedPhoto);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Unable to attach photo',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    } finally {
+      setIsPhotoPicking(false);
+    }
+  }, [canDismiss, enablePhoto]);
+
+  const handleRemovePhoto = useCallback(() => {
+    if (!canDismiss) {
+      return;
+    }
+    setPhoto(null);
+  }, [canDismiss]);
+
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitting || isPhotoPicking) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        text: value,
+        photo,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isPhotoPicking, isSubmitting, onSubmit, photo, value]);
 
   return (
     <Modal
@@ -88,7 +147,7 @@ const ComposerModal = ({
             </View>
             <TextInput
               value={value}
-              onChangeText={onChangeText}
+              onChangeText={setValue}
               placeholder={placeholder}
               placeholderTextColor={placeholderColor}
               multiline
@@ -109,10 +168,12 @@ const ComposerModal = ({
 
             <View className="flex-row flex-wrap items-center justify-between gap-2">
               <View className="flex-row gap-2">
-                {onPickPhoto ? (
+                {enablePhoto ? (
                   <Pressable
                     onPress={
-                      canDismiss && !isPhotoPicking ? onPickPhoto : undefined
+                      canDismiss && !isPhotoPicking
+                        ? handlePickPhoto
+                        : undefined
                     }
                     className="border border-border bg-surface-secondary px-3 py-2"
                     accessibilityRole="button"
@@ -130,9 +191,9 @@ const ComposerModal = ({
                   </Pressable>
                 ) : null}
 
-                {photoUri && onRemovePhoto ? (
+                {photoUri ? (
                   <Pressable
-                    onPress={canDismiss ? onRemovePhoto : undefined}
+                    onPress={canDismiss ? handleRemovePhoto : undefined}
                     className="border border-border bg-surface-secondary px-3 py-2"
                     accessibilityRole="button"
                     accessibilityLabel="Remove photo"
@@ -144,7 +205,7 @@ const ComposerModal = ({
 
               <View className="flex-row gap-2">
                 <Pressable
-                  onPress={!isSubmitting ? onSubmit : undefined}
+                  onPress={!isSubmitting ? handleSubmit : undefined}
                   className="border border-border bg-accent px-3 py-2"
                   accessibilityRole="button"
                   accessibilityLabel={submitLabel}

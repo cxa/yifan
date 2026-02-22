@@ -10,32 +10,27 @@ import {
   Alert,
   FlatList,
   Image,
+  Pressable,
   RefreshControl,
   View,
 } from 'react-native';
 import {
   useNavigation,
-  useScrollToTop,
+  useRoute,
   type NavigationProp,
+  type RouteProp,
 } from '@react-navigation/native';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollShadow, Surface, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
 import LinearGradient from 'react-native-linear-gradient';
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
 
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
-import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
+import { Text } from '@/components/app-text';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
+import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
@@ -45,9 +40,11 @@ import {
   TIMELINE_PAGE_SIZE,
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
-import PhotoViewerModal from '@/components/photo-viewer-modal';
+import type {
+  AuthStackParamList,
+  AuthTagScreenParamList,
+} from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
-import { AnimatedText, Text } from '@/components/app-text';
 
 type PhotoViewerOriginRect = {
   x: number;
@@ -71,6 +68,16 @@ type RepostTarget = {
 
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
+
+const normalizeTag = (value: string) => {
+  let decodedValue = value;
+  try {
+    decodedValue = decodeURIComponent(value);
+  } catch {
+    decodedValue = value;
+  }
+  return decodedValue.trim().replace(/^#+/, '').replace(/#+$/, '').trim();
+};
 
 const getStatusId = (status: FanfouStatus): string => status.id;
 
@@ -96,14 +103,20 @@ const mergeTimelineItems = (
   return merged;
 };
 
-const MentionsRoute = () => {
-  const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
+const TagTimelineRoute = () => {
+  const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
+  const route =
+    useRoute<
+      RouteProp<AuthTagScreenParamList, 'route_root._auth.tag._tag.index'>
+    >();
   const [accent, background, muted] = useThemeColor([
     'accent',
     'background',
     'muted',
   ]);
   const insets = useSafeAreaInsets();
+  const routeTag = normalizeTag(route.params.tag);
+
   const [timelineItems, setTimelineItems] = useState<FanfouStatus[]>([]);
   const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
     () => new Set(),
@@ -127,112 +140,54 @@ const MentionsRoute = () => {
     useState<ReplyTarget | null>(null);
   const [composeRepostTarget, setComposeRepostTarget] =
     useState<RepostTarget | null>(null);
-  useScrollToTop(listRef);
-  const scrollY = useSharedValue(0);
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: event => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-  const titleContainerStyle = useAnimatedStyle(() => {
-    const height = interpolate(
-      scrollY.value,
-      [0, 88],
-      [44, 0],
-      Extrapolation.CLAMP,
-    );
-    const opacity = interpolate(
-      scrollY.value,
-      [0, 70],
-      [1, 0],
-      Extrapolation.CLAMP,
-    );
-    const marginBottom = interpolate(
-      scrollY.value,
-      [0, 88],
-      [0, 0],
-      Extrapolation.CLAMP,
-    );
 
-    return {
-      height,
-      opacity,
-      marginBottom,
-    };
-  });
-  const titleTextStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollY.value,
-      [0, 88],
-      [1, 0.6],
-      Extrapolation.CLAMP,
-    );
-
-    return {
-      transform: [{ scale }],
-      transformOrigin: 'top left',
-    };
-  });
   const handleMentionPress = useCallback(
     (userId: string) => {
-      const parentNavigation =
-        navigation.getParent<NavigationProp<AuthStackParamList>>();
-      if (!parentNavigation) {
-        return;
-      }
-      parentNavigation.navigate('route_root._auth.profile', {
+      navigation.navigate('route_root._auth.profile', {
         screen: 'route_root._auth.profile._handle',
         params: { userId },
       });
     },
     [navigation],
   );
+
   const handleProfilePress = useCallback(
     (userId: string) => {
-      const parentNavigation =
-        navigation.getParent<NavigationProp<AuthStackParamList>>();
-      if (!parentNavigation) {
-        return;
-      }
-      parentNavigation.navigate('route_root._auth.profile', {
+      navigation.navigate('route_root._auth.profile', {
         screen: 'route_root._auth.profile._handle',
         params: { userId },
       });
     },
     [navigation],
   );
+
   const handleStatusPress = useCallback(
     (statusId: string) => {
-      const parentNavigation =
-        navigation.getParent<NavigationProp<AuthStackParamList>>();
-      if (!parentNavigation) {
-        return;
-      }
-      parentNavigation.navigate('route_root._auth.status', {
+      navigation.navigate('route_root._auth.status', {
         screen: 'route_root._auth.status._statusId',
         params: { statusId },
       });
     },
     [navigation],
   );
+
   const handleTagPress = useCallback(
     (tag: string) => {
-      const normalizedTag = tag.trim().replace(/^#+/, '').replace(/#+$/, '');
+      const normalizedTag = normalizeTag(tag);
       if (!normalizedTag) {
         return;
       }
-      const parentNavigation =
-        navigation.getParent<NavigationProp<AuthStackParamList>>();
-      if (!parentNavigation) {
+      if (normalizedTag.toLowerCase() === routeTag.toLowerCase()) {
         return;
       }
-      parentNavigation.navigate('route_root._auth.tag', {
+      navigation.navigate('route_root._auth.tag', {
         screen: 'route_root._auth.tag._tag',
         params: { tag: normalizedTag },
       });
     },
-    [navigation],
+    [navigation, routeTag],
   );
+
   const openPhotoViewer = useCallback(
     (
       photoUrl: string,
@@ -247,6 +202,7 @@ const MentionsRoute = () => {
     },
     [],
   );
+
   const registerPhotoPreviewRef = useCallback(
     (key: string, node: React.ComponentRef<typeof View> | null) => {
       if (node) {
@@ -257,6 +213,7 @@ const MentionsRoute = () => {
     },
     [],
   );
+
   const handlePhotoPress = useCallback(
     (photoUrl: string, previewKey: string) => {
       const previewNode = photoPreviewRefs.current.get(previewKey);
@@ -283,6 +240,7 @@ const MentionsRoute = () => {
     },
     [openPhotoViewer],
   );
+
   const handleClosePhotoViewer = useCallback(() => {
     setPhotoViewerPreviewKey(null);
     setPhotoViewerOriginRect(null);
@@ -297,16 +255,19 @@ const MentionsRoute = () => {
     error,
     refetch,
   } = useQuery<FanfouStatus[]>({
-    queryKey: ['timeline', 'mentions'],
+    queryKey: ['timeline', 'tag', routeTag],
     queryFn: async () => {
-      const data = await get('/statuses/mentions', {
+      const data = await get('/search/public_timeline', {
+        q: routeTag,
         count: TIMELINE_INITIAL_PAGE_SIZE,
         mode: 'default',
       });
       return normalizeTimelineItems(data);
     },
+    enabled: Boolean(routeTag),
     retry: 1,
   });
+
   useEffect(() => {
     if (!queryItems) {
       return;
@@ -326,7 +287,7 @@ const MentionsRoute = () => {
   const errorMessage = error
     ? error instanceof Error
       ? error.message
-      : 'Failed to load mentions.'
+      : 'Failed to load tag timeline.'
     : null;
 
   const setBookmarkPending = useCallback(
@@ -489,9 +450,11 @@ const MentionsRoute = () => {
     if (!maxId) {
       return;
     }
+
     setIsFetchingMore(true);
     try {
-      const data = await get('/statuses/mentions', {
+      const data = await get('/search/public_timeline', {
+        q: routeTag,
         count: TIMELINE_PAGE_SIZE,
         max_id: maxId,
         mode: 'default',
@@ -513,7 +476,7 @@ const MentionsRoute = () => {
     } finally {
       setIsFetchingMore(false);
     }
-  }, [hasReachedTimelineEnd, isFetchingMore, isLoading]);
+  }, [hasReachedTimelineEnd, isFetchingMore, isLoading, routeTag]);
 
   const refreshControl = useMemo(
     () => (
@@ -528,7 +491,10 @@ const MentionsRoute = () => {
     ),
     [accent, background, insets.top, isFetching, isLoading, refetch],
   );
-  const timelineListSettings = useTimelineListSettings(insets);
+
+  const timelineListSettings = useTimelineListSettings(insets, {
+    hasBottomTabBar: false,
+  });
   const composerTitle =
     composeMode === 'reply'
       ? composeReplyTarget
@@ -560,6 +526,44 @@ const MentionsRoute = () => {
     sourceItems: queryItems,
   });
 
+  if (!routeTag) {
+    return (
+      <View
+        className="flex-1 bg-background"
+        style={{
+          paddingTop: insets.top,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        }}
+      >
+        <View className="px-5 pt-3 pb-3 flex-row items-center">
+          <Pressable
+            onPress={() => navigation.goBack()}
+            className="border border-border px-3 py-2 bg-surface"
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <Text className="text-[12px] text-foreground">Back</Text>
+          </Pressable>
+          <View className="flex-1 items-center px-4">
+            <Text className="text-[14px] text-foreground" numberOfLines={1}>
+              Tag timeline
+            </Text>
+          </View>
+          <View className="w-[58px]" />
+        </View>
+
+        <View className="px-4">
+          <Surface className="bg-danger-soft px-4 py-3">
+            <Text className="text-[13px] text-danger-foreground">
+              Missing tag.
+            </Text>
+          </Surface>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <>
       <ScrollShadow
@@ -573,7 +577,6 @@ const MentionsRoute = () => {
           data={timelineItems}
           keyExtractor={item => getStatusId(item)}
           refreshControl={refreshControl}
-          onScroll={scrollHandler}
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
           scrollIndicatorInsets={timelineListSettings.scrollIndicatorInsets}
           contentContainerStyle={timelineListSettings.contentContainerStyle}
@@ -591,20 +594,22 @@ const MentionsRoute = () => {
             ) : null
           }
           ListHeaderComponent={
-            <View className="px-1 relative -bottom-2">
-              <Animated.View
-                className="overflow-hidden justify-end"
-                style={titleContainerStyle}
-              >
-                <AnimatedText
-                  className="text-[34px] font-bold text-foreground leading-[40px]"
-                  style={titleTextStyle}
+            <View className="px-1 relative -bottom-2 gap-4">
+              <View className="flex-row items-center">
+                <Pressable
+                  onPress={() => navigation.goBack()}
+                  className="border border-border px-3 py-2 bg-surface"
+                  accessibilityRole="button"
+                  accessibilityLabel="Back"
                 >
-                  Mentions
-                </AnimatedText>
-              </Animated.View>
+                  <Text className="text-[12px] text-foreground">Back</Text>
+                </Pressable>
+              </View>
+              <Text className="text-[34px] font-bold text-foreground leading-[40px]">
+                {`#${routeTag}#`}
+              </Text>
               {errorMessage ? (
-                <Surface className="mt-4 bg-danger-soft px-4 py-3">
+                <Surface className="bg-danger-soft px-4 py-3">
                   <Text className="text-[13px] text-danger-foreground">
                     {errorMessage}
                   </Text>
@@ -617,13 +622,13 @@ const MentionsRoute = () => {
               <View className="gap-8">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <TimelineSkeletonCard
-                    key={`mentions-skeleton-${index}`}
+                    key={`tag-timeline-skeleton-${index}`}
                     lineCount={index % 2 === 0 ? 2 : 3}
                   />
                 ))}
               </View>
             ) : (
-              <TimelineSkeletonCard message="No mentions yet." />
+              <TimelineSkeletonCard message="No posts for this tag yet." />
             )
           }
           onEndReached={fetchMore}
@@ -636,6 +641,7 @@ const MentionsRoute = () => {
               isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
               photoViewerVisible={photoViewerVisible}
               photoViewerPreviewKey={photoViewerPreviewKey}
+              activeTag={routeTag}
               registerPhotoPreviewRef={registerPhotoPreviewRef}
               onOpenPhoto={handlePhotoPress}
               onPressStatus={handleStatusPress}
@@ -649,6 +655,7 @@ const MentionsRoute = () => {
           )}
         />
       </ScrollShadow>
+
       <PhotoViewerModal
         visible={photoViewerVisible}
         photoUrl={photoViewerUrl}
@@ -656,6 +663,7 @@ const MentionsRoute = () => {
         originRect={photoViewerOriginRect}
         onClose={handleClosePhotoViewer}
       />
+
       <ComposerModal
         visible={composeMode !== null}
         title={composerTitle}
@@ -672,4 +680,4 @@ const MentionsRoute = () => {
   );
 };
 
-export default MentionsRoute;
+export default TagTimelineRoute;

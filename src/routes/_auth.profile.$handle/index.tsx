@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,13 +23,20 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Heart, MessageCircle, Repeat2 } from 'lucide-react-native';
 
 import { useAuthSession } from '@/auth/auth-session';
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
-import ComposerModal from '@/components/composer-modal';
+import ComposerModal, {
+  type ComposerModalSubmitPayload,
+} from '@/components/composer-modal';
+import DropShadowBox, {
+  getDropShadowBorderClass,
+} from '@/components/drop-shadow-box';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
+import { isHydratingTimeline } from '@/components/timeline-hydration';
 import { TIMELINE_SPACING } from '@/components/timeline-list-settings';
 import type {
   AuthProfileScreenParamList,
@@ -31,10 +44,7 @@ import type {
 } from '@/navigation/types';
 import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatTimestamp } from '@/utils/format-timestamp';
-import {
-  pickImageFromLibrary,
-  type PickedImage,
-} from '@/utils/pick-image-from-library';
+import { openLink } from '@/utils/open-link';
 import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 
 const PROFILE_CARD_GAP = 16;
@@ -62,7 +72,18 @@ type PhotoViewerOriginRect = {
   height: number;
 };
 
-type ComposerMode = 'mention' | 'dm' | null;
+type ComposerMode = 'mention' | 'dm' | 'reply' | 'repost' | null;
+
+type ReplyTarget = {
+  statusId: string;
+  userId: string;
+  screenName: string;
+};
+
+type RepostTarget = {
+  statusId: string;
+  screenName: string;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -172,7 +193,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const auth = useAuthSession();
-  const [accent, background] = useThemeColor(['accent', 'background']);
+  const [accent, background, muted] = useThemeColor([
+    'accent',
+    'background',
+    'muted',
+  ]);
 
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
@@ -188,10 +213,13 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const [isFollowSubmitting, setIsFollowSubmitting] = useState(false);
   const [isBlockSubmitting, setIsBlockSubmitting] = useState(false);
   const [composeMode, setComposeMode] = useState<ComposerMode>(null);
-  const [composeText, setComposeText] = useState('');
-  const [composePhoto, setComposePhoto] = useState<PickedImage | null>(null);
-  const [isComposePhotoPicking, setIsComposePhotoPicking] = useState(false);
-  const [isComposeSubmitting, setIsComposeSubmitting] = useState(false);
+  const [composeReplyTarget, setComposeReplyTarget] =
+    useState<ReplyTarget | null>(null);
+  const [composeRepostTarget, setComposeRepostTarget] =
+    useState<RepostTarget | null>(null);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const userQueryKey = useMemo(
     () => ['profile', 'user', routeUserId] as const,
@@ -263,13 +291,18 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     user && user.protected && !isSelf && user.following !== true,
   );
 
+  const recentStatusesQueryKey = useMemo(
+    () => ['profile', 'recent-statuses', routeUserId, currentUserId] as const,
+    [currentUserId, routeUserId],
+  );
+
   const {
-    data: recentStatuses = [],
+    data: recentStatuses,
     isLoading: isRecentStatusesLoading,
     error: recentStatusesError,
     refetch: refetchRecentStatuses,
   } = useQuery<FanfouStatus[]>({
-    queryKey: ['profile', 'recent-statuses', routeUserId, currentUserId],
+    queryKey: recentStatusesQueryKey,
     queryFn: async () => {
       const targetUserId = currentUserId || routeUserId;
       const data = await getRecentStatusesByUserId(targetUserId);
@@ -277,6 +310,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     },
     enabled: Boolean(user) && !isProtectedTimeline,
   });
+
+  const [recentStatusItems, setRecentStatusItems] = useState<FanfouStatus[]>(
+    [],
+  );
+
+  useEffect(() => {
+    if (!recentStatuses) {
+      return;
+    }
+    setRecentStatusItems(recentStatuses);
+  }, [recentStatuses]);
 
   const isFollowing = user ? user.following === true : false;
 
@@ -301,6 +345,30 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       navigation.navigate('route_root._auth.profile', {
         screen: 'route_root._auth.profile._handle',
         params: { userId: targetUserId },
+      });
+    },
+    [navigation],
+  );
+
+  const handleStatusPress = useCallback(
+    (statusId: string) => {
+      navigation.navigate('route_root._auth.status', {
+        screen: 'route_root._auth.status._statusId',
+        params: { statusId },
+      });
+    },
+    [navigation],
+  );
+
+  const handleTagPress = useCallback(
+    (tag: string) => {
+      const normalizedTag = tag.trim().replace(/^#+/, '').replace(/#+$/, '');
+      if (!normalizedTag) {
+        return;
+      }
+      navigation.navigate('route_root._auth.tag', {
+        screen: 'route_root._auth.tag._tag',
+        params: { tag: normalizedTag },
       });
     },
     [navigation],
@@ -432,120 +500,220 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     }
   }, [isBlockSubmitting, isBlocked, updateBlockCache, updateUserCache, user]);
 
+  const setBookmarkPending = useCallback(
+    (statusId: string, pending: boolean) => {
+      setPendingBookmarkIds(previous => {
+        const next = new Set(previous);
+        if (pending) {
+          next.add(statusId);
+        } else {
+          next.delete(statusId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleOpenReplyComposer = useCallback((status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    const userId = status.user.id.trim();
+    const screenName = status.user.screen_name.trim();
+    if (!userId || !screenName) {
+      Alert.alert('Cannot reply', 'Missing reply target.');
+      return;
+    }
+
+    setComposeMode('reply');
+    setComposeReplyTarget({ statusId, userId, screenName });
+    setComposeRepostTarget(null);
+  }, []);
+
+  const handleOpenRepostComposer = useCallback((status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    const screenName = status.user.screen_name.trim();
+    setComposeMode('repost');
+    setComposeRepostTarget({ statusId, screenName });
+    setComposeReplyTarget(null);
+  }, []);
+
   const handleOpenMentionComposer = useCallback(() => {
-    const mentionTarget = user ? user.screen_name : '';
     setComposeMode('mention');
-    setComposeText(mentionTarget ? `@${mentionTarget} ` : '');
-    setComposePhoto(null);
-  }, [user]);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
+  }, []);
 
   const handleOpenDmComposer = useCallback(() => {
     setComposeMode('dm');
-    setComposeText('');
-    setComposePhoto(null);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
   }, []);
 
   const handleCloseComposer = useCallback(() => {
-    if (isComposeSubmitting || isComposePhotoPicking) {
-      return;
-    }
     setComposeMode(null);
-    setComposeText('');
-    setComposePhoto(null);
-  }, [isComposePhotoPicking, isComposeSubmitting]);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
+  }, []);
 
-  const handlePickComposePhoto = useCallback(async () => {
-    if (
-      composeMode !== 'mention' ||
-      isComposeSubmitting ||
-      isComposePhotoPicking
-    ) {
-      return;
-    }
-
-    setIsComposePhotoPicking(true);
-    try {
-      const pickedPhoto = await pickImageFromLibrary();
-      if (pickedPhoto) {
-        setComposePhoto(pickedPhoto);
+  const handleSendComposer = useCallback(
+    async ({ text, photo }: ComposerModalSubmitPayload) => {
+      if (!user || !composeMode) {
+        return;
       }
-    } catch (requestError) {
-      Alert.alert(
-        'Unable to attach photo',
-        getErrorMessage(requestError, 'Please try again.'),
-      );
-    } finally {
-      setIsComposePhotoPicking(false);
-    }
-  }, [composeMode, isComposePhotoPicking, isComposeSubmitting]);
 
-  const handleRemoveComposePhoto = useCallback(() => {
-    if (isComposeSubmitting) {
-      return;
-    }
-    setComposePhoto(null);
-  }, [isComposeSubmitting]);
+      const trimmedText = text.trim();
+      const hasPhoto = Boolean(photo?.base64);
+      if (composeMode === 'dm' && !trimmedText) {
+        Alert.alert('Cannot send', 'Please enter text first.');
+        return;
+      }
 
-  const handleSendComposer = useCallback(async () => {
-    if (!user || !composeMode || isComposeSubmitting || isComposePhotoPicking) {
-      return;
-    }
+      if (composeMode === 'repost' && !composeRepostTarget) {
+        Alert.alert('Cannot repost', 'Missing repost target.');
+        return;
+      }
 
-    const text = composeText.trim();
-    const hasPhoto = Boolean(composePhoto?.base64);
-    if (!text && !hasPhoto) {
-      Alert.alert('Cannot send', 'Please enter text or attach a photo.');
-      return;
-    }
+      if (composeMode === 'reply' && !composeReplyTarget) {
+        Alert.alert('Cannot reply', 'Missing reply target.');
+        return;
+      }
 
-    setIsComposeSubmitting(true);
+      if (
+        (composeMode === 'mention' || composeMode === 'reply') &&
+        !trimmedText &&
+        !hasPhoto
+      ) {
+        Alert.alert('Cannot send', 'Please enter text or attach a photo.');
+        return;
+      }
 
-    try {
-      if (composeMode === 'mention') {
-        if (composePhoto?.base64) {
-          await uploadPhoto({
-            photoBase64: composePhoto.base64,
-            status: text || undefined,
-            params: {
+      try {
+        if (composeMode === 'mention') {
+          if (photo?.base64) {
+            await uploadPhoto({
+              photoBase64: photo.base64,
+              status: trimmedText || undefined,
+              params: {
+                in_reply_to_user_id: user.id,
+              },
+            });
+          } else {
+            await post('/statuses/update', {
+              status: trimmedText,
               in_reply_to_user_id: user.id,
-            },
+            });
+          }
+        } else if (composeMode === 'reply' && composeReplyTarget) {
+          if (photo?.base64) {
+            await uploadPhoto({
+              photoBase64: photo.base64,
+              status: trimmedText || undefined,
+              params: {
+                in_reply_to_status_id: composeReplyTarget.statusId,
+                in_reply_to_user_id: composeReplyTarget.userId,
+              },
+            });
+          } else {
+            await post('/statuses/update', {
+              status: trimmedText,
+              in_reply_to_status_id: composeReplyTarget.statusId,
+              in_reply_to_user_id: composeReplyTarget.userId,
+            });
+          }
+        } else if (composeMode === 'repost' && composeRepostTarget) {
+          await post('/statuses/update', {
+            status: trimmedText || undefined,
+            repost_status_id: composeRepostTarget.statusId,
           });
         } else {
-          await post('/statuses/update', {
-            status: text,
-            in_reply_to_user_id: user.id,
+          await post('/direct_messages/new', {
+            user: user.id,
+            text: trimmedText,
           });
         }
-      } else {
-        await post('/direct_messages/new', {
-          user: user.id,
-          text,
-        });
+
+        setComposeMode(null);
+        setComposeReplyTarget(null);
+        setComposeRepostTarget(null);
+        Alert.alert(
+          'Sent',
+          composeMode === 'mention'
+            ? 'Mention posted.'
+            : composeMode === 'dm'
+            ? 'Direct message sent.'
+            : composeMode === 'reply'
+            ? 'Reply posted.'
+            : 'Reposted.',
+        );
+      } catch (requestError) {
+        Alert.alert(
+          composeMode === 'repost'
+            ? 'Repost failed'
+            : composeMode === 'reply'
+            ? 'Reply failed'
+            : 'Send failed',
+          getErrorMessage(requestError, 'Unable to send message.'),
+        );
+      }
+    },
+    [composeMode, composeReplyTarget, composeRepostTarget, user],
+  );
+
+  const handleToggleBookmark = useCallback(
+    async (status: FanfouStatus) => {
+      const statusId = getStatusId(status);
+      if (pendingBookmarkIds.has(statusId)) {
+        return;
       }
 
-      setComposeMode(null);
-      setComposeText('');
-      setComposePhoto(null);
-      Alert.alert(
-        'Sent',
-        composeMode === 'mention' ? 'Mention posted.' : 'Direct message sent.',
+      const nextFavorited = !status.favorited;
+      setBookmarkPending(statusId, true);
+      setRecentStatusItems(previous =>
+        previous.map(item =>
+          getStatusId(item) === statusId
+            ? { ...item, favorited: nextFavorited }
+            : item,
+        ),
       );
-    } catch (requestError) {
-      Alert.alert(
-        'Send failed',
-        getErrorMessage(requestError, 'Unable to send message.'),
-      );
-    } finally {
-      setIsComposeSubmitting(false);
-    }
-  }, [
-    composeMode,
-    composePhoto?.base64,
-    composeText,
-    isComposePhotoPicking,
-    isComposeSubmitting,
-    user,
-  ]);
+
+      try {
+        await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', {
+          id: statusId,
+        });
+        queryClient.setQueryData<FanfouStatus[]>(
+          recentStatusesQueryKey,
+          previous =>
+            previous
+              ? previous.map(item =>
+                  getStatusId(item) === statusId
+                    ? { ...item, favorited: nextFavorited }
+                    : item,
+                )
+              : previous,
+        );
+      } catch (requestError) {
+        setRecentStatusItems(previous =>
+          previous.map(item =>
+            getStatusId(item) === statusId
+              ? { ...item, favorited: !nextFavorited }
+              : item,
+          ),
+        );
+        Alert.alert(
+          'Bookmark failed',
+          getErrorMessage(requestError, 'Please try again.'),
+        );
+      } finally {
+        setBookmarkPending(statusId, false);
+      }
+    },
+    [
+      pendingBookmarkIds,
+      queryClient,
+      recentStatusesQueryKey,
+      setBookmarkPending,
+    ],
+  );
 
   const profileErrorMessage = error
     ? getErrorMessage(error, 'Failed to load profile.')
@@ -650,12 +818,54 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   ];
 
   const composerTitle =
-    composeMode === 'dm' ? `Message ${handleName}` : `Mention ${handleName}`;
+    composeMode === 'dm'
+      ? `Message ${handleName}`
+      : composeMode === 'reply'
+      ? composeReplyTarget
+        ? `Reply @${composeReplyTarget.screenName}`
+        : 'Reply'
+      : composeMode === 'repost'
+      ? composeRepostTarget?.screenName
+        ? `Repost @${composeRepostTarget.screenName}`
+        : 'Repost'
+      : `Mention ${handleName}`;
   const composerPlaceholder =
     composeMode === 'dm'
       ? 'Write a private message...'
+      : composeMode === 'reply'
+      ? 'Write your reply...'
+      : composeMode === 'repost'
+      ? 'Add a comment (optional)...'
       : 'Write your mention...';
-  const composerSubmitLabel = composeMode === 'dm' ? 'Send' : 'Post';
+  const composerSubmitLabel =
+    composeMode === 'dm'
+      ? 'Send'
+      : composeMode === 'reply'
+      ? 'Reply'
+      : composeMode === 'repost'
+      ? 'Repost'
+      : 'Post';
+  const composerInitialText =
+    composeMode === 'mention'
+      ? `@${user.screen_name} `
+      : composeMode === 'reply' && composeReplyTarget
+      ? `@${composeReplyTarget.screenName} `
+      : '';
+  const composerResetKey =
+    composeMode === 'mention'
+      ? `mention:${user.id}`
+      : composeMode === 'dm'
+      ? `dm:${user.id}`
+      : composeMode === 'reply'
+      ? `reply:${composeReplyTarget?.statusId ?? ''}`
+      : composeMode === 'repost'
+      ? `repost:${composeRepostTarget?.statusId ?? ''}`
+      : 'closed';
+  const isHydratingRecentStatuses = isHydratingTimeline({
+    isLoading: isRecentStatusesLoading,
+    renderedItems: recentStatusItems,
+    sourceItems: recentStatuses,
+  });
 
   return (
     <>
@@ -691,8 +901,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             />
           }
         >
-          <View className="relative mb-4">
-            <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
+          <DropShadowBox containerClassName="mb-4">
             <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
               <View className="flex-row items-start gap-5">
                 {hasAvatar ? (
@@ -767,35 +976,42 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 </Text>
               ) : null}
             </Surface>
-          </View>
+          </DropShadowBox>
 
           <View className="flex-row gap-4">
             {statsPrimary.map(stat => (
-              <View key={stat.label} className="relative flex-1 pb-2">
-                <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
+              <DropShadowBox key={stat.label} containerClassName="flex-1 pb-2">
                 <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
                   <Text
                     className="text-[20px] leading-6 text-foreground"
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                   >
                     {stat.value ?? '--'}
                   </Text>
-                  <Text className="mt-2 text-[12px] text-foreground">
+                  <Text
+                    className="mt-2 text-[12px] text-foreground"
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
                     {stat.label}
                   </Text>
                 </Surface>
-              </View>
+              </DropShadowBox>
             ))}
           </View>
 
           <View className="flex-row gap-4">
             {statsSecondary.map(stat => (
-              <View key={stat.label} className="relative flex-1 pb-2">
-                <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
+              <DropShadowBox key={stat.label} containerClassName="flex-1 pb-2">
                 <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
                   <Text
                     className="text-[20px] leading-6 text-foreground"
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                   >
                     {stat.value ?? '--'}
                   </Text>
@@ -803,13 +1019,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     {stat.label}
                   </Text>
                 </Surface>
-              </View>
+              </DropShadowBox>
             ))}
           </View>
 
           {isSelf ? (
-            <View className="relative pb-2">
-              <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
+            <DropShadowBox containerClassName="pb-2">
               <Surface className="bg-surface-secondary border-2 border-foreground dark:border-border px-4 py-4">
                 <Pressable
                   disabled
@@ -820,10 +1035,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   </Text>
                 </Pressable>
               </Surface>
-            </View>
+            </DropShadowBox>
           ) : (
-            <View className="relative pb-2">
-              <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
+            <DropShadowBox containerClassName="pb-2">
               <Surface className="bg-surface-secondary border-2 border-foreground dark:border-border px-4 py-4">
                 <View className="flex-row gap-3">
                   <Pressable
@@ -897,7 +1111,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   </Pressable>
                 </View>
               </Surface>
-            </View>
+            </DropShadowBox>
           )}
 
           {profileErrorMessage ? (
@@ -909,11 +1123,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
           ) : null}
 
           {isProtectedTimeline ? (
-            <Surface className="bg-surface-secondary border border-border px-4 py-4">
-              <Text className="text-[14px] leading-6 text-muted">
-                This account is protected. Follow to view recent posts.
-              </Text>
-            </Surface>
+            <DropShadowBox type="warning" containerClassName="pb-2">
+              <Surface
+                className={`bg-surface border-2 ${getDropShadowBorderClass(
+                  'warning',
+                )} px-4 py-4`}
+              >
+                <Text className="text-[14px] leading-6 text-warning">
+                  This account is protected. Follow to view recent posts.
+                </Text>
+              </Surface>
+            </DropShadowBox>
           ) : (
             <>
               <Text
@@ -923,7 +1143,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 Recent posts
               </Text>
               <View style={{ gap: TIMELINE_SPACING }}>
-                {isRecentStatusesLoading ? (
+                {isRecentStatusesLoading || isHydratingRecentStatuses ? (
                   <View style={{ gap: TIMELINE_SPACING }}>
                     {Array.from({ length: 3 }).map((_, index) => (
                       <TimelineSkeletonCard
@@ -943,12 +1163,13 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 ) : null}
 
                 {!isRecentStatusesLoading &&
-                recentStatuses.length === 0 &&
+                !isHydratingRecentStatuses &&
+                recentStatusItems.length === 0 &&
                 !recentStatusesErrorMessage ? (
                   <TimelineSkeletonCard message="No recent posts yet." />
                 ) : null}
 
-                {recentStatuses.map(status => {
+                {recentStatusItems.map(status => {
                   const statusKey = getStatusId(status);
                   const segments = parseHtmlToSegments(
                     status.text || status.status || '',
@@ -956,15 +1177,24 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   const photoUrl = getStatusPhotoUrl(status);
                   const photoPreviewKey = `${statusKey}-photo`;
                   const timestamp = formatTimestamp(status.created_at);
-                  const sourceLabel = status.source
+                  const sourceClient = status.source
                     ? parseHtmlToText(status.source).trim()
                     : '';
+                  const viaLabel = sourceClient ? `via ${sourceClient}` : '';
+                  const isBookmarkPending = pendingBookmarkIds.has(statusKey);
 
                   return (
-                    <View key={statusKey} className="relative">
-                      <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
-                      <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
-                        <Text className="text-[15px] leading-6 text-foreground">
+                    <DropShadowBox key={statusKey}>
+                      <Pressable
+                        onPress={() => handleStatusPress(statusKey)}
+                        className="bg-surface border-2 border-foreground dark:border-border px-4 py-4 active:translate-x-[-4px] active:translate-y-[4px]"
+                      >
+                        <View className="flex-row items-center justify-end">
+                          <Text className="text-[12px] text-muted">
+                            {timestamp}
+                          </Text>
+                        </View>
+                        <Text className="mt-1 text-[15px] leading-6 text-foreground">
                           {segments.length > 0
                             ? segments.map((segment, segmentIndex) => {
                                 if (segment.type === 'mention') {
@@ -972,9 +1202,38 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                                     <Text
                                       key={`${statusKey}-${segmentIndex}`}
                                       className="text-accent"
-                                      onPress={() =>
-                                        handleMentionPress(segment.screenName)
-                                      }
+                                      onPress={event => {
+                                        event.stopPropagation();
+                                        handleMentionPress(segment.screenName);
+                                      }}
+                                    >
+                                      {segment.text}
+                                    </Text>
+                                  );
+                                }
+                                if (segment.type === 'tag') {
+                                  return (
+                                    <Text
+                                      key={`${statusKey}-${segmentIndex}`}
+                                      className="bg-accent/15 text-accent px-2 py-0.5 rounded-full"
+                                      onPress={event => {
+                                        event.stopPropagation();
+                                        handleTagPress(segment.tag);
+                                      }}
+                                    >
+                                      {segment.text}
+                                    </Text>
+                                  );
+                                }
+                                if (segment.type === 'link') {
+                                  return (
+                                    <Text
+                                      key={`${statusKey}-${segmentIndex}`}
+                                      className="text-accent underline"
+                                      onPress={event => {
+                                        event.stopPropagation();
+                                        openLink(segment.href);
+                                      }}
                                     >
                                       {segment.text}
                                     </Text>
@@ -1020,20 +1279,53 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                         ) : null}
 
                         <View className="mt-3 flex-row items-center justify-between">
-                          <Text className="text-[12px] text-muted">
-                            {timestamp}
-                          </Text>
-                          {sourceLabel ? (
+                          <View className="flex-row items-center gap-4">
+                            <Pressable
+                              onPress={() => handleOpenReplyComposer(status)}
+                              className="p-1"
+                              accessibilityRole="button"
+                              accessibilityLabel="Reply"
+                            >
+                              <MessageCircle size={16} color={muted} />
+                            </Pressable>
+                            <Pressable
+                              onPress={() => handleOpenRepostComposer(status)}
+                              className="p-1"
+                              accessibilityRole="button"
+                              accessibilityLabel="Repost"
+                            >
+                              <Repeat2 size={16} color={muted} />
+                            </Pressable>
+                            <Pressable
+                              onPress={() => handleToggleBookmark(status)}
+                              disabled={isBookmarkPending}
+                              className={`p-1 ${
+                                isBookmarkPending ? 'opacity-50' : ''
+                              }`}
+                              accessibilityRole="button"
+                              accessibilityLabel={
+                                status.favorited
+                                  ? 'Remove bookmark'
+                                  : 'Bookmark'
+                              }
+                            >
+                              <Heart
+                                size={16}
+                                color={status.favorited ? accent : muted}
+                              />
+                            </Pressable>
+                          </View>
+                          {viaLabel ? (
                             <Text
-                              className="ml-2 text-[12px] text-muted"
+                              className="ml-3 flex-1 text-right text-[12px] text-muted"
                               numberOfLines={1}
                             >
-                              {`via ${sourceLabel}`}
+                              {viaLabel}
                             </Text>
                           ) : null}
                         </View>
-                      </Surface>
-                    </View>
+                      </Pressable>
+                    </DropShadowBox>
                   );
                 })}
               </View>
@@ -1061,18 +1353,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         title={composerTitle}
         placeholder={composerPlaceholder}
         submitLabel={composerSubmitLabel}
-        value={composeText}
-        isSubmitting={isComposeSubmitting}
         topInset={insets.top}
-        photoUri={composeMode === 'mention' ? composePhoto?.uri : null}
-        isPhotoPicking={isComposePhotoPicking}
-        onChangeText={setComposeText}
-        onPickPhoto={
-          composeMode === 'mention' ? handlePickComposePhoto : undefined
-        }
-        onRemovePhoto={
-          composeMode === 'mention' ? handleRemoveComposePhoto : undefined
-        }
+        initialText={composerInitialText}
+        resetKey={composerResetKey}
+        enablePhoto={composeMode === 'mention' || composeMode === 'reply'}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />

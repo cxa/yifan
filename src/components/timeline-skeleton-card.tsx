@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import { Text } from '@/components/app-text';
+import DropShadowBox from '@/components/drop-shadow-box';
 
 type TimelineSkeletonCardProps = {
   lineCount?: number;
@@ -97,8 +98,7 @@ const TimelineSkeletonCard = ({
   );
 
   return (
-    <View className="relative">
-      <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
+    <DropShadowBox>
       <View className="relative bg-surface border-2 border-foreground dark:border-border px-5 py-4 overflow-hidden">
         {message ? (
           <Text className="text-[14px] text-muted">{message}</Text>
@@ -122,7 +122,7 @@ const TimelineSkeletonCard = ({
           </View>
         )}
       </View>
-    </View>
+    </DropShadowBox>
   );
 };
 

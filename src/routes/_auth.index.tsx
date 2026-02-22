@@ -10,17 +10,15 @@ import { Home, AtSign, MoreHorizontal, SquarePen } from 'lucide-react-native';
 
 import { useAuthSession } from '@/auth/auth-session';
 import { post, uploadPhoto } from '@/auth/fanfou-client';
-import ComposerModal from '@/components/composer-modal';
+import ComposerModal, {
+  type ComposerModalSubmitPayload,
+} from '@/components/composer-modal';
 import LoginView from '@/components/login-view';
 import { getTabBarHeight } from '@/navigation/tab-bar-layout';
 import type { AuthTabParamList } from '@/navigation/types';
 import AuthHomeRoute from '@/routes/_auth.home/index';
 import MentionsRoute from '@/routes/_auth.mentions/index';
 import MoreRoute from '@/routes/_auth.more/index';
-import {
-  pickImageFromLibrary,
-  type PickedImage,
-} from '@/utils/pick-image-from-library';
 
 const Tab = createBottomTabNavigator<AuthTabParamList>();
 
@@ -165,95 +163,46 @@ const AuthIndexRoute = () => {
   const insets = useSafeAreaInsets();
   const [backgroundColor] = useThemeColor(['background']);
   const [composeVisible, setComposeVisible] = useState(false);
-  const [composeText, setComposeText] = useState('');
-  const [composePhoto, setComposePhoto] = useState<PickedImage | null>(null);
-  const [isComposeSubmitting, setIsComposeSubmitting] = useState(false);
-  const [isComposePhotoPicking, setIsComposePhotoPicking] = useState(false);
 
   const handleOpenComposer = useCallback(() => {
     setComposeVisible(true);
   }, []);
 
   const handleCloseComposer = useCallback(() => {
-    if (isComposeSubmitting || isComposePhotoPicking) {
-      return;
-    }
     setComposeVisible(false);
-    setComposeText('');
-    setComposePhoto(null);
-  }, [isComposePhotoPicking, isComposeSubmitting]);
+  }, []);
 
-  const handlePickComposePhoto = useCallback(async () => {
-    if (isComposeSubmitting || isComposePhotoPicking) {
-      return;
-    }
-    setIsComposePhotoPicking(true);
-    try {
-      const pickedPhoto = await pickImageFromLibrary();
-      if (pickedPhoto) {
-        setComposePhoto(pickedPhoto);
+  const handleSubmitComposer = useCallback(
+    async ({ text, photo }: ComposerModalSubmitPayload) => {
+      const trimmedText = text.trim();
+      const hasPhoto = Boolean(photo?.base64);
+      if (!trimmedText && !hasPhoto) {
+        Alert.alert('Cannot post', 'Please enter text or attach a photo.');
+        return;
       }
-    } catch (requestError) {
-      Alert.alert(
-        'Unable to attach photo',
-        requestError instanceof Error
-          ? requestError.message
-          : 'Please try again.',
-      );
-    } finally {
-      setIsComposePhotoPicking(false);
-    }
-  }, [isComposePhotoPicking, isComposeSubmitting]);
 
-  const handleRemoveComposePhoto = useCallback(() => {
-    if (isComposeSubmitting) {
-      return;
-    }
-    setComposePhoto(null);
-  }, [isComposeSubmitting]);
-
-  const handleSubmitComposer = useCallback(async () => {
-    if (isComposeSubmitting || isComposePhotoPicking) {
-      return;
-    }
-
-    const text = composeText.trim();
-    const hasPhoto = Boolean(composePhoto?.base64);
-    if (!text && !hasPhoto) {
-      Alert.alert('Cannot post', 'Please enter text or attach a photo.');
-      return;
-    }
-
-    setIsComposeSubmitting(true);
-    try {
-      if (composePhoto?.base64) {
-        await uploadPhoto({
-          photoBase64: composePhoto.base64,
-          status: text || undefined,
-        });
-      } else {
-        await post('/statuses/update', { status: text });
+      try {
+        if (photo?.base64) {
+          await uploadPhoto({
+            photoBase64: photo.base64,
+            status: trimmedText || undefined,
+          });
+        } else {
+          await post('/statuses/update', { status: trimmedText });
+        }
+        setComposeVisible(false);
+        Alert.alert('Posted', 'Your post was sent.');
+      } catch (requestError) {
+        Alert.alert(
+          'Post failed',
+          requestError instanceof Error
+            ? requestError.message
+            : 'Please try again.',
+        );
       }
-      setComposeVisible(false);
-      setComposeText('');
-      setComposePhoto(null);
-      Alert.alert('Posted', 'Your post was sent.');
-    } catch (requestError) {
-      Alert.alert(
-        'Post failed',
-        requestError instanceof Error
-          ? requestError.message
-          : 'Please try again.',
-      );
-    } finally {
-      setIsComposeSubmitting(false);
-    }
-  }, [
-    composePhoto?.base64,
-    composeText,
-    isComposePhotoPicking,
-    isComposeSubmitting,
-  ]);
+    },
+    [],
+  );
 
   const renderAuthTabBar = useCallback(
     (props: BottomTabBarProps) => (
@@ -287,14 +236,9 @@ const AuthIndexRoute = () => {
         title="Compose"
         placeholder="What's happening?"
         submitLabel="Post"
-        value={composeText}
-        isSubmitting={isComposeSubmitting}
         topInset={insets.top}
-        photoUri={composePhoto?.uri}
-        isPhotoPicking={isComposePhotoPicking}
-        onChangeText={setComposeText}
-        onPickPhoto={handlePickComposePhoto}
-        onRemovePhoto={handleRemoveComposePhoto}
+        enablePhoto
+        resetKey="root-compose"
         onCancel={handleCloseComposer}
         onSubmit={handleSubmitComposer}
       />

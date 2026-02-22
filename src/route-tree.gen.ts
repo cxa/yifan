@@ -7,6 +7,8 @@ import Route__auth_index from './routes/_auth.index';
 import Route__auth_mentions_index from './routes/_auth.mentions/index';
 import Route__auth_more_index from './routes/_auth.more/index';
 import Route__auth_profile__handle_index from './routes/_auth.profile.$handle/index';
+import Route__auth_status__statusId_index from './routes/_auth.status.$statusId/index';
+import Route__auth_tag__tag_index from './routes/_auth.tag.$tag/index';
 import Route__auth from './routes/_auth';
 import Route_login_index from './routes/login/index';
 
@@ -92,6 +94,50 @@ export const routeTree: RouteNode =
           name: 'route_root._auth.profile._handle.index',
           pathSegment: '',
           component: Route__auth_profile__handle_index,
+          isIndex: true,
+          children: [],
+        }
+        ],
+      }
+      ],
+    },
+{
+      id: '__root._auth.status',
+      name: 'route_root._auth.status',
+      pathSegment: 'status',
+      children: [
+{
+        id: '__root._auth.status.$statusId',
+        name: 'route_root._auth.status._statusId',
+        pathSegment: ':statusId',
+        children: [
+{
+          id: '__root._auth.status.$statusId.index',
+          name: 'route_root._auth.status._statusId.index',
+          pathSegment: '',
+          component: Route__auth_status__statusId_index,
+          isIndex: true,
+          children: [],
+        }
+        ],
+      }
+      ],
+    },
+{
+      id: '__root._auth.tag',
+      name: 'route_root._auth.tag',
+      pathSegment: 'tag',
+      children: [
+{
+        id: '__root._auth.tag.$tag',
+        name: 'route_root._auth.tag._tag',
+        pathSegment: ':tag',
+        children: [
+{
+          id: '__root._auth.tag.$tag.index',
+          name: 'route_root._auth.tag._tag.index',
+          pathSegment: '',
+          component: Route__auth_tag__tag_index,
           isIndex: true,
           children: [],
         }

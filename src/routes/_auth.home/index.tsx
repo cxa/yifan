@@ -6,10 +6,10 @@ import React, {
   useState,
 } from 'react';
 import {
+  Alert,
   FlatList,
   ActivityIndicator,
   Image,
-  Pressable,
   RefreshControl,
   View,
 } from 'react-native';
@@ -31,24 +31,26 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-import { get } from '@/auth/fanfou-client';
+import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
 import LinearGradient from 'react-native-linear-gradient';
+import ComposerModal, {
+  type ComposerModalSubmitPayload,
+} from '@/components/composer-modal';
+import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
+import { isHydratingTimeline } from '@/components/timeline-hydration';
 import {
+  TIMELINE_AUTO_REFRESH_INTERVAL_MS,
   TIMELINE_HORIZONTAL_PADDING,
+  TIMELINE_INITIAL_PAGE_SIZE,
+  TIMELINE_PAGE_SIZE,
+  TIMELINE_SCROLL_TOP_THRESHOLD,
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
 import type { FanfouStatus } from '@/types/fanfou';
-import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
-import { formatTimestamp } from '@/utils/format-timestamp';
 import { AnimatedText, Text } from '@/components/app-text';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
-
-const INITIAL_PAGE_SIZE = 60;
-const PAGE_SIZE = 20;
-const AUTO_REFRESH_INTERVAL = 60 * 1000;
-const SCROLL_TOP_THRESHOLD = 12;
 
 type PhotoViewerOriginRect = {
   x: number;
@@ -57,26 +59,23 @@ type PhotoViewerOriginRect = {
   height: number;
 };
 
+type TimelineComposerMode = 'reply' | 'repost' | null;
+
+type ReplyTarget = {
+  statusId: string;
+  userId: string;
+  screenName: string;
+};
+
+type RepostTarget = {
+  statusId: string;
+  screenName: string;
+};
+
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 
 const getStatusId = (status: FanfouStatus): string => status.id;
-
-const getStatusPhotoUrl = (status: FanfouStatus): string | null => {
-  const getUrl = (...candidates: Array<string | undefined>) => {
-    for (const candidate of candidates) {
-      if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        return candidate;
-      }
-    }
-    return null;
-  };
-  return getUrl(
-    status.photo?.largeurl,
-    status.photo?.imageurl,
-    status.photo?.thumburl,
-  );
-};
 
 const mergeTimelineItems = (
   existing: FanfouStatus[],
@@ -91,12 +90,10 @@ const mergeTimelineItems = (
   const merged: FanfouStatus[] = [];
   for (const item of nextItems) {
     const id = getStatusId(item);
-    if (id) {
-      if (seen.has(id)) {
-        continue;
-      }
-      seen.add(id);
+    if (seen.has(id)) {
+      continue;
     }
+    seen.add(id);
     merged.push(item);
   }
   return merged;
@@ -104,7 +101,11 @@ const mergeTimelineItems = (
 
 const AuthHomeRoute = () => {
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
-  const [accent, background] = useThemeColor(['accent', 'background']);
+  const [accent, background, muted] = useThemeColor([
+    'accent',
+    'background',
+    'muted',
+  ]);
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const isAtTop = useSharedValue(true);
@@ -112,7 +113,11 @@ const AuthHomeRoute = () => {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isFetchingLatest, setIsFetchingLatest] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasReachedTimelineEnd, setHasReachedTimelineEnd] = useState(false);
   const [timelineItems, setTimelineItems] = useState<FanfouStatus[]>([]);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerPreviewKey, setPhotoViewerPreviewKey] = useState<
@@ -126,6 +131,11 @@ const AuthHomeRoute = () => {
   const listRef = useRef<FlatList<FanfouStatus>>(null);
   const latestIdRef = useRef<string | null>(null);
   const oldestIdRef = useRef<string | null>(null);
+  const [composeMode, setComposeMode] = useState<TimelineComposerMode>(null);
+  const [composeReplyTarget, setComposeReplyTarget] =
+    useState<ReplyTarget | null>(null);
+  const [composeRepostTarget, setComposeRepostTarget] =
+    useState<RepostTarget | null>(null);
   useScrollToTop(listRef);
   const updateIsAtTop = useCallback((value: boolean) => {
     setIsAtTopState(value);
@@ -133,7 +143,7 @@ const AuthHomeRoute = () => {
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
       scrollY.value = event.contentOffset.y;
-      const atTop = event.contentOffset.y <= SCROLL_TOP_THRESHOLD;
+      const atTop = event.contentOffset.y <= TIMELINE_SCROLL_TOP_THRESHOLD;
       if (atTop !== isAtTop.value) {
         isAtTop.value = atTop;
         scheduleOnRN(updateIsAtTop, atTop);
@@ -207,6 +217,38 @@ const AuthHomeRoute = () => {
     },
     [navigation],
   );
+  const handleStatusPress = useCallback(
+    (statusId: string) => {
+      const parentNavigation =
+        navigation.getParent<NavigationProp<AuthStackParamList>>();
+      if (!parentNavigation) {
+        return;
+      }
+      parentNavigation.navigate('route_root._auth.status', {
+        screen: 'route_root._auth.status._statusId',
+        params: { statusId },
+      });
+    },
+    [navigation],
+  );
+  const handleTagPress = useCallback(
+    (tag: string) => {
+      const normalizedTag = tag.trim().replace(/^#+/, '').replace(/#+$/, '');
+      if (!normalizedTag) {
+        return;
+      }
+      const parentNavigation =
+        navigation.getParent<NavigationProp<AuthStackParamList>>();
+      if (!parentNavigation) {
+        return;
+      }
+      parentNavigation.navigate('route_root._auth.tag', {
+        screen: 'route_root._auth.tag._tag',
+        params: { tag: normalizedTag },
+      });
+    },
+    [navigation],
+  );
   const openPhotoViewer = useCallback(
     (
       photoUrl: string,
@@ -272,7 +314,7 @@ const AuthHomeRoute = () => {
     queryKey: ['timeline', 'home'],
     queryFn: async () => {
       const data = await get('/statuses/home_timeline', {
-        count: INITIAL_PAGE_SIZE,
+        count: TIMELINE_INITIAL_PAGE_SIZE,
         mode: 'default',
       });
       return normalizeTimelineItems(data);
@@ -291,6 +333,7 @@ const AuthHomeRoute = () => {
       return;
     }
     setTimelineItems(initialItems);
+    setHasReachedTimelineEnd(false);
   }, [initialItems, timelineItems.length]);
 
   useEffect(() => {
@@ -299,9 +342,8 @@ const AuthHomeRoute = () => {
       oldestIdRef.current = null;
       return;
     }
-    latestIdRef.current = getStatusId(timelineItems[0]) ?? null;
-    oldestIdRef.current =
-      getStatusId(timelineItems[timelineItems.length - 1]) ?? null;
+    latestIdRef.current = getStatusId(timelineItems[0]);
+    oldestIdRef.current = getStatusId(timelineItems[timelineItems.length - 1]);
   }, [timelineItems]);
 
   const fetchLatest = useCallback(async () => {
@@ -316,7 +358,7 @@ const AuthHomeRoute = () => {
     setIsFetchingLatest(true);
     try {
       const data = await get('/statuses/home_timeline', {
-        count: PAGE_SIZE,
+        count: TIMELINE_PAGE_SIZE,
         since_id: sinceId,
         mode: 'default',
       });
@@ -331,7 +373,7 @@ const AuthHomeRoute = () => {
   }, [isFetchingLatest, isLoading, refetch]);
 
   const fetchMore = useCallback(async () => {
-    if (isFetchingMore || isLoading) {
+    if (isFetchingMore || isLoading || hasReachedTimelineEnd) {
       return;
     }
     const maxId = oldestIdRef.current;
@@ -341,19 +383,28 @@ const AuthHomeRoute = () => {
     setIsFetchingMore(true);
     try {
       const data = await get('/statuses/home_timeline', {
-        count: PAGE_SIZE,
+        count: TIMELINE_PAGE_SIZE,
         max_id: maxId,
         mode: 'default',
       });
       const nextItems = normalizeTimelineItems(data);
       if (nextItems.length === 0) {
+        setHasReachedTimelineEnd(true);
         return;
       }
-      setTimelineItems(prev => mergeTimelineItems(prev, nextItems, 'append'));
+      let hasAppended = false;
+      setTimelineItems(prev => {
+        const merged = mergeTimelineItems(prev, nextItems, 'append');
+        hasAppended = merged.length > prev.length;
+        return merged;
+      });
+      if (!hasAppended) {
+        setHasReachedTimelineEnd(true);
+      }
     } finally {
       setIsFetchingMore(false);
     }
-  }, [isFetchingMore, isLoading]);
+  }, [hasReachedTimelineEnd, isFetchingMore, isLoading]);
 
   useEffect(() => {
     if (!isAtTopState || isLoading) {
@@ -361,7 +412,7 @@ const AuthHomeRoute = () => {
     }
     const interval = setInterval(() => {
       fetchLatest();
-    }, AUTO_REFRESH_INTERVAL);
+    }, TIMELINE_AUTO_REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchLatest, isAtTopState, isLoading]);
 
@@ -384,6 +435,158 @@ const AuthHomeRoute = () => {
     }
   }, [fetchLatest, isRefreshing]);
 
+  const setBookmarkPending = useCallback(
+    (statusId: string, pending: boolean) => {
+      setPendingBookmarkIds(previous => {
+        const next = new Set(previous);
+        if (pending) {
+          next.add(statusId);
+        } else {
+          next.delete(statusId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleOpenReplyComposer = useCallback((status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    const userId = status.user.id.trim();
+    const screenName = status.user.screen_name.trim();
+
+    setComposeMode('reply');
+    setComposeReplyTarget({ statusId, userId, screenName });
+    setComposeRepostTarget(null);
+  }, []);
+
+  const handleOpenRepostComposer = useCallback((status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    const screenName = status.user.screen_name.trim();
+    setComposeMode('repost');
+    setComposeRepostTarget({ statusId, screenName });
+    setComposeReplyTarget(null);
+  }, []);
+
+  const handleCloseComposer = useCallback(() => {
+    setComposeMode(null);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
+  }, []);
+
+  const handleSendComposer = useCallback(
+    async ({ text, photo }: ComposerModalSubmitPayload) => {
+      if (!composeMode) {
+        return;
+      }
+
+      const trimmedText = text.trim();
+      const hasPhoto = Boolean(photo?.base64);
+
+      if (composeMode === 'reply') {
+        if (!composeReplyTarget) {
+          Alert.alert('Cannot reply', 'Missing reply target.');
+          return;
+        }
+        if (!trimmedText && !hasPhoto) {
+          Alert.alert('Cannot reply', 'Please enter text or attach a photo.');
+          return;
+        }
+      }
+
+      if (composeMode === 'repost' && !composeRepostTarget) {
+        Alert.alert('Cannot repost', 'Missing repost target.');
+        return;
+      }
+
+      try {
+        if (composeMode === 'reply' && composeReplyTarget) {
+          if (photo?.base64) {
+            await uploadPhoto({
+              photoBase64: photo.base64,
+              status: trimmedText || undefined,
+              params: {
+                in_reply_to_status_id: composeReplyTarget.statusId,
+                in_reply_to_user_id: composeReplyTarget.userId,
+              },
+            });
+          } else {
+            await post('/statuses/update', {
+              status: trimmedText,
+              in_reply_to_status_id: composeReplyTarget.statusId,
+              in_reply_to_user_id: composeReplyTarget.userId,
+            });
+          }
+        }
+
+        if (composeMode === 'repost' && composeRepostTarget) {
+          await post('/statuses/update', {
+            status: trimmedText || undefined,
+            repost_status_id: composeRepostTarget.statusId,
+          });
+        }
+
+        setComposeMode(null);
+        setComposeReplyTarget(null);
+        setComposeRepostTarget(null);
+        Alert.alert(
+          'Sent',
+          composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
+        );
+      } catch (requestError) {
+        Alert.alert(
+          composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
+          requestError instanceof Error
+            ? requestError.message
+            : 'Please try again.',
+        );
+      }
+    },
+    [composeMode, composeReplyTarget, composeRepostTarget],
+  );
+
+  const handleToggleBookmark = useCallback(
+    async (status: FanfouStatus) => {
+      const statusId = getStatusId(status);
+      if (pendingBookmarkIds.has(statusId)) {
+        return;
+      }
+
+      const nextFavorited = !status.favorited;
+      setBookmarkPending(statusId, true);
+      setTimelineItems(previous =>
+        previous.map(item =>
+          getStatusId(item) === statusId
+            ? { ...item, favorited: nextFavorited }
+            : item,
+        ),
+      );
+
+      try {
+        await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', {
+          id: statusId,
+        });
+      } catch (requestError) {
+        setTimelineItems(previous =>
+          previous.map(item =>
+            getStatusId(item) === statusId
+              ? { ...item, favorited: !nextFavorited }
+              : item,
+          ),
+        );
+        Alert.alert(
+          'Bookmark failed',
+          requestError instanceof Error
+            ? requestError.message
+            : 'Please try again.',
+        );
+      } finally {
+        setBookmarkPending(statusId, false);
+      }
+    },
+    [pendingBookmarkIds, setBookmarkPending],
+  );
+
   const refreshControl = useMemo(
     () => (
       <RefreshControl
@@ -398,8 +601,36 @@ const AuthHomeRoute = () => {
     [accent, background, handleRefresh, insets.top, isRefreshing],
   );
   const timelineListSettings = useTimelineListSettings(insets);
-  const isHydratingTimeline =
-    !isLoading && timelineItems.length === 0 && initialItems.length > 0;
+  const isHydratingTimelineItems = isHydratingTimeline({
+    isLoading,
+    renderedItems: timelineItems,
+    sourceItems: initialItems,
+  });
+  const composerTitle =
+    composeMode === 'reply'
+      ? composeReplyTarget
+        ? `Reply @${composeReplyTarget.screenName}`
+        : 'Reply'
+      : composeMode === 'repost'
+      ? composeRepostTarget?.screenName
+        ? `Repost @${composeRepostTarget.screenName}`
+        : 'Repost'
+      : 'Compose';
+  const composerPlaceholder =
+    composeMode === 'reply'
+      ? 'Write your reply...'
+      : 'Add a comment (optional)...';
+  const composerSubmitLabel = composeMode === 'reply' ? 'Reply' : 'Repost';
+  const composerInitialText =
+    composeMode === 'reply' && composeReplyTarget
+      ? `@${composeReplyTarget.screenName} `
+      : '';
+  const composerResetKey =
+    composeMode === 'reply'
+      ? `reply:${composeReplyTarget?.statusId ?? ''}`
+      : composeMode === 'repost'
+      ? `repost:${composeRepostTarget?.statusId ?? ''}`
+      : 'closed';
 
   return (
     <>
@@ -411,7 +642,7 @@ const AuthHomeRoute = () => {
         <FlatList
           ref={listRef}
           data={timelineItems}
-          keyExtractor={(item, index) => getStatusId(item) ?? String(index)}
+          keyExtractor={item => getStatusId(item)}
           refreshControl={refreshControl}
           onScroll={scrollHandler}
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
@@ -421,6 +652,12 @@ const AuthHomeRoute = () => {
             isFetchingMore ? (
               <View className="items-center py-6">
                 <ActivityIndicator color={accent} />
+              </View>
+            ) : hasReachedTimelineEnd && timelineItems.length > 0 ? (
+              <View className="items-center py-6">
+                <Text className="text-[12px] tracking-[4px] text-muted">
+                  FIN
+                </Text>
               </View>
             ) : null
           }
@@ -447,7 +684,7 @@ const AuthHomeRoute = () => {
             </View>
           }
           ListEmptyComponent={
-            isLoading || isHydratingTimeline ? (
+            isLoading || isHydratingTimelineItems ? (
               <View className="gap-8">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <TimelineSkeletonCard
@@ -462,149 +699,25 @@ const AuthHomeRoute = () => {
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}
-          renderItem={({ item, index }) => {
-            const statusKey = getStatusId(item) ?? String(index);
-            const screenName = item.user?.screen_name || '';
-            const userId = item.user?.id || '';
-            const handle = `@${item.user?.id || ''}`;
-            const avatarUrl =
-              item.user?.profile_image_url_large ||
-              item.user?.profile_image_url;
-            const photoUrl = getStatusPhotoUrl(item);
-            const photoPreviewKey = `${statusKey}-photo`;
-            const segments = parseHtmlToSegments(
-              item.text || item.status || '',
-            );
-            const timestamp = formatTimestamp(item.created_at);
-            const sourceLabel = item.source
-              ? `via ${parseHtmlToText(item.source).trim()}`
-              : '';
-
-            return (
-              <View className="relative">
-                <View className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border -translate-x-2 translate-y-2" />
-                <Pressable className="bg-surface border-2 border-foreground dark:border-border px-5 py-4 active:translate-x-[-4px] active:translate-y-[4px]">
-                  <View className="flex-row gap-3">
-                    {avatarUrl ? (
-                      userId ? (
-                        <Pressable
-                          onPress={() => handleProfilePress(userId)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Open profile ${
-                            screenName || userId
-                          }`}
-                        >
-                          <Image
-                            source={{ uri: avatarUrl }}
-                            className="h-10 w-10 rounded-full bg-surface-secondary"
-                          />
-                        </Pressable>
-                      ) : (
-                        <Image
-                          source={{ uri: avatarUrl }}
-                          className="h-10 w-10 rounded-full bg-surface-secondary"
-                        />
-                      )
-                    ) : (
-                      <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
-                        <Text className="text-[14px] text-muted">
-                          {(screenName || 'U').slice(0, 1).toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View className="flex-1">
-                      <View className="flex-row items-baseline gap-1.5">
-                        <Text
-                          className="text-[15px] font-bold text-foreground"
-                          numberOfLines={1}
-                        >
-                          {screenName}
-                        </Text>
-
-                        <Text
-                          className="text-[14px] text-muted"
-                          numberOfLines={1}
-                        >
-                          {handle}
-                        </Text>
-                      </View>
-                      <Text className="mt-1 text-[15px] leading-6 text-foreground">
-                        {segments.length > 0
-                          ? segments.map((segment, segmentIndex) => {
-                              if (segment.type === 'mention') {
-                                return (
-                                  <Text
-                                    key={`${statusKey}-${segmentIndex}`}
-                                    className="text-accent"
-                                    onPress={() =>
-                                      handleMentionPress(segment.screenName)
-                                    }
-                                  >
-                                    {segment.text}
-                                  </Text>
-                                );
-                              }
-                              return segment.text;
-                            })
-                          : ''}
-                      </Text>
-                      {photoUrl ? (
-                        <View
-                          className={
-                            photoViewerVisible &&
-                            photoViewerPreviewKey === photoPreviewKey
-                              ? 'opacity-0'
-                              : undefined
-                          }
-                        >
-                          <Pressable
-                            onPress={() =>
-                              handlePhotoPress(photoUrl, photoPreviewKey)
-                            }
-                            className="mt-3 overflow-hidden border border-border bg-surface-secondary"
-                            accessibilityRole="button"
-                            accessibilityLabel="Open photo"
-                          >
-                            <View
-                              ref={node =>
-                                registerPhotoPreviewRef(photoPreviewKey, node)
-                              }
-                              collapsable={false}
-                              className="h-[220px] w-full"
-                            >
-                              <Image
-                                source={{ uri: photoUrl }}
-                                className="h-full w-full bg-surface-secondary"
-                                resizeMode="cover"
-                              />
-                            </View>
-                          </Pressable>
-                        </View>
-                      ) : null}
-                      {timestamp || sourceLabel ? (
-                        <View className="mt-3 flex-row items-center">
-                          {timestamp ? (
-                            <Text className="text-[12px] text-muted">
-                              {timestamp}
-                            </Text>
-                          ) : null}
-                          {sourceLabel ? (
-                            <Text
-                              className="ml-2 flex-1 text-right text-[12px] text-muted"
-                              numberOfLines={1}
-                            >
-                              {sourceLabel}
-                            </Text>
-                          ) : null}
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
-                </Pressable>
-              </View>
-            );
-          }}
+          renderItem={({ item }) => (
+            <TimelineStatusCard
+              status={item}
+              accent={accent}
+              muted={muted}
+              isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
+              photoViewerVisible={photoViewerVisible}
+              photoViewerPreviewKey={photoViewerPreviewKey}
+              registerPhotoPreviewRef={registerPhotoPreviewRef}
+              onOpenPhoto={handlePhotoPress}
+              onPressStatus={handleStatusPress}
+              onPressProfile={handleProfilePress}
+              onPressMention={handleMentionPress}
+              onPressTag={handleTagPress}
+              onReply={handleOpenReplyComposer}
+              onRepost={handleOpenRepostComposer}
+              onToggleBookmark={handleToggleBookmark}
+            />
+          )}
         />
       </ScrollShadow>
       <PhotoViewerModal
@@ -613,6 +726,18 @@ const AuthHomeRoute = () => {
         topInset={insets.top}
         originRect={photoViewerOriginRect}
         onClose={handleClosePhotoViewer}
+      />
+      <ComposerModal
+        visible={composeMode !== null}
+        title={composerTitle}
+        placeholder={composerPlaceholder}
+        submitLabel={composerSubmitLabel}
+        topInset={insets.top}
+        initialText={composerInitialText}
+        resetKey={composerResetKey}
+        enablePhoto={composeMode === 'reply'}
+        onCancel={handleCloseComposer}
+        onSubmit={handleSendComposer}
       />
     </>
   );

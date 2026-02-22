@@ -20,6 +20,22 @@ export type AuthProfileScreenParamList = {
   'route_root._auth.profile._handle.index': { userId: string };
 };
 
+export type AuthStatusStackParamList = {
+  'route_root._auth.status._statusId': { statusId: string };
+};
+
+export type AuthStatusScreenParamList = {
+  'route_root._auth.status._statusId.index': { statusId: string };
+};
+
+export type AuthTagStackParamList = {
+  'route_root._auth.tag._tag': { tag: string };
+};
+
+export type AuthTagScreenParamList = {
+  'route_root._auth.tag._tag.index': { tag: string };
+};
+
 export type AuthStackParamList = {
   'route_root._auth.home':
     | NavigatorScreenParams<AuthHomeStackParamList>
@@ -32,6 +48,8 @@ export type AuthStackParamList = {
     | NavigatorScreenParams<AuthMoreStackParamList>
     | undefined;
   'route_root._auth.profile': NavigatorScreenParams<AuthProfileStackParamList>;
+  'route_root._auth.status': NavigatorScreenParams<AuthStatusStackParamList>;
+  'route_root._auth.tag': NavigatorScreenParams<AuthTagStackParamList>;
 };
 
 export type LoginStackParamList = {
