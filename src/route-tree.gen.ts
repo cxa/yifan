@@ -6,7 +6,7 @@ import Route__auth_home_index from './routes/_auth.home/index';
 import Route__auth_index from './routes/_auth.index';
 import Route__auth_mentions_index from './routes/_auth.mentions/index';
 import Route__auth_more_index from './routes/_auth.more/index';
-import Route__auth_profile__screenName_index from './routes/_auth.profile.$screenName/index';
+import Route__auth_profile__handle_index from './routes/_auth.profile.$handle/index';
 import Route__auth from './routes/_auth';
 import Route_login_index from './routes/login/index';
 
@@ -83,15 +83,15 @@ export const routeTree: RouteNode =
       pathSegment: 'profile',
       children: [
 {
-        id: '__root._auth.profile.$screenName',
-        name: 'route_root._auth.profile._screenName',
-        pathSegment: ':screenName',
+        id: '__root._auth.profile.$handle',
+        name: 'route_root._auth.profile._handle',
+        pathSegment: ':handle',
         children: [
 {
-          id: '__root._auth.profile.$screenName.index',
-          name: 'route_root._auth.profile._screenName.index',
+          id: '__root._auth.profile.$handle.index',
+          name: 'route_root._auth.profile._handle.index',
           pathSegment: '',
-          component: Route__auth_profile__screenName_index,
+          component: Route__auth_profile__handle_index,
           isIndex: true,
           children: [],
         }

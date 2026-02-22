@@ -19,7 +19,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
     );
   }
 
-  return <View className="flex-1">{children}</View>;
+  return children;
 };
 
 export default AuthLayout;

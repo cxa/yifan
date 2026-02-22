@@ -13,11 +13,11 @@ export type AuthMoreStackParamList = {
 };
 
 export type AuthProfileStackParamList = {
-  'route_root._auth.profile._screenName': { screenName: string };
+  'route_root._auth.profile._handle': { userId: string };
 };
 
 export type AuthProfileScreenParamList = {
-  'route_root._auth.profile._screenName.index': { screenName: string };
+  'route_root._auth.profile._handle.index': { userId: string };
 };
 
 export type AuthStackParamList = {

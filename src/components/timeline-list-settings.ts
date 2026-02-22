@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import type { ViewStyle } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
+import {
+  getTabBarBaseHeight,
+  getTabBarHeight,
+} from '@/navigation/tab-bar-layout';
 
-export const TIMELINE_TAB_BAR_HEIGHT = 44;
 export const TIMELINE_SPACING = 32;
 export const TIMELINE_HORIZONTAL_PADDING = 24;
 
@@ -17,19 +20,20 @@ export type TimelineListSettings = {
 export const useTimelineListSettings = (
   insets: EdgeInsets,
 ): TimelineListSettings =>
-  useMemo(
-    () => ({
+  useMemo(() => {
+    const tabBarBaseHeight = getTabBarBaseHeight(insets.bottom);
+    const tabBarHeight = getTabBarHeight(insets.bottom);
+
+    return {
       contentContainerStyle: {
         paddingHorizontal: TIMELINE_HORIZONTAL_PADDING,
         paddingTop: insets.top,
-        paddingBottom:
-          TIMELINE_TAB_BAR_HEIGHT + insets.bottom + TIMELINE_SPACING,
+        paddingBottom: tabBarHeight + TIMELINE_SPACING,
         gap: TIMELINE_SPACING,
       },
       scrollIndicatorInsets: {
-        bottom: TIMELINE_TAB_BAR_HEIGHT,
+        bottom: tabBarBaseHeight,
       },
       scrollEventThrottle: 16,
-    }),
-    [insets.bottom, insets.top],
-  );
+    };
+  }, [insets.bottom, insets.top]);

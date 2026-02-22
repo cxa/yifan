@@ -1,6 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, View } from 'react-native';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useScrollToTop,
+  type NavigationProp,
+} from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollShadow, Surface, useThemeColor } from 'heroui-native';
@@ -22,7 +26,7 @@ import {
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
-import { parseHtmlToSegments } from '@/utils/parse-html';
+import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import type { FanfouStatus } from '@/types/fanfou';
 import { AnimatedText, Text } from '@/components/app-text';
@@ -34,17 +38,10 @@ type PhotoViewerOriginRect = {
   height: number;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const isFanfouStatus = (value: unknown): value is FanfouStatus =>
-  isRecord(value);
-
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
-  Array.isArray(value) ? value.filter(isFanfouStatus) : [];
+  Array.isArray(value) ? (value as FanfouStatus[]) : [];
 
-const getStatusId = (status: FanfouStatus): string | undefined =>
-  status.id ?? (status.rawid ? String(status.rawid) : undefined);
+const getStatusId = (status: FanfouStatus): string => status.id;
 
 const getStatusPhotoUrl = (status: FanfouStatus): string | null => {
   const getUrl = (...candidates: Array<string | undefined>) => {
@@ -76,6 +73,8 @@ const MentionsRoute = () => {
   const photoPreviewRefs = useRef(
     new Map<string, React.ComponentRef<typeof View>>(),
   );
+  const listRef = useRef<FlatList<FanfouStatus>>(null);
+  useScrollToTop(listRef);
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
@@ -122,15 +121,29 @@ const MentionsRoute = () => {
     };
   });
   const handleMentionPress = useCallback(
-    (screenName: string) => {
+    (userId: string) => {
       const parentNavigation =
         navigation.getParent<NavigationProp<AuthStackParamList>>();
       if (!parentNavigation) {
         return;
       }
       parentNavigation.navigate('route_root._auth.profile', {
-        screen: 'route_root._auth.profile._screenName',
-        params: { screenName },
+        screen: 'route_root._auth.profile._handle',
+        params: { userId },
+      });
+    },
+    [navigation],
+  );
+  const handleProfilePress = useCallback(
+    (userId: string) => {
+      const parentNavigation =
+        navigation.getParent<NavigationProp<AuthStackParamList>>();
+      if (!parentNavigation) {
+        return;
+      }
+      parentNavigation.navigate('route_root._auth.profile', {
+        screen: 'route_root._auth.profile._handle',
+        params: { userId },
       });
     },
     [navigation],
@@ -238,6 +251,7 @@ const MentionsRoute = () => {
         color={background}
       >
         <FlatList
+          ref={listRef}
           className="bg-background"
           data={items}
           keyExtractor={(item, index) => getStatusId(item) ?? String(index)}
@@ -286,10 +300,12 @@ const MentionsRoute = () => {
             const statusKey = getStatusId(item) ?? String(index);
             const name =
               item.user?.screen_name || item.user?.name || 'Unknown author';
-            const handle = item.user?.name
-              ? `@${item.user.name}`
-              : item.user?.screen_name
-              ? `@${item.user.screen_name}`
+            const screenName = item.user?.screen_name || '';
+            const userId = item.user?.id || '';
+            const handle = screenName
+              ? `@${screenName}`
+              : item.user?.id
+              ? `@${item.user.id}`
               : '';
             const avatarUrl =
               item.user?.profile_image_url_large ||
@@ -300,6 +316,9 @@ const MentionsRoute = () => {
               item.text || item.status || '',
             );
             const timestamp = formatTimestamp(item.created_at);
+            const sourceLabel = item.source
+              ? `via ${parseHtmlToText(item.source).trim()}`
+              : '';
 
             return (
               <View className="relative">
@@ -307,10 +326,25 @@ const MentionsRoute = () => {
                 <Pressable className="bg-surface border-2 border-foreground dark:border-border px-5 py-4 active:translate-x-[-4px] active:translate-y-[4px]">
                   <View className="flex-row gap-3">
                     {avatarUrl ? (
-                      <Image
-                        source={{ uri: avatarUrl }}
-                        className="h-10 w-10 rounded-full bg-surface-secondary"
-                      />
+                      userId ? (
+                        <Pressable
+                          onPress={() => handleProfilePress(userId)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open profile ${
+                            screenName || userId
+                          }`}
+                        >
+                          <Image
+                            source={{ uri: avatarUrl }}
+                            className="h-10 w-10 rounded-full bg-surface-secondary"
+                          />
+                        </Pressable>
+                      ) : (
+                        <Image
+                          source={{ uri: avatarUrl }}
+                          className="h-10 w-10 rounded-full bg-surface-secondary"
+                        />
+                      )
                     ) : (
                       <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
                         <Text className="text-[14px] text-muted">
@@ -388,10 +422,22 @@ const MentionsRoute = () => {
                           </Pressable>
                         </View>
                       ) : null}
-                      {timestamp ? (
-                        <Text className="mt-3 text-[12px] text-muted">
-                          {timestamp}
-                        </Text>
+                      {timestamp || sourceLabel ? (
+                        <View className="mt-3 flex-row items-center">
+                          {timestamp ? (
+                            <Text className="text-[12px] text-muted">
+                              {timestamp}
+                            </Text>
+                          ) : null}
+                          {sourceLabel ? (
+                            <Text
+                              className="ml-2 flex-1 text-right text-[12px] text-muted"
+                              numberOfLines={1}
+                            >
+                              {sourceLabel}
+                            </Text>
+                          ) : null}
+                        </View>
                       ) : null}
                     </View>
                   </View>

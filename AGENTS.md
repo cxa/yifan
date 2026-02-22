@@ -52,7 +52,18 @@
 - Prefer arrow functions
 - Keep ESLint clean (`@react-native/eslint-config`).
 - Deprecated TypeScript APIs are blocked by lint (`@typescript-eslint/no-deprecated`); for worklets threading use `scheduleOnRN` instead of `runOnJS`.
+- For required data (for example profile `user`), avoid `user?.` access in the main render path; add early returns for missing/loading/error states, then render with non-null data.
+- Avoid magic numbers in UI/layout/logic; use shared tokens/helpers or named constants with clear intent.
 - Use kebab-case for filenames.
+
+## Design System (Neobrutalism)
+- The app visual language is neobrutalism; do not soften it into generic modern UI.
+- Use strong contrast blocks with visible borders (typically `border-2` + `border-foreground` or `dark:border-border`).
+- Prefer hard, offset depth over blur shadows (for example the existing offset background block pattern).
+- Keep corners mostly sharp; only use rounded shapes where semantically expected (avatars, pills, media masks).
+- Keep spacing bold and consistent: outer page padding 16-20, card padding 16-20, vertical gaps usually 12-16.
+- Keep typography direct and high-contrast; use muted text only for secondary metadata.
+- For new screens/components, match existing neobrutalist primitives before introducing new visual patterns.
 
 ## Testing Guidelines
 - Jest with the React Native preset.

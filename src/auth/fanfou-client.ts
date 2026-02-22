@@ -26,6 +26,7 @@ export const getFanfouClient = (): FanfouClient => {
 };
 
 type FanfouGetParams = Record<string, string | number | boolean | undefined>;
+type FanfouPostParams = Record<string, string | number | boolean | undefined>;
 
 export const get = async (
   endpoint: string,
@@ -35,6 +36,37 @@ export const get = async (
   return client.get(endpoint, {
     ...params,
     format: 'html',
+  });
+};
+
+export const post = async (
+  endpoint: string,
+  params?: FanfouPostParams,
+): Promise<unknown> => {
+  const client = getFanfouClient();
+  return client.post(endpoint, {
+    ...params,
+    format: 'html',
+  });
+};
+
+export const uploadPhoto = async ({
+  photoBase64,
+  status,
+  params,
+}: {
+  photoBase64: string;
+  status?: string;
+  params?: FanfouPostParams;
+}): Promise<unknown> => {
+  const client = getFanfouClient();
+  return client.uploadPhoto({
+    photoBase64,
+    status,
+    params: {
+      ...params,
+      format: 'html',
+    },
   });
 };
 

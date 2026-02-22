@@ -6,7 +6,14 @@ import type { FileRouterOptions, RouteNode } from './types';
 
 const getInitialRouteName = (node: RouteNode) => {
   const indexChild = node.children.find(child => child.isIndex);
-  return indexChild?.name;
+  if (indexChild) {
+    return indexChild.name;
+  }
+
+  const firstRoutableChild = node.children.find(
+    child => child.component || child.children.length > 0,
+  );
+  return firstRoutableChild?.name;
 };
 
 const createScreenComponent = (

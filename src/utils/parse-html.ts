@@ -29,8 +29,8 @@ export type HtmlTextSegment =
   | { type: 'text'; text: string }
   | { type: 'mention'; text: string; screenName: string; url?: string };
 
-const normalizeHtmlText = (value: string) => {
-  if (!value) {
+const normalizeHtmlText = (value: unknown) => {
+  if (typeof value !== 'string' || !value) {
     return '';
   }
   const withLineBreaks = value.replace(/<\s*br\s*\/?>/gi, '\n');
@@ -62,8 +62,8 @@ const extractScreenNameFromUrl = (url: string) => {
   }
 };
 
-export const parseHtmlToSegments = (value: string): HtmlTextSegment[] => {
-  if (!value) {
+export const parseHtmlToSegments = (value: unknown): HtmlTextSegment[] => {
+  if (typeof value !== 'string' || !value) {
     return [];
   }
   const segments: HtmlTextSegment[] = [];
@@ -85,7 +85,8 @@ export const parseHtmlToSegments = (value: string): HtmlTextSegment[] => {
     const screenNameFromText = sanitizedText.startsWith('@')
       ? sanitizedText.slice(1)
       : null;
-    const screenName = screenNameFromText || extractScreenNameFromUrl(href);
+    const screenNameFromUrl = extractScreenNameFromUrl(href);
+    const screenName = screenNameFromUrl || screenNameFromText;
     if (screenName) {
       const lastSegment = segments[segments.length - 1];
       if (lastSegment?.type === 'text') {
@@ -124,8 +125,8 @@ export const parseHtmlToSegments = (value: string): HtmlTextSegment[] => {
   return segments;
 };
 
-export const parseHtmlToText = (value: string) => {
-  if (!value) {
+export const parseHtmlToText = (value: unknown) => {
+  if (typeof value !== 'string' || !value) {
     return '';
   }
   return normalizeHtmlText(value).trim();

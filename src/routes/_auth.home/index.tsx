@@ -13,7 +13,11 @@ import {
   RefreshControl,
   View,
 } from 'react-native';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useScrollToTop,
+  type NavigationProp,
+} from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollShadow, Surface, useThemeColor } from 'heroui-native';
@@ -36,7 +40,7 @@ import {
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
 import type { FanfouStatus } from '@/types/fanfou';
-import { parseHtmlToSegments } from '@/utils/parse-html';
+import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { AnimatedText, Text } from '@/components/app-text';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
@@ -53,17 +57,10 @@ type PhotoViewerOriginRect = {
   height: number;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const isFanfouStatus = (value: unknown): value is FanfouStatus =>
-  isRecord(value);
-
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
-  Array.isArray(value) ? value.filter(isFanfouStatus) : [];
+  Array.isArray(value) ? (value as FanfouStatus[]) : [];
 
-const getStatusId = (status: FanfouStatus): string | undefined =>
-  status.id ?? (status.rawid ? String(status.rawid) : undefined);
+const getStatusId = (status: FanfouStatus): string => status.id;
 
 const getStatusPhotoUrl = (status: FanfouStatus): string | null => {
   const getUrl = (...candidates: Array<string | undefined>) => {
@@ -126,8 +123,10 @@ const AuthHomeRoute = () => {
   const photoPreviewRefs = useRef(
     new Map<string, React.ComponentRef<typeof View>>(),
   );
+  const listRef = useRef<FlatList<FanfouStatus>>(null);
   const latestIdRef = useRef<string | null>(null);
   const oldestIdRef = useRef<string | null>(null);
+  useScrollToTop(listRef);
   const updateIsAtTop = useCallback((value: boolean) => {
     setIsAtTopState(value);
   }, []);
@@ -181,15 +180,29 @@ const AuthHomeRoute = () => {
     };
   });
   const handleMentionPress = useCallback(
-    (screenName: string) => {
+    (userId: string) => {
       const parentNavigation =
         navigation.getParent<NavigationProp<AuthStackParamList>>();
       if (!parentNavigation) {
         return;
       }
       parentNavigation.navigate('route_root._auth.profile', {
-        screen: 'route_root._auth.profile._screenName',
-        params: { screenName },
+        screen: 'route_root._auth.profile._handle',
+        params: { userId },
+      });
+    },
+    [navigation],
+  );
+  const handleProfilePress = useCallback(
+    (userId: string) => {
+      const parentNavigation =
+        navigation.getParent<NavigationProp<AuthStackParamList>>();
+      if (!parentNavigation) {
+        return;
+      }
+      parentNavigation.navigate('route_root._auth.profile', {
+        screen: 'route_root._auth.profile._handle',
+        params: { userId },
       });
     },
     [navigation],
@@ -396,6 +409,7 @@ const AuthHomeRoute = () => {
         color={background}
       >
         <FlatList
+          ref={listRef}
           data={timelineItems}
           keyExtractor={(item, index) => getStatusId(item) ?? String(index)}
           refreshControl={refreshControl}
@@ -450,7 +464,8 @@ const AuthHomeRoute = () => {
           onEndReachedThreshold={0.4}
           renderItem={({ item, index }) => {
             const statusKey = getStatusId(item) ?? String(index);
-            const name = item.user?.screen_name || '';
+            const screenName = item.user?.screen_name || '';
+            const userId = item.user?.id || '';
             const handle = `@${item.user?.id || ''}`;
             const avatarUrl =
               item.user?.profile_image_url_large ||
@@ -461,6 +476,9 @@ const AuthHomeRoute = () => {
               item.text || item.status || '',
             );
             const timestamp = formatTimestamp(item.created_at);
+            const sourceLabel = item.source
+              ? `via ${parseHtmlToText(item.source).trim()}`
+              : '';
 
             return (
               <View className="relative">
@@ -468,33 +486,48 @@ const AuthHomeRoute = () => {
                 <Pressable className="bg-surface border-2 border-foreground dark:border-border px-5 py-4 active:translate-x-[-4px] active:translate-y-[4px]">
                   <View className="flex-row gap-3">
                     {avatarUrl ? (
-                      <Image
-                        source={{ uri: avatarUrl }}
-                        className="h-10 w-10 rounded-full bg-surface-secondary"
-                      />
+                      userId ? (
+                        <Pressable
+                          onPress={() => handleProfilePress(userId)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open profile ${
+                            screenName || userId
+                          }`}
+                        >
+                          <Image
+                            source={{ uri: avatarUrl }}
+                            className="h-10 w-10 rounded-full bg-surface-secondary"
+                          />
+                        </Pressable>
+                      ) : (
+                        <Image
+                          source={{ uri: avatarUrl }}
+                          className="h-10 w-10 rounded-full bg-surface-secondary"
+                        />
+                      )
                     ) : (
                       <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
                         <Text className="text-[14px] text-muted">
-                          {name.slice(0, 1).toUpperCase()}
+                          {(screenName || 'U').slice(0, 1).toUpperCase()}
                         </Text>
                       </View>
                     )}
+
                     <View className="flex-1">
                       <View className="flex-row items-baseline gap-1.5">
                         <Text
                           className="text-[15px] font-bold text-foreground"
                           numberOfLines={1}
                         >
-                          {name}
+                          {screenName}
                         </Text>
-                        {handle ? (
-                          <Text
-                            className="text-[14px] text-muted"
-                            numberOfLines={1}
-                          >
-                            {handle}
-                          </Text>
-                        ) : null}
+
+                        <Text
+                          className="text-[14px] text-muted"
+                          numberOfLines={1}
+                        >
+                          {handle}
+                        </Text>
                       </View>
                       <Text className="mt-1 text-[15px] leading-6 text-foreground">
                         {segments.length > 0
@@ -549,10 +582,22 @@ const AuthHomeRoute = () => {
                           </Pressable>
                         </View>
                       ) : null}
-                      {timestamp ? (
-                        <Text className="mt-3 text-[12px] text-muted">
-                          {timestamp}
-                        </Text>
+                      {timestamp || sourceLabel ? (
+                        <View className="mt-3 flex-row items-center">
+                          {timestamp ? (
+                            <Text className="text-[12px] text-muted">
+                              {timestamp}
+                            </Text>
+                          ) : null}
+                          {sourceLabel ? (
+                            <Text
+                              className="ml-2 flex-1 text-right text-[12px] text-muted"
+                              numberOfLines={1}
+                            >
+                              {sourceLabel}
+                            </Text>
+                          ) : null}
+                        </View>
                       ) : null}
                     </View>
                   </View>
