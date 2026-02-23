@@ -12,7 +12,12 @@
  */
 
 @theme {
+    /* Since we only got one weight */
     --font-weight-bold: 400;
+    /* Font Family */
+    --font-xiaolai: Xiaolai;
+    --font-huiwen: HuiwenHKHei-Regular;
+    --font-huiwen-mincho: Huiwen-MinchoGBK-Regular;
 }
 
 :root,
@@ -55,9 +60,6 @@
     /* Border Radius */
     --radius: 0rem;
     --field-radius: 0rem;
-
-    /* Font Family */
-    --font-sans: Xiaolai;
 }
 
 .dark,

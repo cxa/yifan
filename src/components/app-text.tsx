@@ -9,15 +9,23 @@ import {
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import { $ } from '@cxa/twx';
 
+import { useAppFontClassName } from '@/settings/app-font-preference';
+
 type ClassNameProp = { className?: string };
 type AnimatedClassName = string | SharedValue<string | undefined> | undefined;
 const IOS_DEFAULT_DYNAMIC_TYPE_RAMP: NonNullable<TextProps['dynamicTypeRamp']> =
   'body';
 
-const withFont = (className?: string) => $('font-sans', className);
-const withFontAnimated = (className?: AnimatedClassName) =>
+const withFont = (fontClassName?: string, className?: string) =>
+  fontClassName ? $(fontClassName, className) : className;
+const withFontAnimated = (
+  fontClassName?: string,
+  className?: AnimatedClassName,
+) =>
   typeof className === 'string' || className === undefined
-    ? $('font-sans', className)
+    ? fontClassName
+      ? $(fontClassName, className)
+      : className
     : className;
 
 const Text = React.forwardRef<
@@ -33,20 +41,24 @@ const Text = React.forwardRef<
       ...props
     },
     ref,
-  ) => (
-    <RNText
-      ref={ref}
-      {...props}
-      allowFontScaling={allowFontScaling}
-      dynamicTypeRamp={
-        Platform.OS === 'ios'
-          ? dynamicTypeRamp ?? IOS_DEFAULT_DYNAMIC_TYPE_RAMP
-          : dynamicTypeRamp
-      }
-      maxFontSizeMultiplier={maxFontSizeMultiplier}
-      className={withFont(className)}
-    />
-  ),
+  ) => {
+    const fontClassName = useAppFontClassName();
+
+    return (
+      <RNText
+        ref={ref}
+        {...props}
+        allowFontScaling={allowFontScaling}
+        dynamicTypeRamp={
+          Platform.OS === 'ios'
+            ? dynamicTypeRamp ?? IOS_DEFAULT_DYNAMIC_TYPE_RAMP
+            : dynamicTypeRamp
+        }
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
+        className={withFont(fontClassName, className)}
+      />
+    );
+  },
 );
 
 Text.displayName = 'AppText';
@@ -54,14 +66,18 @@ Text.displayName = 'AppText';
 const TextInput = React.forwardRef<
   React.ComponentRef<typeof RNTextInput>,
   TextInputProps & ClassNameProp
->(({ className, allowFontScaling = true, ...props }, ref) => (
-  <RNTextInput
-    ref={ref}
-    {...props}
-    allowFontScaling={allowFontScaling}
-    className={withFont(className)}
-  />
-));
+>(({ className, allowFontScaling = true, ...props }, ref) => {
+  const fontClassName = useAppFontClassName();
+
+  return (
+    <RNTextInput
+      ref={ref}
+      {...props}
+      allowFontScaling={allowFontScaling}
+      className={withFont(fontClassName, className)}
+    />
+  );
+});
 TextInput.displayName = 'AppTextInput';
 
 type AnimatedTextProps = React.ComponentProps<typeof Animated.Text>;
@@ -78,20 +94,24 @@ const AnimatedText = React.forwardRef<
       ...props
     },
     ref,
-  ) => (
-    <Animated.Text
-      ref={ref}
-      {...props}
-      allowFontScaling={allowFontScaling}
-      dynamicTypeRamp={
-        Platform.OS === 'ios'
-          ? dynamicTypeRamp ?? IOS_DEFAULT_DYNAMIC_TYPE_RAMP
-          : dynamicTypeRamp
-      }
-      maxFontSizeMultiplier={maxFontSizeMultiplier}
-      className={withFontAnimated(className)}
-    />
-  ),
+  ) => {
+    const fontClassName = useAppFontClassName();
+
+    return (
+      <Animated.Text
+        ref={ref}
+        {...props}
+        allowFontScaling={allowFontScaling}
+        dynamicTypeRamp={
+          Platform.OS === 'ios'
+            ? dynamicTypeRamp ?? IOS_DEFAULT_DYNAMIC_TYPE_RAMP
+            : dynamicTypeRamp
+        }
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
+        className={withFontAnimated(fontClassName, className)}
+      />
+    );
+  },
 );
 AnimatedText.displayName = 'AppAnimatedText';
 
@@ -103,14 +123,18 @@ type AnimatedTextInputProps = React.ComponentProps<
 const AnimatedTextInput = React.forwardRef<
   React.ComponentRef<typeof RNTextInput>,
   AnimatedTextInputProps
->(({ className, allowFontScaling = true, ...props }, ref) => (
-  <AnimatedTextInputBase
-    ref={ref}
-    {...props}
-    allowFontScaling={allowFontScaling}
-    className={withFontAnimated(className)}
-  />
-));
+>(({ className, allowFontScaling = true, ...props }, ref) => {
+  const fontClassName = useAppFontClassName();
+
+  return (
+    <AnimatedTextInputBase
+      ref={ref}
+      {...props}
+      allowFontScaling={allowFontScaling}
+      className={withFontAnimated(fontClassName, className)}
+    />
+  );
+});
 AnimatedTextInput.displayName = 'AppAnimatedTextInput';
 
 export { Text, TextInput, AnimatedText, AnimatedTextInput };

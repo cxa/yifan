@@ -8,5 +8,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["**/node_modules", "**/Pods", "route-tree.gen.ts"]
+  "exclude": ["**/node_modules", "**/Pods"]
 }

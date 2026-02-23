@@ -2,6 +2,7 @@ const mockGetRequestToken = jest.fn();
 const mockGetAccessToken = jest.fn();
 const mockRequest = jest.fn();
 const mockUploadPhoto = jest.fn();
+const mockUploadProfileImage = jest.fn();
 const mockOpenURL = jest.fn();
 const mockGetInitialURL = jest.fn().mockResolvedValue(null);
 const linkingListeners: Array<(event: { url: string }) => void> = [];
@@ -33,6 +34,8 @@ jest.mock('react-native', () => ({
       getAccessToken: (...args: unknown[]) => mockGetAccessToken(...args),
       request: (...args: unknown[]) => mockRequest(...args),
       uploadPhoto: (...args: unknown[]) => mockUploadPhoto(...args),
+      uploadProfileImage: (...args: unknown[]) =>
+        mockUploadProfileImage(...args),
     },
   },
 }));
@@ -136,6 +139,26 @@ describe('FanfouClient', () => {
     );
   });
 
+  test('post prefers api error field as error message', async () => {
+    mockRequest.mockResolvedValueOnce({
+      status: 403,
+      body: JSON.stringify({ error: 'rate limit exceeded' }),
+    });
+
+    const client = new FanfouClient({
+      oauthToken: 'at',
+      oauthTokenSecret: 'as',
+    });
+
+    await expect(
+      client.post('/statuses/update', { status: 'hi' }),
+    ).rejects.toMatchObject({
+      name: 'FanfouApiError',
+      status: 403,
+      message: 'rate limit exceeded',
+    });
+  });
+
   test('constructor throws if access token is missing', () => {
     expect(
       () =>
@@ -171,5 +194,71 @@ describe('FanfouClient', () => {
       'hello',
       { foo: 'bar' },
     );
+  });
+
+  test('uploadPhoto prefers api error field as error message', async () => {
+    mockUploadPhoto.mockResolvedValueOnce({
+      status: 413,
+      body: JSON.stringify({ error: 'photo too large' }),
+    });
+
+    const client = new FanfouClient({
+      oauthToken: 'at',
+      oauthTokenSecret: 'as',
+    });
+
+    await expect(
+      client.uploadPhoto({
+        photoBase64: 'base64',
+      }),
+    ).rejects.toMatchObject({
+      name: 'FanfouApiError',
+      status: 413,
+      message: 'photo too large',
+    });
+  });
+
+  test('uploadProfileImage calls native module and parses response', async () => {
+    mockUploadProfileImage.mockResolvedValueOnce({
+      status: 200,
+      body: JSON.stringify({ id: '1' }),
+    });
+
+    const client = new FanfouClient({
+      oauthToken: 'at',
+      oauthTokenSecret: 'as',
+    });
+
+    const response = await client.uploadProfileImage({
+      imageBase64: 'base64',
+      params: { foo: 'bar' },
+    });
+
+    expect(response).toEqual({ id: '1' });
+    expect(mockUploadProfileImage).toHaveBeenCalledWith('at', 'as', 'base64', {
+      foo: 'bar',
+    });
+  });
+
+  test('uploadProfileImage prefers api error field as error message', async () => {
+    mockUploadProfileImage.mockResolvedValueOnce({
+      status: 400,
+      body: JSON.stringify({ error: 'invalid image' }),
+    });
+
+    const client = new FanfouClient({
+      oauthToken: 'at',
+      oauthTokenSecret: 'as',
+    });
+
+    await expect(
+      client.uploadProfileImage({
+        imageBase64: 'base64',
+      }),
+    ).rejects.toMatchObject({
+      name: 'FanfouApiError',
+      status: 400,
+      message: 'invalid image',
+    });
   });
 });

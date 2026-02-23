@@ -1,7 +1,6 @@
 const path = require('path');
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const { resolve } = require('metro-resolver');
-const { withFileRouterConfig } = require('rn-file-routing/metro');
 const { withUniwindConfig } = require('uniwind/metro');
 
 /**
@@ -28,12 +27,7 @@ const config = {
 };
 
 const mergedConfig = mergeConfig(getDefaultConfig(projectRoot), config);
-const routingConfig = withFileRouterConfig(mergedConfig, {
-  routesDir: path.join(projectRoot, 'src', 'routes'),
-  output: path.join(projectRoot, 'src', 'route-tree.gen.ts'),
-});
-
-module.exports = withUniwindConfig(routingConfig, {
+module.exports = withUniwindConfig(mergedConfig, {
   cssEntryFile: './global.css',
   dtsFile: './uniwind-types.d.ts',
 });

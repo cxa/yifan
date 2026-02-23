@@ -25,18 +25,18 @@ internal object EnvSecrets {
 
   private val consumerKeyData = Obfuscated(
     length = 32,
-    cipherEven = intArrayOf(107, 47, 188, 168, 233, 115, 50, 158, 57, 74, 188, 116, 55, 212, 51, 231),
-    cipherOdd = intArrayOf(147, 171, 221, 123, 115, 175, 40, 128, 83, 53, 245, 166, 161, 64, 131, 241),
-    maskEven = intArrayOf(83, 25, 223, 203, 140, 70, 80, 171, 9, 46, 222, 21, 3, 226, 2, 209),
-    maskOdd = intArrayOf(241, 147, 237, 78, 17, 156, 17, 181, 103, 83, 193, 158, 144, 120, 178, 144),
+    cipherEven = intArrayOf(5, 194, 205, 103, 142, 141, 216, 196, 22, 228, 164, 114, 100, 152, 93, 239),
+    cipherOdd = intArrayOf(227, 208, 223, 226, 6, 90, 126, 168, 128, 227, 211, 156, 121, 40, 138, 80),
+    maskEven = intArrayOf(61, 244, 174, 4, 235, 184, 186, 241, 38, 128, 198, 19, 80, 174, 108, 217),
+    maskOdd = intArrayOf(129, 232, 239, 215, 100, 105, 71, 157, 180, 133, 231, 164, 72, 16, 187, 49),
   )
 
   private val consumerSecretData = Obfuscated(
     length = 32,
-    cipherEven = intArrayOf(88, 168, 207, 136, 129, 119, 73, 37, 120, 150, 19, 147, 214, 232, 35, 108),
-    cipherOdd = intArrayOf(220, 209, 93, 218, 31, 62, 228, 36, 94, 246, 202, 177, 208, 48, 73, 173),
-    maskEven = intArrayOf(111, 157, 250, 176, 182, 21, 120, 64, 27, 160, 114, 241, 231, 219, 66, 92),
-    maskOdd = intArrayOf(233, 232, 101, 188, 124, 7, 128, 71, 105, 144, 248, 130, 226, 5, 42, 207),
+    cipherEven = intArrayOf(32, 196, 126, 80, 28, 247, 36, 88, 12, 220, 111, 29, 253, 55, 191, 140),
+    cipherOdd = intArrayOf(118, 16, 70, 100, 203, 185, 241, 253, 181, 170, 179, 135, 183, 219, 208, 192),
+    maskEven = intArrayOf(23, 241, 75, 104, 43, 149, 21, 61, 111, 234, 14, 127, 204, 4, 222, 188),
+    maskOdd = intArrayOf(67, 41, 126, 2, 168, 128, 149, 158, 130, 204, 129, 180, 133, 238, 179, 162),
   )
 
   fun consumerKey(): String = decode(consumerKeyData)

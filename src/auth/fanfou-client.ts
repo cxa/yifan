@@ -1,6 +1,11 @@
-import { FanfouClient, getAccessToken } from 'rn-fanfou-client';
+import {
+  FanfouClient,
+  getAccessToken,
+  type OAuthAccessToken,
+} from 'rn-fanfou-client';
 
 import type { AuthAccessToken } from './secure-token-storage';
+import type { FanfouUser } from '@/types/fanfou';
 
 let fanfouClient: FanfouClient | null = null;
 let cachedAccessToken: AuthAccessToken | null = null;
@@ -70,8 +75,62 @@ export const uploadPhoto = async ({
   });
 };
 
+export const uploadProfileImage = async ({
+  imageBase64,
+  params,
+}: {
+  imageBase64: string;
+  params?: FanfouPostParams;
+}): Promise<unknown> => {
+  const client = getFanfouClient();
+  return client.uploadProfileImage({
+    imageBase64,
+    params: {
+      ...params,
+      format: 'html',
+    },
+  });
+};
+
 export const requestFanfouAccessToken = async (callbackUrl: string) => {
   return getAccessToken({
     callbackUrl,
   });
+};
+
+export const resolveAuthAccessTokenIdentity = async (
+  accessToken: OAuthAccessToken,
+): Promise<AuthAccessToken> => {
+  let resolvedUserId = accessToken.userId;
+  let resolvedScreenName = accessToken.screenName;
+  if (resolvedUserId) {
+    resolvedUserId = resolvedUserId.trim();
+  }
+  if (resolvedScreenName) {
+    resolvedScreenName = resolvedScreenName.trim();
+  }
+  try {
+    if (!resolvedUserId || !resolvedScreenName) {
+      const client = new FanfouClient(accessToken);
+      const user = (await client.get('/account/verify_credentials', {
+        mode: 'lite',
+        format: 'html',
+      })) as FanfouUser;
+      resolvedUserId = resolvedUserId ?? user.id.trim();
+      resolvedScreenName = resolvedScreenName ?? user.screen_name.trim();
+    }
+  } catch {
+    // Keep existing token identity if API call fails.
+  }
+
+  if (!resolvedUserId || !resolvedScreenName) {
+    throw new Error('Missing user identity in access token.');
+  }
+
+  return {
+    oauthToken: accessToken.oauthToken,
+    oauthTokenSecret: accessToken.oauthTokenSecret,
+    userId: resolvedUserId,
+    screenName: resolvedScreenName,
+  };
 };

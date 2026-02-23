@@ -23,6 +23,7 @@ class FanfouOAuthModule(
   override fun getName(): String = "FanfouOAuthModule"
 
   private val uploadPhotoUrl = "http://api.fanfou.com/photos/upload.json"
+  private val uploadProfileImageUrl = "http://api.fanfou.com/account/update_profile_image.json"
   private val multipartBoundary = "DAN1324567890FAN"
 
   private fun resolveConsumer(
@@ -114,6 +115,8 @@ class FanfouOAuthModule(
         val parsed = parseFormEncoded(response.body)
         val token = parsed["oauth_token"]
         val secret = parsed["oauth_token_secret"]
+        val userId = parsed["user_id"] ?: parsed["id"]
+        val screenName = parsed["screen_name"] ?: parsed["name"]
         if (token.isNullOrBlank() || secret.isNullOrBlank()) {
           promise.reject("oauth_access_token_invalid", "Invalid access token response")
           return@Thread
@@ -121,6 +124,12 @@ class FanfouOAuthModule(
         val result = Arguments.createMap().apply {
           putString("oauthToken", token)
           putString("oauthTokenSecret", secret)
+          if (!userId.isNullOrBlank()) {
+            putString("userId", userId)
+          }
+          if (!screenName.isNullOrBlank()) {
+            putString("screenName", screenName)
+          }
         }
         promise.resolve(result)
       } catch (e: Exception) {
@@ -219,13 +228,6 @@ class FanfouOAuthModule(
         request.setPayload(body.toByteArray())
         service.signRequest(accessToken, request)
         val response = service.execute(request)
-        if (response.code < 200 || response.code >= 300) {
-          promise.reject(
-            "photo_upload_http_error",
-            "HTTP ${response.code}: ${response.body}",
-          )
-          return@Thread
-        }
         val result = Arguments.createMap().apply {
           putInt("status", response.code)
           putString("body", response.body)
@@ -233,6 +235,65 @@ class FanfouOAuthModule(
         promise.resolve(result)
       } catch (e: Exception) {
         promise.reject("photo_upload_failed", e)
+      }
+    }.start()
+  }
+
+  @ReactMethod
+  fun uploadProfileImage(
+    token: String,
+    tokenSecret: String,
+    imageBase64: String,
+    params: ReadableMap,
+    promise: Promise,
+  ) {
+    Thread {
+      try {
+        val resolved = resolveConsumer(promise) ?: return@Thread
+        val imageBytes = try {
+          Base64.decode(imageBase64, Base64.DEFAULT)
+        } catch (e: IllegalArgumentException) {
+          promise.reject("profile_image_invalid", "Invalid image data")
+          return@Thread
+        }
+
+        val extraParams = mutableMapOf<String, String>()
+        params.toHashMap().forEach { (key, value) ->
+          if (key.isNotBlank()) {
+            extraParams[key] = value?.toString() ?: ""
+          }
+        }
+
+        val body = ByteArrayOutputStream()
+        body.write(("--$multipartBoundary\r\n").toByteArray(Charset.forName("UTF-8")))
+        extraParams.forEach { (key, value) ->
+          val part =
+            "\r\n--$multipartBoundary\r\nContent-Disposition:form-data; name=\"$key\"\r\n\r\n$value"
+          body.write(part.toByteArray(Charset.forName("UTF-8")))
+        }
+        val header =
+          "\r\n--$multipartBoundary\r\nContent-Disposition: form-data; name=\"image\"; filename=\"avatar.jpg\"\r\nContent-Length: ${imageBytes.size}\r\nContent-Type: image/jpeg\r\n\r\n"
+        body.write(header.toByteArray(Charset.forName("UTF-8")))
+        body.write(imageBytes)
+        body.write(("\r\n--$multipartBoundary--\r\n").toByteArray(Charset.forName("UTF-8")))
+
+        val service = buildService(resolved.first, resolved.second, null)
+        val accessToken = OAuth1AccessToken(token, tokenSecret)
+        val request = OAuthRequest(Verb.POST, uploadProfileImageUrl)
+        request.addHeader(
+          "Content-Type",
+          "multipart/form-data; boundary=$multipartBoundary",
+        )
+        request.setPayload(body.toByteArray())
+        service.signRequest(accessToken, request)
+        val response = service.execute(request)
+        val result = Arguments.createMap().apply {
+          putInt("status", response.code)
+          putString("body", response.body)
+        }
+        promise.resolve(result)
+      } catch (e: Exception) {
+        promise.reject("profile_image_upload_failed", e)
       }
     }.start()
   }

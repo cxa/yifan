@@ -1,10 +1,14 @@
 import React from 'react';
 import { Image, Pressable, View } from 'react-native';
-import { Heart, MessageCircle, Repeat2 } from 'lucide-react-native';
+import { MessageCircle, Repeat2 } from 'lucide-react-native';
 
 import type { FanfouStatus } from '@/types/fanfou';
 import { Text } from '@/components/app-text';
-import DropShadowBox from '@/components/drop-shadow-box';
+import DropShadowBox, {
+  getDropShadowBorderClass,
+  type DropShadowBoxType,
+} from '@/components/drop-shadow-box';
+import FavoriteHeartIcon from '@/components/favorite-heart-icon';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 import { openLink } from '@/utils/open-link';
@@ -13,6 +17,9 @@ type TimelineStatusCardProps = {
   status: FanfouStatus;
   accent: string;
   muted: string;
+  showAvatar?: boolean;
+  showAuthor?: boolean;
+  shadowType?: DropShadowBoxType;
   isBookmarkPending: boolean;
   photoViewerVisible: boolean;
   photoViewerPreviewKey: string | null;
@@ -34,6 +41,9 @@ type TimelineStatusCardProps = {
 const TAG_PILL_CLASS = 'bg-accent/15 text-accent px-2 py-0.5 rounded-full';
 const ACTIVE_TAG_PILL_CLASS =
   'bg-accent text-accent-foreground px-2 py-0.5 rounded-full';
+const FOOTER_META_GAP = 12;
+const FOOTER_META_ITEM_GAP = 4;
+const FOOTER_META_VIA_VISIBILITY_BUFFER = 6;
 
 const getStatusId = (status: FanfouStatus): string => status.id;
 
@@ -57,6 +67,9 @@ const TimelineStatusCard = ({
   status,
   accent,
   muted,
+  showAvatar = true,
+  showAuthor = true,
+  shadowType = 'default',
   isBookmarkPending,
   photoViewerVisible,
   photoViewerPreviewKey,
@@ -71,6 +84,18 @@ const TimelineStatusCard = ({
   onRepost,
   onToggleBookmark,
 }: TimelineStatusCardProps) => {
+  const [footerWidth, setFooterWidth] = React.useState(0);
+  const [actionsWidth, setActionsWidth] = React.useState(0);
+  const [timestampWidth, setTimestampWidth] = React.useState(0);
+  const [viaWidth, setViaWidth] = React.useState(0);
+  const updateMeasuredWidth = React.useCallback(
+    (setWidth: React.Dispatch<React.SetStateAction<number>>, value: number) => {
+      const next = Math.round(value);
+      setWidth(previous => (previous === next ? previous : next));
+    },
+    [],
+  );
+
   const statusId = getStatusId(status);
   const user = status.user;
   const displayName = user.screen_name || user.name;
@@ -85,50 +110,74 @@ const TimelineStatusCard = ({
   const sourceClient = parseHtmlToText(status.source).trim();
   const viaLabel = sourceClient ? `via ${sourceClient}` : '';
   const normalizedActiveTag = activeTag?.toLowerCase();
+  const canShowVia = React.useMemo(() => {
+    if (!viaLabel) {
+      return false;
+    }
+    if (!footerWidth || !actionsWidth || !timestampWidth || !viaWidth) {
+      return false;
+    }
+    const availableMetaWidth = footerWidth - actionsWidth - FOOTER_META_GAP;
+    const requiredMetaWidth = timestampWidth + FOOTER_META_ITEM_GAP + viaWidth;
+    return (
+      availableMetaWidth >=
+      requiredMetaWidth + FOOTER_META_VIA_VISIBILITY_BUFFER
+    );
+  }, [actionsWidth, footerWidth, timestampWidth, viaLabel, viaWidth]);
 
   return (
-    <DropShadowBox>
+    <DropShadowBox type={shadowType}>
       <Pressable
         onPress={() => onPressStatus(statusId)}
-        className="bg-surface border-2 border-foreground dark:border-border px-5 py-4 active:translate-x-[-4px] active:translate-y-[4px]"
+        className={`bg-surface border-2 ${getDropShadowBorderClass(
+          shadowType,
+        )} px-5 py-4 active:translate-x-[-4px] active:translate-y-[4px]`}
       >
-        <View className="flex-row gap-3">
-          <Pressable
-            onPress={event => {
-              event.stopPropagation();
-              onPressProfile(userId);
-            }}
-            className="h-10 w-10"
-            accessibilityRole="button"
-            accessibilityLabel={`Open profile ${screenName || userId}`}
-          >
-            <Image
-              source={{ uri: avatarUrl }}
-              className="h-10 w-10 rounded-full bg-surface-secondary"
-            />
-          </Pressable>
-
-          <View className="flex-1">
-            <Text
-              className="text-[17px] font-bold text-foreground"
-              numberOfLines={1}
+        <View className={showAvatar ? 'flex-row gap-3' : undefined}>
+          {showAvatar ? (
+            <Pressable
+              onPress={event => {
+                event.stopPropagation();
+                onPressProfile(userId);
+              }}
+              className="h-10 w-10"
+              accessibilityRole="button"
+              accessibilityLabel={`Open profile ${screenName || userId}`}
             >
-              {displayName}
-            </Text>
-            <View className="mt-0.5 flex-row items-center gap-2">
-              <Text
-                className="min-w-0 flex-1 text-[14px] text-muted"
-                numberOfLines={1}
-              >
-                {handle}
-              </Text>
-              <Text
-                className="shrink-0 text-[12px] text-muted"
-                numberOfLines={1}
-              >
-                {timestamp}
-              </Text>
-            </View>
+              <Image
+                source={{ uri: avatarUrl }}
+                className="h-10 w-10 rounded-full bg-surface-secondary"
+              />
+            </Pressable>
+          ) : null}
+
+          <View className={showAvatar ? 'flex-1' : undefined}>
+            {showAuthor ? (
+              <View className="mt-0.5 flex-row items-center gap-2">
+                <Pressable
+                  onPress={event => {
+                    event.stopPropagation();
+                    onPressProfile(userId);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open profile ${screenName || userId}`}
+                  className="min-w-0 shrink"
+                >
+                  <Text
+                    className="text-[17px] font-bold text-foreground"
+                    numberOfLines={1}
+                  >
+                    {displayName}
+                  </Text>
+                </Pressable>
+                <Text
+                  className="min-w-0 shrink text-[14px] text-muted"
+                  numberOfLines={1}
+                >
+                  {handle}
+                </Text>
+              </View>
+            ) : null}
             <Text className="mt-1 text-[15px] leading-6 text-foreground">
               {segments.length > 0
                 ? segments.map((segment, segmentIndex) => {
@@ -212,8 +261,50 @@ const TimelineStatusCard = ({
                 </Pressable>
               </View>
             ) : null}
-            <View className="mt-3 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-4">
+            <View className="absolute opacity-0" pointerEvents="none">
+              <View
+                className="flex-row items-center"
+                onLayout={event => {
+                  updateMeasuredWidth(
+                    setTimestampWidth,
+                    event.nativeEvent.layout.width,
+                  );
+                }}
+              >
+                <Text className="text-[12px] text-muted">{timestamp}</Text>
+              </View>
+              {viaLabel ? (
+                <View
+                  className="flex-row items-center"
+                  onLayout={event => {
+                    updateMeasuredWidth(
+                      setViaWidth,
+                      event.nativeEvent.layout.width,
+                    );
+                  }}
+                >
+                  <Text className="text-[12px] text-muted">{viaLabel}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View
+              className="mt-3 flex-row items-center justify-between"
+              onLayout={event => {
+                updateMeasuredWidth(
+                  setFooterWidth,
+                  event.nativeEvent.layout.width,
+                );
+              }}
+            >
+              <View
+                className="flex-row items-center gap-4"
+                onLayout={event => {
+                  updateMeasuredWidth(
+                    setActionsWidth,
+                    event.nativeEvent.layout.width,
+                  );
+                }}
+              >
                 <Pressable
                   onPress={() => onReply(status)}
                   className="p-1"
@@ -239,17 +330,22 @@ const TimelineStatusCard = ({
                     status.favorited ? 'Remove bookmark' : 'Bookmark'
                   }
                 >
-                  <Heart size={16} color={status.favorited ? accent : muted} />
+                  <FavoriteHeartIcon
+                    size={16}
+                    isFavorited={status.favorited}
+                    activeColor={accent}
+                    inactiveColor={muted}
+                  />
                 </Pressable>
               </View>
-              {viaLabel ? (
-                <Text
-                  className="ml-3 flex-1 text-right text-[12px] text-muted"
-                  numberOfLines={1}
-                >
-                  {viaLabel}
-                </Text>
-              ) : null}
+              <View className="ml-3 flex-1 min-w-0 items-end">
+                <View className="flex-row items-center gap-1">
+                  <Text className="text-[12px] text-muted">{timestamp}</Text>
+                  {canShowVia ? (
+                    <Text className="text-[12px] text-muted">{viaLabel}</Text>
+                  ) : null}
+                </View>
+              </View>
             </View>
           </View>
         </View>

@@ -15,6 +15,8 @@ static NSString *const kAccessTokenURL =
     @"http://fanfou.com/oauth/access_token";
 static NSString *const kUploadPhotoURL =
     @"http://api.fanfou.com/photos/upload.json";
+static NSString *const kUploadProfileImageURL =
+    @"http://api.fanfou.com/account/update_profile_image.json";
 static NSString *const kMultipartBoundary = @"DAN1324567890FAN";
 
 + (BOOL)requiresMainQueueSetup {
@@ -211,7 +213,9 @@ static NSString *FFTimestamp(void) {
 }
 
 static NSData *FFMultipartBodyData(NSDictionary<NSString *, NSString *> *params,
-                                   NSData *imageData, NSString *boundary) {
+                                   NSData *imageData, NSString *boundary,
+                                   NSString *fileFieldName,
+                                   NSString *fileName) {
   NSMutableData *body = [NSMutableData data];
   [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary]
                        dataUsingEncoding:NSUTF8StringEncoding]];
@@ -226,10 +230,18 @@ static NSData *FFMultipartBodyData(NSDictionary<NSString *, NSString *> *params,
 
   NSString *header = [NSString
       stringWithFormat:
-          @"\r\n--%@\r\nContent-Disposition: form-data; name=\"photo\"; "
+          @"\r\n--%@\r\nContent-Disposition: form-data; name=\"%@\"; "
           @"filename=\"image.jpg\"\r\nContent-Length: %zu\r\nContent-Type: "
           @"image/jpeg\r\n\r\n",
-          boundary, imageData.length];
+          boundary, fileFieldName, imageData.length];
+  if (fileName.length > 0) {
+    header = [NSString
+        stringWithFormat:
+            @"\r\n--%@\r\nContent-Disposition: form-data; name=\"%@\"; "
+            @"filename=\"%@\"\r\nContent-Length: %zu\r\nContent-Type: "
+            @"image/jpeg\r\n\r\n",
+            boundary, fileFieldName, fileName, imageData.length];
+  }
   [body appendData:[header dataUsingEncoding:NSUTF8StringEncoding]];
   [body appendData:imageData];
   [body appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]
@@ -385,12 +397,29 @@ RCT_EXPORT_METHOD(
         NSDictionary *data = FFParseFormEncoded(body);
         NSString *token = data[@"oauth_token"];
         NSString *secret = data[@"oauth_token_secret"];
+        NSString *userId = data[@"user_id"];
+        if (userId.length == 0) {
+          userId = data[@"id"];
+        }
+        NSString *screenName = data[@"screen_name"];
+        if (screenName.length == 0) {
+          screenName = data[@"name"];
+        }
         if (token.length == 0 || secret.length == 0) {
           rejecter(@"oauth_access_token_invalid",
                    @"Invalid access token response", nil);
           return;
         }
-        resolver(@{@"oauthToken" : token, @"oauthTokenSecret" : secret});
+        NSMutableDictionary *accessToken =
+            [@{@"oauthToken" : token, @"oauthTokenSecret" : secret}
+                mutableCopy];
+        if (userId.length > 0) {
+          accessToken[@"userId"] = userId;
+        }
+        if (screenName.length > 0) {
+          accessToken[@"screenName"] = screenName;
+        }
+        resolver(accessToken);
       }
       rejecter:rejecter];
 }
@@ -491,8 +520,8 @@ RCT_EXPORT_METHOD(
       forHTTPHeaderField:@"Content-Type"];
   [request setValue:FFAuthorizationHeader(oauthParams)
       forHTTPHeaderField:@"Authorization"];
-  request.HTTPBody =
-      FFMultipartBodyData(stringParams, imageData, kMultipartBoundary);
+  request.HTTPBody = FFMultipartBodyData(
+      stringParams, imageData, kMultipartBoundary, @"photo", @"image.jpg");
 
   NSURLSessionDataTask *task = [[NSURLSession sharedSession]
       dataTaskWithRequest:request
@@ -507,21 +536,81 @@ RCT_EXPORT_METHOD(
               data != nil ? [[NSString alloc] initWithData:data
                                                   encoding:NSUTF8StringEncoding]
                           : @"";
-          if (httpResponse.statusCode < 200 || httpResponse.statusCode >= 300) {
-            NSString *message = [NSString
-                stringWithFormat:@"HTTP error %ld: %@",
-                                 (long)httpResponse.statusCode, body ?: @""];
-            NSDictionary *info = @{
-              @"status" : @(httpResponse.statusCode),
-              @"body" : body ?: @""
-            };
-            NSError *statusError =
-                [NSError errorWithDomain:@"FanfouOAuth"
-                                    code:httpResponse.statusCode
-                                userInfo:info];
-            rejecter(@"photo_upload_http_error", message, statusError);
+          resolver(
+              @{@"status" : @(httpResponse.statusCode),
+                @"body" : body ?: @""});
+        }];
+  [task resume];
+}
+
+RCT_EXPORT_METHOD(
+    uploadProfileImage : (NSString *)token tokenSecret : (NSString *)
+        tokenSecret imageBase64 : (NSString *)imageBase64 params : (
+            NSDictionary *)params resolver : (RCTPromiseResolveBlock)
+            resolver rejecter : (RCTPromiseRejectBlock)rejecter) {
+  NSString *resolvedKey = nil;
+  NSString *resolvedSecret = nil;
+  if (!FFResolveConsumer(rejecter, &resolvedKey, &resolvedSecret)) {
+    return;
+  }
+  NSData *imageData = [[NSData alloc] initWithBase64EncodedString:imageBase64
+                                                          options:0];
+  if (imageData.length == 0) {
+    rejecter(@"profile_image_invalid", @"Invalid image data", nil);
+    return;
+  }
+
+  NSMutableDictionary<NSString *, NSString *> *stringParams =
+      [NSMutableDictionary dictionary];
+  if ([params isKindOfClass:[NSDictionary class]]) {
+    [params enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+      if (![key isKindOfClass:[NSString class]]) {
+        return;
+      }
+      NSString *value = obj != nil ? [obj description] : @"";
+      stringParams[key] = value;
+    }];
+  }
+
+  NSMutableDictionary<NSString *, NSString *> *oauthParams = [@{
+    @"oauth_consumer_key" : resolvedKey,
+    @"oauth_token" : token,
+    @"oauth_nonce" : FFNonce(),
+    @"oauth_signature_method" : @"HMAC-SHA1",
+    @"oauth_timestamp" : FFTimestamp(),
+    @"oauth_version" : @"1.0"
+  } mutableCopy];
+
+  NSString *signature = FFSignature(@"POST", kUploadProfileImageURL, @{},
+                                    oauthParams, resolvedSecret, tokenSecret);
+  oauthParams[@"oauth_signature"] = signature;
+
+  NSMutableURLRequest *request = [NSMutableURLRequest
+      requestWithURL:[NSURL URLWithString:kUploadProfileImageURL]];
+  request.HTTPMethod = @"POST";
+  [request setValue:[NSString
+                        stringWithFormat:@"multipart/form-data; boundary=%@",
+                                         kMultipartBoundary]
+      forHTTPHeaderField:@"Content-Type"];
+  [request setValue:FFAuthorizationHeader(oauthParams)
+      forHTTPHeaderField:@"Authorization"];
+  request.HTTPBody = FFMultipartBodyData(
+      stringParams, imageData, kMultipartBoundary, @"image", @"avatar.jpg");
+
+  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+      dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *response,
+                            NSError *error) {
+          if (error) {
+            rejecter(@"profile_image_upload_failed", error.localizedDescription,
+                     error);
             return;
           }
+          NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+          NSString *body =
+              data != nil ? [[NSString alloc] initWithData:data
+                                                  encoding:NSUTF8StringEncoding]
+                          : @"";
           resolver(
               @{@"status" : @(httpResponse.statusCode),
                 @"body" : body ?: @""});

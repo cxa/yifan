@@ -1,7 +1,12 @@
 import * as Keychain from 'react-native-keychain';
 import type { OAuthAccessToken } from 'rn-fanfou-client';
 
-export type AuthAccessToken = OAuthAccessToken;
+export type AuthAccessToken = OAuthAccessToken & {
+  oauthToken: string;
+  oauthTokenSecret: string;
+  userId: string;
+  screenName: string;
+};
 
 const SERVICE = 'fanfou.oauth';
 
@@ -22,11 +27,11 @@ const parseAccessToken = (raw?: string | null): AuthAccessToken | null => {
     }
     const oauthToken = getString(parsed.oauthToken);
     const oauthTokenSecret = getString(parsed.oauthTokenSecret);
-    if (!oauthToken || !oauthTokenSecret) {
-      return null;
-    }
     const userId = getString(parsed.userId);
     const screenName = getString(parsed.screenName);
+    if (!oauthToken || !oauthTokenSecret || !userId || !screenName) {
+      return null;
+    }
     return { oauthToken, oauthTokenSecret, userId, screenName };
   } catch {
     return null;

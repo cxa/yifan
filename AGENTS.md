@@ -11,10 +11,10 @@
 - Shared assets live in `assets/shared/` with platform-specific assets in `assets/android/` and `assets/ios/`. Avoid duplicating shared files in native folders; use symlinks when needed.
 
 ## Routing Conventions
-- Prefer flat route folders (for example, `src/routes/_auth.home`, `src/routes/_auth.mentions`).
-- Use flat files for auth routes (for example, `src/routes/_auth.tsx` and `src/routes/_auth.index.tsx`); avoid nesting under `src/routes/_auth/`.
-- Use `index.tsx` as the route entry screen.
-- Use `route.tsx` as the layout when needed.
+- Use React Navigation with all navigator wiring in `src/navigation/app-navigator.tsx`.
+- Keep route names centralized in `src/navigation/route-names.ts` and route param types in `src/navigation/types.ts`; avoid hardcoded route-name strings.
+- Use semantic route screen filenames in `src/routes/` (for example, `auth-home-screen.tsx`, `auth-profile-screen.tsx`, `login-screen.tsx`).
+- Keep route files flat under `src/routes/` and use explicit semantic names; avoid underscore/dynamic-token filename patterns.
 - Route-scoped shared components live in a `-components` folder next to the route.
 - Route-scoped translations live in `-translations.ts`, and each route lazily loads its own translations.
 
@@ -24,7 +24,7 @@
 ## Product Scope & Source of Truth
 - Build mobile clients for `fantfou.com` on iOS and Android.
 - Mirror the site’s core UI and flows.
-- Use the Fanfou REST API docs for endpoints, payloads, and error behavior.
+- Use the Fanfou REST API docs at https://github.com/FanfouAPI/FanFouAPIDoc/wiki for endpoints, payloads, and error behavior.
 - Authentication uses OAuth 1.0; avoid Basic Auth unless docs require it.
 - OAuth callback URL: `gohan://authorize_callback`.
 - `rn-fanfou-client` is minimal: the app must supply the consumer key/secret and handle token persistence.

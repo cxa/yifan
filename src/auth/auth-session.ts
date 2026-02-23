@@ -31,10 +31,16 @@ const setSnapshot = (next: AuthSnapshot) => {
 const hydrateAuth = async () => {
   try {
     const accessToken = await loadAuthAccessToken();
+    if (!accessToken) {
+      setFanfouAccessToken(null);
+      setSnapshot({ status: 'unauthenticated', accessToken: null });
+      return;
+    }
+
     setFanfouAccessToken(accessToken);
     setSnapshot({
-      status: accessToken ? 'authenticated' : 'unauthenticated',
-      accessToken: accessToken ?? null,
+      status: 'authenticated',
+      accessToken,
     });
   } catch {
     setFanfouAccessToken(null);

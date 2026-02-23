@@ -9,6 +9,7 @@ export type OAuthAccessToken = {
 
 const FANFOU_API_BASE_URL = 'http://api.fanfou.com';
 const FANFOU_OAUTH_AUTHORIZE_URL = 'https://m.fanfou.com/oauth/authorize';
+const FANFOU_UPDATE_PROFILE_IMAGE_ENDPOINT = '/account/update_profile_image';
 
 type OAuthRequestToken = {
   oauthToken: string;
@@ -40,6 +41,12 @@ type NativeOAuthModule = {
     status: string | null,
     params: Record<string, string>,
   ) => Promise<NativeRequestResponse>;
+  uploadProfileImage: (
+    token: string,
+    tokenSecret: string,
+    imageBase64: string,
+    params: Record<string, string>,
+  ) => Promise<NativeRequestResponse>;
 };
 
 export class FanfouApiError extends Error {
@@ -69,7 +76,8 @@ const isNativeOAuthModule = (value: unknown): value is NativeOAuthModule =>
   typeof value.getRequestToken === 'function' &&
   typeof value.getAccessToken === 'function' &&
   typeof value.request === 'function' &&
-  typeof value.uploadPhoto === 'function';
+  typeof value.uploadPhoto === 'function' &&
+  typeof value.uploadProfileImage === 'function';
 
 const getNativeModule = (): NativeOAuthModule => {
   const module = NativeModules.FanfouOAuthModule;
@@ -174,6 +182,18 @@ const parseBody = (body: string): unknown => {
   } catch {
     return body;
   }
+};
+
+const extractApiErrorMessage = (data: unknown): string | null => {
+  if (!isRecord(data)) {
+    return null;
+  }
+  const apiError = data.error;
+  if (typeof apiError !== 'string') {
+    return null;
+  }
+  const normalized = apiError.trim();
+  return normalized.length > 0 ? normalized : null;
 };
 
 const requireAccessToken = (accessToken: OAuthAccessToken) => {
@@ -295,12 +315,15 @@ export class FanfouClient {
     const data = parseBody(response.body);
 
     if (response.status < 200 || response.status >= 300) {
-      throw new FanfouApiError('API GET failed', {
-        status: response.status,
-        url,
-        body: response.body,
-        data,
-      });
+      throw new FanfouApiError(
+        extractApiErrorMessage(data) ?? 'API GET failed',
+        {
+          status: response.status,
+          url,
+          body: response.body,
+          data,
+        },
+      );
     }
 
     return data;
@@ -317,12 +340,15 @@ export class FanfouClient {
     const data = parseBody(response.body);
 
     if (response.status < 200 || response.status >= 300) {
-      throw new FanfouApiError('API POST failed', {
-        status: response.status,
-        url,
-        body: response.body,
-        data,
-      });
+      throw new FanfouApiError(
+        extractApiErrorMessage(data) ?? 'API POST failed',
+        {
+          status: response.status,
+          url,
+          body: response.body,
+          data,
+        },
+      );
     }
 
     return data;
@@ -349,12 +375,48 @@ export class FanfouClient {
     const data = parseBody(response.body);
 
     if (response.status < 200 || response.status >= 300) {
-      throw new FanfouApiError('API upload photo failed', {
-        status: response.status,
-        url: `${FANFOU_API_BASE_URL}/photos/upload.json`,
-        body: response.body,
-        data,
-      });
+      throw new FanfouApiError(
+        extractApiErrorMessage(data) ?? 'API upload photo failed',
+        {
+          status: response.status,
+          url: `${FANFOU_API_BASE_URL}/photos/upload.json`,
+          body: response.body,
+          data,
+        },
+      );
+    }
+
+    return data;
+  };
+
+  public uploadProfileImage = async ({
+    imageBase64,
+    params,
+  }: {
+    imageBase64: string;
+    params?: Record<string, string | number | boolean | undefined>;
+  }): Promise<unknown> => {
+    const token = requireAccessToken(this.accessToken);
+    const normalized = normalizeParams(params);
+    const url = this.buildEndpointUrl(FANFOU_UPDATE_PROFILE_IMAGE_ENDPOINT);
+    const response = await getNativeModule().uploadProfileImage(
+      token.key,
+      token.secret,
+      imageBase64,
+      normalized,
+    );
+    const data = parseBody(response.body);
+
+    if (response.status < 200 || response.status >= 300) {
+      throw new FanfouApiError(
+        extractApiErrorMessage(data) ?? 'API upload profile image failed',
+        {
+          status: response.status,
+          url,
+          body: response.body,
+          data,
+        },
+      );
     }
 
     return data;

@@ -161,10 +161,6 @@
       "version": "workspace:*",
       "integrated": false
     },
-    "rn-file-routing": {
-      "version": "workspace:*",
-      "integrated": false
-    },
     "tailwind-merge": {
       "version": "^3.4.0",
       "integrated": false

@@ -1,69 +1,70 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import {
+  AUTH_MESSAGES_ROUTE,
+  AUTH_PROFILE_ROUTE,
+  AUTH_STACK_ROUTE,
+  AUTH_STATUS_ROUTE,
+  AUTH_TAG_TIMELINE_ROUTE,
+  AUTH_TAB_ROUTE,
+  LOGIN_STACK_ROUTE,
+  ROOT_STACK_ROUTE,
+} from '@/navigation/route-names';
 
-export type AuthHomeStackParamList = {
-  'route_root._auth.home.index': undefined;
-};
-
-export type AuthMentionsStackParamList = {
-  'route_root._auth.mentions.index': undefined;
-};
-
-export type AuthMoreStackParamList = {
-  'route_root._auth.more.index': undefined;
+export type AuthMessagesStackParamList = {
+  [AUTH_MESSAGES_ROUTE.LIST]: undefined;
 };
 
 export type AuthProfileStackParamList = {
-  'route_root._auth.profile._handle': { userId: string };
-};
-
-export type AuthProfileScreenParamList = {
-  'route_root._auth.profile._handle.index': { userId: string };
+  [AUTH_PROFILE_ROUTE.DETAIL]: { userId: string };
 };
 
 export type AuthStatusStackParamList = {
-  'route_root._auth.status._statusId': { statusId: string };
-};
-
-export type AuthStatusScreenParamList = {
-  'route_root._auth.status._statusId.index': { statusId: string };
+  [AUTH_STATUS_ROUTE.DETAIL]: { statusId: string };
 };
 
 export type AuthTagStackParamList = {
-  'route_root._auth.tag._tag': { tag: string };
-};
-
-export type AuthTagScreenParamList = {
-  'route_root._auth.tag._tag.index': { tag: string };
+  [AUTH_TAG_TIMELINE_ROUTE.DETAIL]: { tag: string };
 };
 
 export type AuthStackParamList = {
-  'route_root._auth.home':
-    | NavigatorScreenParams<AuthHomeStackParamList>
+  [AUTH_STACK_ROUTE.TABS]: undefined;
+  [AUTH_STACK_ROUTE.MY_TIMELINE]:
+    | { userId: string; backCount?: number }
     | undefined;
-  'route_root._auth.index': undefined;
-  'route_root._auth.mentions':
-    | NavigatorScreenParams<AuthMentionsStackParamList>
+  [AUTH_STACK_ROUTE.MESSAGES]:
+    | NavigatorScreenParams<AuthMessagesStackParamList>
     | undefined;
-  'route_root._auth.more':
-    | NavigatorScreenParams<AuthMoreStackParamList>
+  [AUTH_STACK_ROUTE.FAVORITES]:
+    | { userId: string; backCount?: number }
     | undefined;
-  'route_root._auth.profile': NavigatorScreenParams<AuthProfileStackParamList>;
-  'route_root._auth.status': NavigatorScreenParams<AuthStatusStackParamList>;
-  'route_root._auth.tag': NavigatorScreenParams<AuthTagStackParamList>;
+  [AUTH_STACK_ROUTE.PHOTOS]: { userId: string; backCount?: number } | undefined;
+  [AUTH_STACK_ROUTE.USER_LIST]: {
+    userId: string;
+    mode: 'following' | 'followers';
+    backCount?: number;
+  };
+  [AUTH_STACK_ROUTE.PROFILE]: NavigatorScreenParams<AuthProfileStackParamList>;
+  [AUTH_STACK_ROUTE.EDIT_PROFILE]: undefined;
+  [AUTH_STACK_ROUTE.STATUS]: NavigatorScreenParams<AuthStatusStackParamList>;
+  [AUTH_STACK_ROUTE.TAG_TIMELINE]: NavigatorScreenParams<AuthTagStackParamList>;
 };
 
 export type LoginStackParamList = {
-  'route_root.login.index': undefined;
+  [LOGIN_STACK_ROUTE.INDEX]: undefined;
 };
 
 export type RootStackParamList = {
-  'route_root._auth': NavigatorScreenParams<AuthStackParamList> | undefined;
-  'route_root.login': NavigatorScreenParams<LoginStackParamList> | undefined;
+  [ROOT_STACK_ROUTE.AUTH]:
+    | NavigatorScreenParams<AuthStackParamList>
+    | undefined;
+  [ROOT_STACK_ROUTE.LOGIN]:
+    | NavigatorScreenParams<LoginStackParamList>
+    | undefined;
 };
 
 export type AuthTabParamList = {
-  Home: undefined;
-  Mentions: undefined;
-  Compose: undefined;
-  More: undefined;
+  [AUTH_TAB_ROUTE.HOME]: undefined;
+  [AUTH_TAB_ROUTE.MENTIONS]: undefined;
+  [AUTH_TAB_ROUTE.COMPOSE]: undefined;
+  [AUTH_TAB_ROUTE.MORE]: undefined;
 };

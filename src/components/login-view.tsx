@@ -18,10 +18,14 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 
-import { requestFanfouAccessToken } from '@/auth/fanfou-client';
+import {
+  requestFanfouAccessToken,
+  resolveAuthAccessTokenIdentity,
+} from '@/auth/fanfou-client';
 import { setAuthAccessToken } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
 import AuthActionButton from '@/components/auth-action-button';
+import { AUTH_STACK_ROUTE, ROOT_STACK_ROUTE } from '@/navigation/route-names';
 import type {
   LoginStackParamList,
   RootStackParamList,
@@ -359,7 +363,8 @@ const LoginView = () => {
     setErrorMessage(null);
     setIsSigningIn(true);
     try {
-      const accessToken = await requestFanfouAccessToken(CALLBACK_URL);
+      const rawAccessToken = await requestFanfouAccessToken(CALLBACK_URL);
+      const accessToken = await resolveAuthAccessTokenIdentity(rawAccessToken);
       await saveAuthAccessToken(accessToken);
       setAuthAccessToken(accessToken);
       if (rootNavigation) {
@@ -367,8 +372,8 @@ const LoginView = () => {
           index: 0,
           routes: [
             {
-              name: 'route_root._auth',
-              params: { screen: 'route_root._auth.index' },
+              name: ROOT_STACK_ROUTE.AUTH,
+              params: { screen: AUTH_STACK_ROUTE.TABS },
             },
           ],
         });
@@ -423,16 +428,10 @@ const LoginView = () => {
           entering={FadeInDown.delay(500).duration(800).springify()}
           className="w-full max-w-[320px] pointer-events-auto"
         >
-          <AuthActionButton
-            label="Sign in with Fanfou"
-            loadingLabel="Signing in..."
-            onPress={handleSignIn}
-            isLoading={isSigningIn}
-          />
           {isSigningIn && (
             <Animated.View
               entering={FadeInDown.duration(300)}
-              className="mt-6 items-center"
+              className="mb-6 items-center"
             >
               <Pressable
                 onPress={() => setIsSigningIn(false)}
@@ -445,6 +444,13 @@ const LoginView = () => {
               </Pressable>
             </Animated.View>
           )}
+
+          <AuthActionButton
+            label="Sign in with Fanfou"
+            loadingLabel="Signing in..."
+            onPress={handleSignIn}
+            isLoading={isSigningIn}
+          />
         </Animated.View>
       </View>
     </View>

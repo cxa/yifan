@@ -36,6 +36,8 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Xiaolai.ttf</string>
+		<string>HuiwenHKHei-Regular.ttf</string>
+		<string>Huiwen-MinchoGBK-Regular.ttf</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

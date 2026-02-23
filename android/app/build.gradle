@@ -71,8 +71,9 @@ def enableProguardInReleaseBuilds = false
  * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
-def sharedFontsDir = file("$rootDir/assets/shared/fonts")
+def sharedFontsDir = file("$rootDir/../assets/shared/fonts")
 def generatedAssetsDir = file("$buildDir/generated/assets")
+def mainAssetsFontsDir = file("$projectDir/src/main/assets/fonts")
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -115,8 +116,14 @@ android {
 }
 
 tasks.register('prepareSharedFonts', Copy) {
+    doFirst {
+        delete("$generatedAssetsDir/fonts")
+    }
     from(sharedFontsDir) {
-        include 'Xiaolai.ttf'
+        include '*.ttf'
+        exclude { details ->
+            new File(mainAssetsFontsDir, details.name).exists()
+        }
     }
     into("$generatedAssetsDir/fonts")
 }
