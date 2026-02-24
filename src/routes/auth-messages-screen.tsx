@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  Platform,
   Pressable,
   RefreshControl,
   View,
@@ -347,14 +346,12 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
 
   const renderHeaderTabs = useCallback(
     () => (
-      <View className="w-full items-center">
-        <MailboxHeaderTabs
-          activeMailbox={activeMailbox}
-          muted={muted}
-          activeIconColor={accentForeground}
-          onPressTab={setActiveMailbox}
-        />
-      </View>
+      <MailboxHeaderTabs
+        activeMailbox={activeMailbox}
+        muted={muted}
+        activeIconColor={accentForeground}
+        onPressTab={setActiveMailbox}
+      />
     ),
     [accentForeground, activeMailbox, muted],
   );
@@ -368,10 +365,8 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
       title: '',
       headerTitle: renderHeaderTabs,
       headerTitleAlign: 'center',
-      headerBackButtonDisplayMode: 'default',
-      headerBackTitle: String(totalMailboxCount),
-      headerRight:
-        Platform.OS === 'android' ? () => <View className="w-10" /> : undefined,
+      headerBackButtonDisplayMode: 'minimal',
+      headerBackTitle: '',
     });
 
     return () => {
@@ -381,7 +376,6 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         headerTitleAlign: undefined,
         headerBackButtonDisplayMode: 'minimal',
         headerBackTitle: undefined,
-        headerRight: undefined,
       });
     };
   }, [parentNavigation, renderHeaderTabs, totalMailboxCount]);

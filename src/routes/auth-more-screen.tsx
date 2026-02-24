@@ -36,8 +36,8 @@ import {
   AUTH_STACK_ROUTE,
 } from '@/navigation/route-names';
 import {
-  getTabBarBaseHeight,
-  getTabBarHeight,
+  getContentBottomPadding,
+  getScrollIndicatorBottomInset,
 } from '@/navigation/tab-bar-layout';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
 import {
@@ -238,8 +238,8 @@ const MoreRouteContent = ({
     useState<AppFontOption | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
-  const tabBarBaseHeight = getTabBarBaseHeight(insets.bottom);
-  const tabBarHeight = getTabBarHeight(insets.bottom);
+  const contentBottomPadding = getContentBottomPadding(insets.bottom, true);
+  const scrollIndicatorBottom = getScrollIndicatorBottomInset(insets.bottom, true);
   useScrollToTop(scrollRef);
 
   const {
@@ -302,9 +302,9 @@ const MoreRouteContent = ({
       flexGrow: 1,
       paddingHorizontal: PAGE_HORIZONTAL_PADDING,
       paddingTop: insets.top,
-      paddingBottom: tabBarHeight + PAGE_BOTTOM_PADDING,
+      paddingBottom: contentBottomPadding + PAGE_BOTTOM_PADDING,
     }),
-    [insets.top, tabBarHeight],
+    [insets.top, contentBottomPadding],
   );
 
   const handleOpenMyTimeline = useCallback(() => {
@@ -491,7 +491,7 @@ const MoreRouteContent = ({
         ref={scrollRef}
         className="flex-1"
         scrollIndicatorInsets={{
-          bottom: tabBarBaseHeight,
+          bottom: scrollIndicatorBottom,
         }}
         contentContainerStyle={contentContainerStyle}
       >
@@ -612,8 +612,8 @@ const MissingUserIdPlaceholder = () => {
   const [background] = useThemeColor(['background']);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
-  const tabBarBaseHeight = getTabBarBaseHeight(insets.bottom);
-  const tabBarHeight = getTabBarHeight(insets.bottom);
+  const placeholderContentPadding = getContentBottomPadding(insets.bottom, true);
+  const placeholderScrollInset = getScrollIndicatorBottomInset(insets.bottom, true);
   useScrollToTop(scrollRef);
 
   const contentContainerStyle = useMemo(
@@ -621,10 +621,10 @@ const MissingUserIdPlaceholder = () => {
       flexGrow: 1,
       paddingHorizontal: PAGE_HORIZONTAL_PADDING,
       paddingTop: insets.top,
-      paddingBottom: tabBarHeight + PAGE_BOTTOM_PADDING,
+      paddingBottom: placeholderContentPadding + PAGE_BOTTOM_PADDING,
       justifyContent: 'center' as const,
     }),
-    [insets.top, tabBarHeight],
+    [insets.top, placeholderContentPadding],
   );
 
   return (
@@ -638,7 +638,7 @@ const MissingUserIdPlaceholder = () => {
         ref={scrollRef}
         className="flex-1"
         scrollIndicatorInsets={{
-          bottom: tabBarBaseHeight,
+          bottom: placeholderScrollInset,
         }}
         contentContainerStyle={contentContainerStyle}
       >

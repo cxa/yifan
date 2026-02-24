@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import type { ViewStyle } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import {
-  getTabBarBaseHeight,
-  getTabBarHeight,
+  getContentBottomPadding,
+  getScrollIndicatorBottomInset,
 } from '@/navigation/tab-bar-layout';
 
 export const TIMELINE_SPACING = 32;
@@ -32,15 +32,13 @@ export const useTimelineListSettings = (
 ): TimelineListSettings =>
   useMemo(() => {
     const hasBottomTabBar = options?.hasBottomTabBar ?? true;
-    const safeBottomInset = Math.max(insets.bottom, 0);
-    const tabBarBaseHeight = getTabBarBaseHeight(insets.bottom);
-    const tabBarHeight = getTabBarHeight(insets.bottom);
-    const contentBottomPadding = hasBottomTabBar
-      ? tabBarHeight + TIMELINE_SPACING
-      : safeBottomInset + TIMELINE_SPACING;
-    const indicatorBottomInset = hasBottomTabBar
-      ? tabBarBaseHeight
-      : safeBottomInset;
+    const contentBottomPadding =
+      getContentBottomPadding(insets.bottom, hasBottomTabBar) +
+      TIMELINE_SPACING;
+    const indicatorBottomInset = getScrollIndicatorBottomInset(
+      insets.bottom,
+      hasBottomTabBar,
+    );
 
     return {
       contentContainerStyle: {

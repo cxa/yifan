@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
   BottomTabBarProps,
   createBottomTabNavigator,
@@ -14,10 +14,19 @@ import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import LoginView from '@/components/login-view';
+import Animated, {
+  FadeInRight,
+  FadeOutRight,
+  LinearTransition,
+} from 'react-native-reanimated';
 import { AUTH_TAB_ROUTE } from '@/navigation/route-names';
-import { getTabBarHeight } from '@/navigation/tab-bar-layout';
+import {
+  TAB_BAR_BUTTON_HEIGHT,
+  TAB_BAR_MIN_BOTTOM_GAP,
+} from '@/navigation/tab-bar-layout';
 import type { AuthTabParamList } from '@/navigation/types';
 import AuthHomeRoute from '@/routes/auth-home-screen';
+import { useAppFontFamily } from '@/settings/app-font-preference';
 import MentionsRoute from '@/routes/auth-mentions-screen';
 import MoreRoute from '@/routes/auth-more-screen';
 
@@ -46,12 +55,34 @@ const iconForRoute = (routeName: keyof AuthTabParamList, color: string) => {
   }
 };
 
+const labelForRoute = (routeName: keyof AuthTabParamList) => {
+  switch (routeName) {
+    case AUTH_TAB_ROUTE.HOME:
+      return 'Home';
+    case AUTH_TAB_ROUTE.MENTIONS:
+      return 'Mentions';
+    case AUTH_TAB_ROUTE.MORE:
+      return 'More';
+    case AUTH_TAB_ROUTE.COMPOSE:
+      return 'Post';
+    default:
+      return '';
+  }
+};
+
 const ComposeTabPlaceholder = () => <View className="flex-1 bg-background" />;
 
 type AuthTabBarProps = BottomTabBarProps & {
   isComposerVisible: boolean;
   onComposePress: () => void;
 };
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const springTransition = LinearTransition.springify()
+  .damping(12)
+  .stiffness(150)
+  .mass(1)
+  .energyThreshold(0.01);
 
 const AuthTabBar = ({
   state,
@@ -61,36 +92,42 @@ const AuthTabBar = ({
   onComposePress,
 }: AuthTabBarProps) => {
   const insets = useSafeAreaInsets();
-  const [accent, muted, accentForeground] = useThemeColor([
+  const [accent, muted, accentForeground, background] = useThemeColor([
     'accent',
     'muted',
     'accent-foreground',
+    'background',
   ]);
 
-  const composeIndex = state.routes.findIndex(
-    r => r.name === AUTH_TAB_ROUTE.COMPOSE,
-  );
-  const composeRoute = composeIndex !== -1 ? state.routes[composeIndex] : null;
-  const mainRoutes = state.routes.filter(
-    r => r.name !== AUTH_TAB_ROUTE.COMPOSE,
-  );
+  const leftRoutesGroup = state.routes.filter(r => r.name !== AUTH_TAB_ROUTE.COMPOSE);
+  const rightRoutesGroup = state.routes.filter(r => r.name === AUTH_TAB_ROUTE.COMPOSE);
+  const fontFamily = useAppFontFamily();
 
   const renderItem = (
-    route: BottomTabBarProps['state']['routes'][number],
-    isLast: boolean,
-    isBlock: boolean,
+    route: BottomTabBarProps['state']['routes'][number] | null,
   ) => {
-    if (!route) return null;
-    if (!isTabRouteName(route.name)) {
-      return null;
-    }
+    if (!route || !isTabRouteName(route.name)) return null;
+
     const { options } = descriptors[route.key];
     const isComposeRoute = route.name === AUTH_TAB_ROUTE.COMPOSE;
     const isFocused = isComposeRoute
       ? isComposerVisible
       : state.index === state.routes.indexOf(route);
-    const backgroundColor = isFocused ? accent : 'transparent';
+
+    // Neobrutalism colors
+    const activeColor = isComposeRoute ? '#FF4F00' : accent;
+    const bgColor = isFocused ? activeColor : background;
     const iconColor = isFocused ? accentForeground : muted;
+    const textColor = accentForeground;
+
+    const buttonStyle = StyleSheet.flatten([
+      styles.tabButton,
+      {
+        backgroundColor: bgColor,
+        paddingHorizontal: isFocused ? 20 : 0,
+        width: isFocused ? ('auto' as const) : TAB_BAR_BUTTON_HEIGHT,
+      },
+    ]);
 
     const onPress = () => {
       const event = navigation.emit({
@@ -99,9 +136,7 @@ const AuthTabBar = ({
         canPreventDefault: true,
       });
 
-      if (event.defaultPrevented) {
-        return;
-      }
+      if (event.defaultPrevented) return;
 
       if (isComposeRoute) {
         onComposePress();
@@ -121,44 +156,54 @@ const AuthTabBar = ({
     };
 
     return (
-      <Pressable
-        key={route.key}
-        accessibilityRole="button"
-        accessibilityState={isFocused ? { selected: true } : {}}
-        accessibilityLabel={options.tabBarAccessibilityLabel}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        className={`items-center justify-center border-foreground dark:border-border ${
-          isBlock ? 'flex-1' : 'w-full'
-        } ${!isLast && isBlock ? 'border-r-2' : ''}`}
-        style={{
-          backgroundColor,
-          height: getTabBarHeight(insets.bottom),
-        }}
-      >
-        {iconForRoute(route.name, iconColor)}
-      </Pressable>
+      <View key={route.key} className="relative mx-[4px]">
+        {/* Neobrutalist solid shadow */}
+        <Animated.View
+          layout={springTransition}
+          className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border rounded-full -translate-x-1 translate-y-1"
+        />
+        {/* Front floating button */}
+        <AnimatedPressable
+          accessibilityRole="button"
+          accessibilityState={isFocused ? { selected: true } : {}}
+          accessibilityLabel={options.tabBarAccessibilityLabel}
+          onPress={onPress}
+          onLongPress={onLongPress}
+          layout={springTransition}
+          className="flex-row items-center justify-center border-2 border-foreground dark:border-border rounded-full overflow-hidden"
+          style={buttonStyle}
+        >
+          <Animated.View layout={springTransition} className="items-center justify-center w-6 h-6">
+            {iconForRoute(route.name, iconColor)}
+          </Animated.View>
+          {isFocused && (
+            <Animated.Text
+              entering={FadeInRight.duration(200)}
+              exiting={FadeOutRight.duration(200)}
+              className="ml-2 font-bold text-base"
+              style={{ color: textColor, fontFamily }}
+              numberOfLines={1}
+            >
+              {labelForRoute(route.name)}
+            </Animated.Text>
+          )}
+        </AnimatedPressable>
+      </View>
     );
   };
 
   return (
-    <View className="absolute left-0 right-0 bottom-0 flex-row bg-transparent">
-      {/* Main Tabs Block */}
-      <View className="flex-1 flex-row border-2 border-b-0 border-l-0 bg-surface border-foreground dark:border-border">
-        {mainRoutes.map((route, index) =>
-          renderItem(route, index === mainRoutes.length - 1, true),
-        )}
+    <View
+      className="absolute left-0 right-0 flex-row justify-between pointer-events-box-none items-center px-4"
+      style={{ bottom: Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_GAP) }}
+      pointerEvents="box-none"
+    >
+      <View className="flex-row items-center bg-transparent" pointerEvents="box-none">
+        {leftRoutesGroup.map(route => renderItem(route))}
       </View>
-
-      {/* Gap */}
-      <View className="w-4" />
-
-      {/* Compose Button Block */}
-      {composeRoute ? (
-        <View className="w-20 border-2 border-b-0 border-r-0 bg-surface border-foreground dark:border-border">
-          {renderItem(composeRoute, true, false)}
-        </View>
-      ) : null}
+      <View className="flex-row items-center bg-transparent" pointerEvents="box-none">
+        {rightRoutesGroup.map(route => renderItem(route))}
+      </View>
     </View>
   );
 };
@@ -255,3 +300,9 @@ const AuthIndexRoute = () => {
 };
 
 export default AuthIndexRoute;
+
+const styles = StyleSheet.create({
+  tabButton: {
+    height: TAB_BAR_BUTTON_HEIGHT,
+  },
+});
