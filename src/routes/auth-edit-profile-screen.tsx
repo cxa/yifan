@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
   View,
 } from 'react-native';
+
+import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
@@ -42,11 +43,7 @@ const EditProfileRoute = () => {
   const auth = useAuthSession();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const queryClient = useQueryClient();
-  const [accent, background, muted] = useThemeColor([
-    'accent',
-    'background',
-    'muted',
-  ]);
+  const [background, muted] = useThemeColor(['background', 'muted']);
   const insets = useSafeAreaInsets();
 
   const userId = auth.accessToken?.userId ?? null;
@@ -161,7 +158,7 @@ const EditProfileRoute = () => {
           <DropShadowBox>
             <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
               <View className="flex-row items-center gap-3">
-                <ActivityIndicator color={accent} />
+                <NeobrutalActivityIndicator />
                 <Text className="text-[14px] text-foreground">
                   Loading profile...
                 </Text>
@@ -281,7 +278,7 @@ const EditProfileRoute = () => {
 
         {isFetching && user ? (
           <View className="items-center py-1">
-            <ActivityIndicator color={accent} />
+            <NeobrutalActivityIndicator />
           </View>
         ) : null}
       </ScrollView>

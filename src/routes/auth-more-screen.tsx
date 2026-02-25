@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Platform,
@@ -8,6 +7,8 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+
+import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import {
   useFocusEffect,
   useNavigation,
@@ -216,7 +217,7 @@ const FontSettingRow = ({
         {option.label}
       </Text>
       {isUpdating ? (
-        <ActivityIndicator size="small" color={mutedColor} />
+        <NeobrutalActivityIndicator size="small" color={mutedColor} />
       ) : null}
     </Pressable>
   );
@@ -227,11 +228,7 @@ const MoreRouteContent = ({
   displayNameFallback,
 }: MoreRouteContentProps) => {
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
-  const [accent, background, muted] = useThemeColor([
-    'accent',
-    'background',
-    'muted',
-  ]);
+  const [background, muted] = useThemeColor(['background', 'muted']);
   const appFontPreference = useAppFontPreference();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [updatingFontOption, setUpdatingFontOption] =
@@ -505,7 +502,7 @@ const MoreRouteContent = ({
                       className="items-center justify-center rounded-full border-2 border-foreground dark:border-border bg-surface-secondary"
                       style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
                     >
-                      <ActivityIndicator color={accent} />
+                      <NeobrutalActivityIndicator />
                     </View>
                     <View className="flex-1">
                       <Text className="text-[16px] font-semibold text-foreground">
@@ -536,7 +533,7 @@ const MoreRouteContent = ({
                   profileUrl={profileUrl}
                   description={description}
                   rightSlot={
-                    isFetching ? <ActivityIndicator color={accent} /> : null
+                    isFetching ? <NeobrutalActivityIndicator /> : null
                   }
                   footer={
                     errorMessage ? (

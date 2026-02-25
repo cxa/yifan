@@ -6,7 +6,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Modal,
   Pressable,
@@ -14,6 +13,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+
+import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -830,7 +831,7 @@ const PhotoViewerModal = ({
         </GestureDetector>
         {isImageLoading ? (
           <View style={styles.loading} pointerEvents="none">
-            <ActivityIndicator color="#FFFFFF" />
+            <NeobrutalActivityIndicator color="#FFFFFF" />
           </View>
         ) : null}
         <Animated.View

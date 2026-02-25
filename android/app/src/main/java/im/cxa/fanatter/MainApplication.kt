@@ -11,10 +11,11 @@ import com.rnfanfouclient.FanfouSecrets
 class MainApplication : Application(), ReactApplication {
 
   override val reactHost: ReactHost by lazy {
+    val packageList = PackageList(this).packages
+    packageList.add(SystemUiInfoPackage())
     getDefaultReactHost(
       context = applicationContext,
-      packageList =
-        PackageList(this).packages,
+      packageList = packageList,
     )
   }
 
