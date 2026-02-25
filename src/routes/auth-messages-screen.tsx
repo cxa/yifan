@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 
-import NeobrutalActivityIndicator, { COMPACT_PULL_THRESHOLD, NeobrutalRefreshIndicator } from '@/components/neobrutal-activity-indicator';
+import { COMPACT_PULL_THRESHOLD, NeobrutalRefreshIndicator } from '@/components/neobrutal-activity-indicator';
 import { usePullScrollY, usePullRefreshState } from '@/components/use-pull-to-refresh';
 import {
   useNavigation,
@@ -35,6 +35,7 @@ import ComposerModal, {
 import { get, post } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
 import DropShadowBox from '@/components/drop-shadow-box';
+import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import { AUTH_PROFILE_ROUTE, AUTH_STACK_ROUTE } from '@/navigation/route-names';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -50,6 +51,17 @@ const POSTAGE_STAMP_PATH =
 const STAMP_SIZE = 44;
 const STAMP_CONTENT_OFFSET = 7;
 const STAMP_CONTENT_SIZE = 30;
+// Wave SVG is wider so waves can bleed past the right perforation border
+const STAMP_WAVE_SVG_WIDTH = Math.round(STAMP_SIZE * (18 / 15));
+const STAMP_WAVE_SVG_HEIGHT = Math.round(STAMP_SIZE * (19 / 15));
+const STAMP_WAVE_SVG_STYLE = { position: 'absolute' as const, top: 0, left: 0 };
+
+// Wavy cancellation lines clustered in bottom-right; last wave bleeds past bottom border
+const STAMP_WAVE_LINES: { d: string; opacity: number }[] = [
+  { d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',    opacity: 0.25 },
+  { d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9', opacity: 0.5  },
+  { d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',  opacity: 0.3  },
+];
 
 type MailboxKind = 'inbox' | 'outbox';
 
@@ -181,8 +193,54 @@ const PostageStamp = ({
         strokeLinejoin="round"
       />
     </Svg>
+    <Svg
+      width={STAMP_WAVE_SVG_WIDTH}
+      height={STAMP_WAVE_SVG_HEIGHT}
+      viewBox="0 0 18 19"
+      style={STAMP_WAVE_SVG_STYLE}
+    >
+      {STAMP_WAVE_LINES.map(({ d, opacity }, i) => (
+        <Path
+          key={i}
+          d={d}
+          fill="none"
+          stroke="#E63946"
+          strokeWidth="0.6"
+          strokeLinecap="round"
+          opacity={opacity}
+        />
+      ))}
+    </Svg>
   </View>
 );
+
+const SKELETON_TEXT_LINE_2_STYLE = { opacity: 0.7 };
+
+const MessageSkeletonCard = ({ shimmerIndex }: { shimmerIndex: number }) => {
+  const [border] = useThemeColor(['border']);
+  return (
+    <DropShadowBox containerClassName="w-full">
+      <View className="w-full overflow-hidden bg-white dark:bg-surface border-2 border-foreground dark:border-border px-4 pb-4 pt-5">
+        <View className="flex-row gap-3">
+          <PostageStamp initial="" borderColor={border} />
+          <View className="flex-1">
+            <View className="absolute bottom-0 left-0 top-0 w-px bg-danger/40" />
+            <View className="pl-3 gap-2">
+              <View className="flex-row items-baseline gap-1">
+                <ShimmerBar className="h-3 w-24 bg-surface-secondary" isActive={shimmerIndex === 0} />
+                <ShimmerBar className="h-2.5 w-12 bg-surface-secondary" isActive={false} />
+              </View>
+              <ShimmerBar className="h-3 w-full bg-surface-secondary" isActive={shimmerIndex === 1} />
+              <ShimmerBar className="h-3 w-4/5 bg-surface-secondary" style={SKELETON_TEXT_LINE_2_STYLE} isActive={shimmerIndex === 2} />
+              <View className="mt-1 border-t border-dashed border-border" />
+              <ShimmerBar className="h-2.5 w-16 bg-surface-secondary" isActive={false} />
+            </View>
+          </View>
+        </View>
+      </View>
+    </DropShadowBox>
+  );
+};
 
 const MailboxHeaderTabs = ({
   activeMailbox,
@@ -580,8 +638,10 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           ItemSeparatorComponent={MessageItemSeparator}
           ListEmptyComponent={
             isLoading ? (
-              <View className="items-center py-8">
-                <NeobrutalActivityIndicator size="small" />
+              <View className="gap-7">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <MessageSkeletonCard key={i} shimmerIndex={i % 3} />
+                ))}
               </View>
             ) : (
               <TimelineEmptyMessage

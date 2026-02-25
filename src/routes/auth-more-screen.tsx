@@ -5,6 +5,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  useColorScheme,
   View,
 } from 'react-native';
 
@@ -19,8 +20,9 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollShadow, Surface, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, MessageCircle } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
@@ -59,6 +61,74 @@ const SECTION_GAP = 24;
 const AVATAR_SIZE = 80;
 const ENTRY_ICON_SIZE = 18;
 const ENTRY_ICON_WRAPPER = 36;
+const POSTAGE_STAMP_PATH =
+  'M14 1v1.5c-.75 0-.75 1.5 0 1.5v1.25c-.75 0-.75 1.5 0 1.5v1.5c-.75 0-.75 1.5 0 1.5V11c-.75 0-.75 1.5 0 1.5V14h-1.5c0-.75-1.5-.75-1.5 0H9.75c0-.75-1.5-.75-1.5 0h-1.5c0-.75-1.5-.75-1.5 0H4c0-.75-1.5-.75-1.5 0H1v-1.5c.75 0 .75-1.5 0-1.5V9.75c.75 0 .75-1.5 0-1.5v-1.5c.75 0 .75-1.5 0-1.5V4c.75 0 .75-1.5 0-1.5V1h1.5c0 .75 1.5.75 1.5 0h1.25c0 .75 1.5.75 1.5 0h1.5c0 .75 1.5.75 1.5 0H11c0 .75 1.5.75 1.5 0z';
+
+// Wavy cancellation lines clustered in bottom-right; last wave bleeds past bottom border
+const STAMP_WAVE_LINES: { d: string; opacity: number }[] = [
+  { d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',    opacity: 0.25 },
+  { d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9', opacity: 0.5  },
+  { d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',  opacity: 0.3  },
+];
+
+// Hill sits low in the stamp interior; peak at y=8, base at y=12.5
+const STAMP_HILL_PATH = 'M2.5 12.5 Q7.5 8 12.5 12.5';
+
+// Moon crescent aligned right, centered around (10.5, 5.3)
+const STAMP_MOON_PATH = 'M11 4.3 A2.2 2.2 0 1 1 8.2 7.3 A1.5 1.5 0 0 0 11 4.3';
+
+const PostageStampIcon = ({ color, size }: { color: string; size: number }) => {
+  const isDark = useColorScheme() === 'dark';
+  return (
+  <Svg width={size} height={size * (19 / 15)} viewBox="0 0 18 19">
+    <Path
+      d={POSTAGE_STAMP_PATH}
+      fill="none"
+      stroke={color}
+      strokeWidth="1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d={STAMP_HILL_PATH}
+      fill="none"
+      stroke={color}
+      strokeWidth="0.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {isDark ? (
+      <Path
+        d={STAMP_MOON_PATH}
+        fill={color}
+        stroke="none"
+      />
+    ) : (
+      <>
+        <Circle cx="4.5" cy="5.3" r="1.3" fill={color} />
+        <Path
+          d="M4.5 2.9 L4.5 2.3 M6.4 3.8 L6.8 3.3 M7.3 5.3 L7.9 5.3 M6.4 6.8 L6.8 7.3 M4.5 7.7 L4.5 8.3 M2.6 6.8 L2.2 7.3 M1.7 5.3 L1.1 5.3 M2.6 3.8 L2.2 3.3"
+          fill="none"
+          stroke={color}
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
+      </>
+    )}
+    {STAMP_WAVE_LINES.map(({ d, opacity }, i) => (
+      <Path
+        key={i}
+        d={d}
+        fill="none"
+        stroke="#E63946"
+        strokeWidth="0.6"
+        strokeLinecap="round"
+        opacity={opacity}
+      />
+    ))}
+  </Svg>
+  );
+};
 const SCROLL_SHADOW_SIZE = 100;
 const ENTRY_GAP = 12;
 const MISSING_USER_ID_ERROR =
@@ -109,6 +179,7 @@ type MoreEntry = {
   helper?: string;
   showChevron?: boolean;
   icon: React.ComponentType<{ color: string; size: number }>;
+  noIconBox?: boolean;
   onPress?: () => void;
 };
 
@@ -135,6 +206,7 @@ const EntryRow = ({
   helper,
   showChevron,
   icon: Icon,
+  noIconBox,
   onPress,
   iconColor,
 }: EntryRowProps) => {
@@ -153,15 +225,19 @@ const EntryRow = ({
       >
         <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
           <View className="flex-row items-center gap-4">
-            <View
-              className="items-center justify-center border-2 border-foreground dark:border-border bg-surface-secondary"
-              style={{
-                width: ENTRY_ICON_WRAPPER,
-                height: ENTRY_ICON_WRAPPER,
-              }}
-            >
-              <Icon color={iconColor} size={ENTRY_ICON_SIZE} />
-            </View>
+            {noIconBox ? (
+              <Icon color={iconColor} size={ENTRY_ICON_WRAPPER} />
+            ) : (
+              <View
+                className="items-center justify-center border-2 border-foreground dark:border-border bg-surface-secondary"
+                style={{
+                  width: ENTRY_ICON_WRAPPER,
+                  height: ENTRY_ICON_WRAPPER,
+                }}
+              >
+                <Icon color={iconColor} size={ENTRY_ICON_SIZE} />
+              </View>
+            )}
             <View className="flex-1">
               <Text className="text-[15px] font-semibold text-foreground">
                 {label}
@@ -422,7 +498,8 @@ const MoreRouteContent = ({
         value: '',
         helper: 'Inbox + sent',
         showChevron: true,
-        icon: MessageCircle,
+        icon: PostageStampIcon,
+        noIconBox: true,
         onPress: handleOpenPrivateMessages,
       },
     ],
