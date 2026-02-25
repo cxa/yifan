@@ -129,6 +129,7 @@ const TimelineStatusCard = ({
     <DropShadowBox type={shadowType}>
       <Pressable
         onPress={() => onPressStatus(statusId)}
+        unstable_pressDelay={100}
         className={`bg-surface border-2 ${getDropShadowBorderClass(
           shadowType,
         )} px-5 py-4 active:translate-x-[-4px] active:translate-y-[4px]`}
