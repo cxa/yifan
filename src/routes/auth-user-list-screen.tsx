@@ -38,7 +38,7 @@ const EMPTY_MESSAGE: Record<'following' | 'followers', string> = {
   following: 'No following users yet.',
   followers: 'No followers yet.',
 };
-const UserItemSeparator = () => <View className="h-8" />;
+const UserItemSeparator = () => <View className="h-6" />;
 
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
