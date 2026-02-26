@@ -30,6 +30,8 @@ import type {
   LoginStackParamList,
   RootStackParamList,
 } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
+
 import { Text } from '@/components/app-text';
 
 const CALLBACK_URL = 'gohan://authorize_callback';
@@ -349,6 +351,7 @@ const TechnicalAnimation = () => {
 };
 
 const LoginView = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<LoginStackParamList>>();
   const rootNavigation =
     navigation.getParent<NavigationProp<RootStackParamList>>();
@@ -380,7 +383,7 @@ const LoginView = () => {
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Sign in failed.';
+        error instanceof Error ? error.message : t('loginFailed');
       setErrorMessage(message);
     } finally {
       setIsSigningIn(false);
@@ -439,15 +442,15 @@ const LoginView = () => {
                 className="opacity-70 active:opacity-100"
               >
                 <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium tracking-wide">
-                  CANCEL
+                  {t('loginCancel')}
                 </Text>
               </Pressable>
             </Animated.View>
           )}
 
           <AuthActionButton
-            label="Sign in with Fanfou"
-            loadingLabel="Signing in..."
+            label={t('loginButton')}
+            loadingLabel={t('loginLoading')}
             onPress={handleSignIn}
             isLoading={isSigningIn}
           />

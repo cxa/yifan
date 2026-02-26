@@ -22,6 +22,7 @@ import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouUser } from '@/types/fanfou';
 import { parseHtmlToText } from '@/utils/parse-html';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
@@ -40,6 +41,7 @@ const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
 const EditProfileRoute = () => {
+  const { t } = useTranslation();
   const auth = useAuthSession();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const queryClient = useQueryClient();
@@ -80,7 +82,7 @@ const EditProfileRoute = () => {
   }, [isInitialized, user]);
 
   const errorMessage = error
-    ? getErrorMessage(error, 'Unable to load profile details.')
+    ? getErrorMessage(error, t('editProfileLoadFailed'))
     : null;
 
   const contentContainerStyle = useMemo(
@@ -100,7 +102,7 @@ const EditProfileRoute = () => {
 
     const nextName = name.trim();
     if (!nextName) {
-      Alert.alert('Cannot save', 'Display name is required.');
+      Alert.alert(t('editProfileSaveFailedTitle'), t('editProfileNameRequired'));
       return;
     }
 
@@ -118,8 +120,8 @@ const EditProfileRoute = () => {
       navigation.goBack();
     } catch (updateError) {
       Alert.alert(
-        'Update failed',
-        getErrorMessage(updateError, 'Unable to update profile.'),
+        t('editProfileUpdateFailedTitle'),
+        getErrorMessage(updateError, t('editProfileUpdateFailed')),
       );
     } finally {
       setIsSaving(false);
@@ -131,6 +133,7 @@ const EditProfileRoute = () => {
     name,
     navigation,
     queryClient,
+    t,
     url,
     userId,
   ]);
@@ -140,7 +143,7 @@ const EditProfileRoute = () => {
       <View className="flex-1 bg-background px-6 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            Missing authenticated user.
+            {t('notLoggedIn')}
           </Text>
         </Surface>
       </View>
@@ -160,7 +163,7 @@ const EditProfileRoute = () => {
               <View className="flex-row items-center gap-3">
                 <NeobrutalActivityIndicator size="small" />
                 <Text className="text-[14px] text-foreground">
-                  Loading profile...
+                  {t('editProfileLoading')}
                 </Text>
               </View>
             </Surface>
@@ -175,7 +178,7 @@ const EditProfileRoute = () => {
               )} px-4 py-3`}
             >
               <Text className="text-[13px] text-danger">
-                {errorMessage ?? 'Unable to load profile details.'}
+                {errorMessage ?? t('editProfileLoadFailed')}
               </Text>
               <View className="mt-3">
                 <Pressable
@@ -184,9 +187,9 @@ const EditProfileRoute = () => {
                   }}
                   className="self-start border border-danger bg-danger-soft px-3 py-2"
                   accessibilityRole="button"
-                  accessibilityLabel="Retry loading profile"
+                  accessibilityLabel={t('editProfileRetry')}
                 >
-                  <Text className="text-[12px] text-danger">Retry</Text>
+                  <Text className="text-[12px] text-danger">{t('editProfileRetry')}</Text>
                 </Pressable>
               </View>
             </Surface>
@@ -199,11 +202,11 @@ const EditProfileRoute = () => {
               <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
                 <View style={{ gap: FORM_FIELD_GAP }}>
                   <View className="gap-1">
-                    <Text className={FORM_LABEL_CLASS}>Display name</Text>
+                    <Text className={FORM_LABEL_CLASS}>{t('editProfileName')}</Text>
                     <TextInput
                       value={name}
                       onChangeText={setName}
-                      placeholder="Your display name"
+                      placeholder={t('editProfileNamePlaceholder')}
                       placeholderTextColor={muted}
                       className={INPUT_CLASS}
                       editable={!isSaving}
@@ -211,11 +214,11 @@ const EditProfileRoute = () => {
                   </View>
 
                   <View className="gap-1">
-                    <Text className={FORM_LABEL_CLASS}>Location</Text>
+                    <Text className={FORM_LABEL_CLASS}>{t('editProfileLocation')}</Text>
                     <TextInput
                       value={location}
                       onChangeText={setLocation}
-                      placeholder="Where are you?"
+                      placeholder={t('editProfileLocationPlaceholder')}
                       placeholderTextColor={muted}
                       className={INPUT_CLASS}
                       editable={!isSaving}
@@ -223,11 +226,11 @@ const EditProfileRoute = () => {
                   </View>
 
                   <View className="gap-1">
-                    <Text className={FORM_LABEL_CLASS}>Website</Text>
+                    <Text className={FORM_LABEL_CLASS}>{t('editProfileWebsite')}</Text>
                     <TextInput
                       value={url}
                       onChangeText={setUrl}
-                      placeholder="https://example.com"
+                      placeholder={t('editProfileWebsitePlaceholder')}
                       placeholderTextColor={muted}
                       autoCapitalize="none"
                       keyboardType="url"
@@ -237,11 +240,11 @@ const EditProfileRoute = () => {
                   </View>
 
                   <View className="gap-1">
-                    <Text className={FORM_LABEL_CLASS}>Bio</Text>
+                    <Text className={FORM_LABEL_CLASS}>{t('editProfileBio')}</Text>
                     <TextInput
                       value={description}
                       onChangeText={setDescription}
-                      placeholder="Tell people about yourself"
+                      placeholder={t('editProfileBioPlaceholder')}
                       placeholderTextColor={muted}
                       multiline
                       textAlignVertical="top"
@@ -266,10 +269,10 @@ const EditProfileRoute = () => {
                     : 'active:translate-x-[-3px] active:translate-y-[3px]'
                 }`}
                 accessibilityRole="button"
-                accessibilityLabel="Save profile"
+                accessibilityLabel={t('editProfileSave')}
               >
                 <Text className="text-[16px] font-bold text-accent-foreground">
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? t('editProfileSaving') : t('editProfileSave')}
                 </Text>
               </Pressable>
             </DropShadowBox>

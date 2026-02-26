@@ -24,6 +24,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
@@ -112,6 +113,7 @@ const mergeTimelineItems = (
 };
 
 const TagTimelineRoute = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const route =
     useRoute<
@@ -124,9 +126,9 @@ const TagTimelineRoute = () => {
   ]);
   const insets = useSafeAreaInsets();
   const routeTag = normalizeTag(route.params.tag);
-  const screenTitle = `#${routeTag}#`;
+  const screenTitle = t('tagTimelineTitle', { tag: routeTag });
   useNativeHeaderTitle({
-    title: routeTag ? screenTitle : 'Tag timeline',
+    title: routeTag ? screenTitle : t('tagTimelineFallbackTitle'),
   });
 
   const [timelineItems, setTimelineItems] = useState<FanfouStatus[]>([]);
@@ -305,7 +307,7 @@ const TagTimelineRoute = () => {
   const errorMessage = error
     ? error instanceof Error
       ? error.message
-      : 'Failed to load tag timeline.'
+      : t('tagTimelineLoadFailed')
     : null;
 
   const setBookmarkPending = useCallback(
@@ -358,17 +360,17 @@ const TagTimelineRoute = () => {
 
       if (composeMode === 'reply') {
         if (!composeReplyTarget) {
-          Alert.alert('Cannot reply', 'Missing reply target.');
+          Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
           return;
         }
         if (!trimmedText && !hasPhoto) {
-          Alert.alert('Cannot reply', 'Please enter text or attach a photo.');
+          Alert.alert(t('cannotReplyTitle'), t('replyNeedsContent'));
           return;
         }
       }
 
       if (composeMode === 'repost' && !composeRepostTarget) {
-        Alert.alert('Cannot repost', 'Missing repost target.');
+        Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
         return;
       }
 
@@ -403,19 +405,19 @@ const TagTimelineRoute = () => {
         setComposeReplyTarget(null);
         setComposeRepostTarget(null);
         Alert.alert(
-          'Sent',
-          composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
+          t('sentTitle'),
+          composeMode === 'reply' ? t('replySent') : t('repostSent'),
         );
       } catch (requestError) {
         Alert.alert(
-          composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
+          composeMode === 'reply' ? t('replyFailedTitle') : t('repostFailedTitle'),
           requestError instanceof Error
             ? requestError.message
-            : 'Please try again.',
+            : t('retryMessage'),
         );
       }
     },
-    [composeMode, composeReplyTarget, composeRepostTarget],
+    [composeMode, composeReplyTarget, composeRepostTarget, t],
   );
 
   const handleToggleBookmark = useCallback(
@@ -448,16 +450,16 @@ const TagTimelineRoute = () => {
           ),
         );
         Alert.alert(
-          'Bookmark failed',
+          t('bookmarkFailedTitle'),
           requestError instanceof Error
             ? requestError.message
-            : 'Please try again.',
+            : t('retryMessage'),
         );
       } finally {
         setBookmarkPending(statusId, false);
       }
     },
-    [pendingBookmarkIds, setBookmarkPending],
+    [pendingBookmarkIds, setBookmarkPending, t],
   );
 
   const fetchMore = useCallback(async () => {
@@ -518,18 +520,18 @@ const TagTimelineRoute = () => {
   const composerTitle =
     composeMode === 'reply'
       ? composeReplyTarget
-        ? `Reply @${composeReplyTarget.screenName}`
-        : 'Reply'
+        ? t('composerReplyTo', { name: composeReplyTarget.screenName })
+        : t('composerReply')
       : composeMode === 'repost'
         ? composeRepostTarget?.screenName
-          ? `Repost @${composeRepostTarget.screenName}`
-          : 'Repost'
-        : 'Compose';
+          ? t('composerRepostTo', { name: composeRepostTarget.screenName })
+          : t('composerRepost')
+        : t('composerWritePost');
   const composerPlaceholder =
     composeMode === 'reply'
-      ? 'Write your reply...'
-      : 'Add a comment (optional)...';
-  const composerSubmitLabel = composeMode === 'reply' ? 'Reply' : 'Repost';
+      ? t('composerReplyPlaceholder')
+      : t('composerCommentPlaceholder');
+  const composerSubmitLabel = composeMode === 'reply' ? t('composerSubmitReply') : t('composerSubmitRepost');
   const composerInitialText =
     composeMode === 'reply' && composeReplyTarget
       ? `@${composeReplyTarget.screenName} `
@@ -552,7 +554,7 @@ const TagTimelineRoute = () => {
         <View>
           <Surface className="bg-danger-soft px-4 py-3">
             <Text className="text-[13px] text-danger-foreground">
-              Missing tag.
+              {t('tagMissing')}
             </Text>
           </Surface>
         </View>
@@ -600,7 +602,7 @@ const TagTimelineRoute = () => {
             isLoading || isHydratingTimelineItems ? (
               <TimelineSkeletonList keyPrefix="tag-timeline-skeleton" />
             ) : (
-              <TimelineSkeletonCard message="No posts for this tag yet." />
+              <TimelineSkeletonCard message={t('tagTimelineEmpty')} />
             )
           }
           onEndReached={fetchMore}

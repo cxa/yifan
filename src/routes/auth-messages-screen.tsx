@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import { COMPACT_PULL_THRESHOLD, NeobrutalRefreshIndicator } from '@/components/neobrutal-activity-indicator';
 import { usePullScrollY, usePullRefreshState } from '@/components/use-pull-to-refresh';
@@ -110,15 +111,15 @@ const MAILBOX_META: Record<
   }
 > = {
   inbox: {
-    label: 'Inbox',
-    emptyMessage: 'No messages in inbox.',
-    addressLabel: 'From',
+    label: '收件箱',
+    emptyMessage: '收件箱没有消息。',
+    addressLabel: '发件人',
     icon: Inbox,
   },
   outbox: {
-    label: 'Outbox',
-    emptyMessage: 'No messages in outbox.',
-    addressLabel: 'To',
+    label: '发件箱',
+    emptyMessage: '发件箱没有消息。',
+    addressLabel: '收件人',
     icon: Send,
   },
 };
@@ -248,6 +249,7 @@ const MailboxHeaderTabs = ({
   activeIconColor,
   onPressTab,
 }: MailboxHeaderTabsProps) => {
+  const { t } = useTranslation();
   const tabItems: MailboxKind[] = ['inbox', 'outbox'];
 
   return (
@@ -268,7 +270,7 @@ const MailboxHeaderTabs = ({
                   }`}
                 accessibilityRole="button"
                 accessibilityState={isActive ? { selected: true } : undefined}
-                accessibilityLabel={`Open ${meta.label}`}
+                accessibilityLabel={key === 'inbox' ? t('messagesInbox') : t('messagesOutbox')}
               >
                 <View className="flex-row items-center justify-center gap-1.5">
                   <Icon color={isActive ? activeIconColor : muted} size={12} />
@@ -276,7 +278,7 @@ const MailboxHeaderTabs = ({
                     className={`text-[11px] ${isActive ? 'text-accent-foreground' : 'text-foreground'
                       }`}
                   >
-                    {meta.label}
+                    {key === 'inbox' ? t('messagesInbox') : t('messagesOutbox')}
                   </Text>
                 </View>
               </Pressable>
@@ -296,6 +298,7 @@ const MessageCard = ({
   onReply,
   stampBorderColor,
 }: MessageCardProps) => {
+  const { t } = useTranslation();
   const counterpart = mailbox === 'inbox' ? message.sender : message.recipient;
   const counterpartId =
     counterpart?.id ||
@@ -315,11 +318,11 @@ const MessageCard = ({
       return;
     }
     Alert.alert(
-      'Delete message',
-      `Delete this message from ${displayName}?`,
+      t('messageDeleteTitle'),
+      t('messageDeleteConfirm', { name: displayName }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onDelete },
+        { text: t('messageDeleteCancel'), style: 'cancel' },
+        { text: t('messageDeleteConfirmButton'), style: 'destructive', onPress: onDelete },
       ],
       { cancelable: true },
     );
@@ -410,6 +413,7 @@ const MessageCard = ({
 };
 
 const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const inboxListRef = useRef<FlatList<FanfouDirectMessage>>(null);
   const outboxListRef = useRef<FlatList<FanfouDirectMessage>>(null);
@@ -487,17 +491,17 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
 
     return () => {
       parentNavigation.setOptions({
-        title: 'Private messages',
+        title: t('messagesTitle'),
         headerTitle: undefined,
         headerTitleAlign: undefined,
         headerBackButtonDisplayMode: 'minimal',
         headerBackTitle: undefined,
       });
     };
-  }, [parentNavigation, renderHeaderTabs, totalMailboxCount]);
+  }, [parentNavigation, renderHeaderTabs, t, totalMailboxCount]);
 
   const errorMessage = error
-    ? getErrorMessage(error, 'Failed to load private messages.')
+    ? getErrorMessage(error, t('messagesLoadFailed'))
     : null;
 
   const contentContainerStyle = useMemo(
@@ -528,12 +532,12 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         );
       } catch (deleteError) {
         Alert.alert(
-          'Delete failed',
-          getErrorMessage(deleteError, 'Failed to delete message.'),
+          t('messageDeleteFailed'),
+          getErrorMessage(deleteError, t('messageDeleteFailedMessage')),
         );
       }
     },
-    [queryClient, userId],
+    [queryClient, t, userId],
   );
 
   const handleSubmitReply = useCallback(
@@ -543,7 +547,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
       }
       const trimmedText = text.trim();
       if (!trimmedText) {
-        Alert.alert('Cannot send', 'Please enter a message.');
+        Alert.alert(t('cannotSendMessageTitle'), t('messageNeedsContent'));
         return;
       }
       try {
@@ -555,12 +559,12 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         await refetch();
       } catch (replyError) {
         Alert.alert(
-          'Reply failed',
-          getErrorMessage(replyError, 'Failed to send reply.'),
+          t('messageReplyFailed'),
+          getErrorMessage(replyError, t('messageReplyFailedMessage')),
         );
       }
     },
-    [replyTarget, refetch],
+    [replyTarget, refetch, t],
   );
 
   const handleOpenProfile = useCallback(
@@ -645,7 +649,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
               </View>
             ) : (
               <TimelineEmptyMessage
-                message={MAILBOX_META[mailbox].emptyMessage}
+                message={mailbox === 'inbox' ? t('messagesInboxEmpty') : t('messagesOutboxEmpty')}
               />
             )
           }
@@ -666,9 +670,9 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
 
       <ComposerModal
         visible={replyTarget !== null}
-        title={replyTarget ? `Reply to @${replyTarget.displayName}` : ''}
-        placeholder="Write your reply..."
-        submitLabel="Send"
+        title={replyTarget ? t('messageReplyComposerTitle', { name: replyTarget.displayName }) : ''}
+        placeholder={t('messageReplyPlaceholder')}
+        submitLabel={t('messageSend')}
         topInset={insets.top}
         resetKey={replyTarget ? `dm-reply:${replyTarget.userId}` : ''}
         onCancel={() => setReplyTarget(null)}
@@ -679,6 +683,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
 };
 
 const PrivateMessagesRoute = () => {
+  const { t } = useTranslation();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
 
@@ -687,7 +692,7 @@ const PrivateMessagesRoute = () => {
       <View className="flex-1 bg-background px-6 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            Missing authenticated user.
+            {t('notLoggedIn')}
           </Text>
         </Surface>
       </View>

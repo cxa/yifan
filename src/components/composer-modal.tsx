@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useThemeColor } from 'heroui-native';
+import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/app-text';
 import {
@@ -47,6 +48,7 @@ const ComposerModal = ({
   onCancel,
   onSubmit,
 }: ComposerModalProps) => {
+  const { t } = useTranslation();
   const [placeholderColor] = useThemeColor(['muted']);
   const [value, setValue] = useState(initialText);
   const [photo, setPhoto] = useState<PickedImage | null>(null);
@@ -81,13 +83,13 @@ const ComposerModal = ({
       }
     } catch (error) {
       Alert.alert(
-        'Unable to attach photo',
-        error instanceof Error ? error.message : 'Please try again.',
+        t('composerPhotoError'),
+        error instanceof Error ? error.message : t('retryMessage'),
       );
     } finally {
       setIsPhotoPicking(false);
     }
-  }, [canDismiss, enablePhoto]);
+  }, [canDismiss, enablePhoto, t]);
 
   const handleRemovePhoto = useCallback(() => {
     if (!canDismiss) {
@@ -140,9 +142,9 @@ const ComposerModal = ({
                 onPress={canDismiss ? onCancel : undefined}
                 className="border border-border bg-surface-secondary px-3 py-2"
                 accessibilityRole="button"
-                accessibilityLabel="Cancel"
+                accessibilityLabel={t('composerCancel')}
               >
-                <Text className="text-[13px] text-foreground">Cancel</Text>
+                <Text className="text-[13px] text-foreground">{t('composerCancel')}</Text>
               </Pressable>
             </View>
             <TextInput
@@ -178,15 +180,15 @@ const ComposerModal = ({
                     className="border border-border bg-surface-secondary px-3 py-2"
                     accessibilityRole="button"
                     accessibilityLabel={
-                      photoUri ? 'Change photo' : 'Attach photo'
+                      photoUri ? t('composerChangePhoto') : t('composerAttachPhoto')
                     }
                   >
                     <Text className="text-[13px] text-foreground">
                       {isPhotoPicking
-                        ? 'Choosing...'
+                        ? t('composerPickingPhoto')
                         : photoUri
-                        ? 'Change photo'
-                        : 'Attach photo'}
+                        ? t('composerChangePhoto')
+                        : t('composerAttachPhoto')}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -196,9 +198,9 @@ const ComposerModal = ({
                     onPress={canDismiss ? handleRemovePhoto : undefined}
                     className="border border-border bg-surface-secondary px-3 py-2"
                     accessibilityRole="button"
-                    accessibilityLabel="Remove photo"
+                    accessibilityLabel={t('composerRemovePhotoA11y')}
                   >
-                    <Text className="text-[13px] text-foreground">Remove</Text>
+                    <Text className="text-[13px] text-foreground">{t('composerRemovePhoto')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -211,7 +213,7 @@ const ComposerModal = ({
                   accessibilityLabel={submitLabel}
                 >
                   <Text className="text-[13px] text-accent-foreground">
-                    {isSubmitting ? 'Sending...' : submitLabel}
+                    {isSubmitting ? t('composerSending') : submitLabel}
                   </Text>
                 </Pressable>
               </View>

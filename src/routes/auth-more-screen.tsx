@@ -43,6 +43,8 @@ import {
   getScrollIndicatorBottomInset,
 } from '@/navigation/tab-bar-layout';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
+
 import {
   APP_FONT_OPTION,
   APP_FONT_OPTIONS,
@@ -50,6 +52,12 @@ import {
   type AppFontOption,
   useAppFontPreference,
 } from '@/settings/app-font-preference';
+import {
+  APP_LANGUAGE_OPTIONS,
+  setAppLanguagePreference,
+  type AppLanguageOption,
+  useAppLanguagePreference,
+} from '@/settings/app-language-preference';
 import type { FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
@@ -131,10 +139,6 @@ const PostageStampIcon = ({ color, size }: { color: string; size: number }) => {
 };
 const SCROLL_SHADOW_SIZE = 100;
 const ENTRY_GAP = 12;
-const MISSING_USER_ID_ERROR =
-  'Unable to load account details. Missing user id.';
-const FONT_SETTING_TITLE = 'Font style';
-const FONT_SETTING_HELPER = 'Choose your preferred app font.';
 const SYSTEM_FONT_FAMILY = Platform.select({
   ios: 'System',
   android: 'sans-serif',
@@ -189,10 +193,16 @@ type FontSettingRowProps = {
   option: { value: AppFontOption; label: string };
   isLast: boolean;
   isSelected: boolean;
-  isUpdating: boolean;
   isBusy: boolean;
-  mutedColor: string;
   onPress: (next: AppFontOption) => void;
+};
+
+type LanguageSettingRowProps = {
+  option: { value: AppLanguageOption; label: string; nativeLabel: string };
+  isLast: boolean;
+  isSelected: boolean;
+  isBusy: boolean;
+  onPress: (next: AppLanguageOption) => void;
 };
 
 type MoreRouteContentProps = {
@@ -262,9 +272,7 @@ const FontSettingRow = ({
   option,
   isLast,
   isSelected,
-  isUpdating,
   isBusy,
-  mutedColor,
   onPress,
 }: FontSettingRowProps) => {
   const isDisabled = isSelected || isBusy;
@@ -292,9 +300,38 @@ const FontSettingRow = ({
       >
         {option.label}
       </Text>
-      {isUpdating ? (
-        <NeobrutalActivityIndicator size="small" color={mutedColor} />
-      ) : null}
+    </Pressable>
+  );
+};
+
+const LanguageSettingRow = ({
+  option,
+  isLast,
+  isSelected,
+  isBusy,
+  onPress,
+}: LanguageSettingRowProps) => {
+  const isDisabled = isSelected || isBusy;
+
+  return (
+    <Pressable
+      disabled={isDisabled}
+      accessibilityRole="button"
+      onPress={() => onPress(option.value)}
+      className={`flex-row items-center gap-3 px-4 py-4 ${
+        isLast ? '' : 'border-b-2 border-foreground dark:border-border'
+      } ${isDisabled ? 'opacity-80' : 'active:bg-surface-secondary'}`}
+    >
+      <View
+        className={`h-5 w-5 items-center justify-center border-2 border-foreground dark:border-border ${
+          isSelected ? 'bg-accent' : 'bg-surface-secondary'
+        }`}
+      >
+        {isSelected ? <View className="h-2 w-2 bg-accent-foreground" /> : null}
+      </View>
+      <Text className="flex-1 text-[15px] text-foreground">
+        {option.nativeLabel}
+      </Text>
     </Pressable>
   );
 };
@@ -303,12 +340,16 @@ const MoreRouteContent = ({
   userId,
   displayNameFallback,
 }: MoreRouteContentProps) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
   const [background, muted] = useThemeColor(['background', 'muted']);
   const appFontPreference = useAppFontPreference();
+  const appLanguagePreference = useAppLanguagePreference();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [updatingFontOption, setUpdatingFontOption] =
     useState<AppFontOption | null>(null);
+  const [updatingLanguageOption, setUpdatingLanguageOption] =
+    useState<AppLanguageOption | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const contentBottomPadding = getContentBottomPadding(insets.bottom, true);
@@ -336,7 +377,7 @@ const MoreRouteContent = ({
   );
 
   const errorMessage = error
-    ? getErrorMessage(error, 'Unable to load account details.')
+    ? getErrorMessage(error, t('moreAccountLoadFailed'))
     : null;
   const displayName = user
     ? user.screen_name || user.name || displayNameFallback
@@ -456,54 +497,54 @@ const MoreRouteContent = ({
   const profileStatsPrimary = useMemo<ProfileStatItem[]>(
     () => [
       {
-        label: 'Posts',
+        label: t('profileStatPosts'),
         value: user ? formatCount(user.statuses_count) : '--',
         onPress: handleOpenMyTimeline,
       },
       {
-        label: 'Following',
+        label: t('profileStatFollowing'),
         value: user ? formatCount(user.friends_count) : '--',
         onPress: handleOpenFollowing,
       },
       {
-        label: 'Followers',
+        label: t('profileStatFollowers'),
         value: user ? formatCount(user.followers_count) : '--',
         onPress: handleOpenFollowers,
       },
     ],
-    [handleOpenFollowers, handleOpenFollowing, handleOpenMyTimeline, user],
+    [handleOpenFollowers, handleOpenFollowing, handleOpenMyTimeline, t, user],
   );
 
   const profileStatsSecondary = useMemo<ProfileStatItem[]>(
     () => [
       {
-        label: 'Favorites',
+        label: t('profileStatFavorites'),
         value: user ? formatCount(user.favourites_count) : '--',
         onPress: handleOpenFavorites,
       },
       {
-        label: 'Photos',
+        label: t('profileStatPhotos'),
         value: user ? formatCount(user.photo_count) : '--',
         onPress: handleOpenPhotos,
       },
     ],
-    [handleOpenFavorites, handleOpenPhotos, user],
+    [handleOpenFavorites, handleOpenPhotos, t, user],
   );
 
   const entries = useMemo<MoreEntry[]>(
     () => [
       {
         key: 'messages',
-        label: 'Private messages',
+        label: t('morePrivateMessages'),
         value: '',
-        helper: 'Inbox + sent',
+        helper: t('morePrivateMessagesHelper'),
         showChevron: true,
         icon: PostageStampIcon,
         noIconBox: true,
         onPress: handleOpenPrivateMessages,
       },
     ],
-    [handleOpenPrivateMessages],
+    [handleOpenPrivateMessages, t],
   );
 
   const handleSignOut = useCallback(() => {
@@ -511,12 +552,12 @@ const MoreRouteContent = ({
       return;
     }
     Alert.alert(
-      'Sign out',
-      'Are you sure you want to sign out?',
+      t('moreSignOutConfirmTitle'),
+      t('moreSignOutConfirmMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('messageDeleteCancel'), style: 'cancel' },
         {
-          text: 'Sign out',
+          text: t('moreSignOut'),
           style: 'destructive',
           onPress: async () => {
             setIsSigningOut(true);
@@ -531,7 +572,7 @@ const MoreRouteContent = ({
       ],
       { cancelable: true },
     );
-  }, [isSigningOut]);
+  }, [isSigningOut, t]);
 
   const handleSelectFontPreference = useCallback(
     async (next: AppFontOption) => {
@@ -544,14 +585,34 @@ const MoreRouteContent = ({
         await persistAppFontPreference(next);
       } catch (updateError) {
         Alert.alert(
-          'Update failed',
-          getErrorMessage(updateError, 'Failed to update font setting.'),
+          t('moreFontUpdateFailed'),
+          getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
         );
       } finally {
         setUpdatingFontOption(null);
       }
     },
-    [appFontPreference, updatingFontOption],
+    [appFontPreference, t, updatingFontOption],
+  );
+
+  const handleSelectLanguagePreference = useCallback(
+    async (next: AppLanguageOption) => {
+      if (updatingLanguageOption || appLanguagePreference === next) {
+        return;
+      }
+      setUpdatingLanguageOption(next);
+      try {
+        await setAppLanguagePreference(next);
+      } catch (updateError) {
+        Alert.alert(
+          t('moreFontUpdateFailed'),
+          getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
+        );
+      } finally {
+        setUpdatingLanguageOption(null);
+      }
+    },
+    [appLanguagePreference, t, updatingLanguageOption],
   );
 
   return (
@@ -583,7 +644,7 @@ const MoreRouteContent = ({
                     </View>
                     <View className="flex-1">
                       <Text className="text-[16px] font-semibold text-foreground">
-                        Loading account...
+                        {t('moreAccountLoading')}
                       </Text>
                       {handleName ? (
                         <Text className="mt-1 text-[12px] text-muted">
@@ -643,10 +704,10 @@ const MoreRouteContent = ({
               <Surface className="bg-surface border-2 border-foreground dark:border-border">
                 <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
                   <Text className="text-[15px] font-semibold text-foreground">
-                    {FONT_SETTING_TITLE}
+                    {t('moreFontStyle')}
                   </Text>
                   <Text className="mt-0.5 text-[12px] text-muted">
-                    {FONT_SETTING_HELPER}
+                    {t('moreFontStyleHelper')}
                   </Text>
                 </View>
                 {APP_FONT_OPTIONS.map((option, index) => (
@@ -655,10 +716,31 @@ const MoreRouteContent = ({
                     option={option}
                     isLast={index === APP_FONT_OPTIONS.length - 1}
                     isSelected={appFontPreference === option.value}
-                    isUpdating={updatingFontOption === option.value}
                     isBusy={Boolean(updatingFontOption)}
-                    mutedColor={muted}
                     onPress={handleSelectFontPreference}
+                  />
+                ))}
+              </Surface>
+            </DropShadowBox>
+
+            <DropShadowBox>
+              <Surface className="bg-surface border-2 border-foreground dark:border-border">
+                <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
+                  <Text className="text-[15px] font-semibold text-foreground">
+                    {t('moreLanguage')}
+                  </Text>
+                  <Text className="mt-0.5 text-[12px] text-muted">
+                    {t('moreLanguageHelper')}
+                  </Text>
+                </View>
+                {APP_LANGUAGE_OPTIONS.map((option, index) => (
+                  <LanguageSettingRow
+                    key={option.value}
+                    option={option}
+                    isLast={index === APP_LANGUAGE_OPTIONS.length - 1}
+                    isSelected={appLanguagePreference === option.value}
+                    isBusy={Boolean(updatingLanguageOption)}
+                    onPress={handleSelectLanguagePreference}
                   />
                 ))}
               </Surface>
@@ -669,8 +751,8 @@ const MoreRouteContent = ({
 
           <View className="mt-6">
             <AuthActionButton
-              label="Sign out"
-              loadingLabel="Signing out..."
+              label={t('moreSignOut')}
+              loadingLabel={t('moreSigningOut')}
               variant="danger"
               onPress={handleSignOut}
               isLoading={isSigningOut}
@@ -683,6 +765,7 @@ const MoreRouteContent = ({
 };
 
 const MissingUserIdPlaceholder = () => {
+  const { t } = useTranslation();
   const [background] = useThemeColor(['background']);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
@@ -720,7 +803,7 @@ const MissingUserIdPlaceholder = () => {
           <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
             <View className="rounded-sm border border-danger bg-danger-soft px-3 py-2">
               <Text className="text-[12px] text-danger">
-                {MISSING_USER_ID_ERROR}
+                {t('moreAccountLoadFailedNoId')}
               </Text>
             </View>
           </Surface>

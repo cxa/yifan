@@ -62,6 +62,7 @@ import type {
 import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
+import { useTranslation } from 'react-i18next';
 
 const PROFILE_CARD_GAP = 16;
 
@@ -115,6 +116,7 @@ type ProfileRouteContentProps = {
 };
 
 const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -422,21 +424,22 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         { id: user.id },
       );
       updateUserCache({ following: nextFollowing });
+      const name = user.screen_name ?? user.name ?? '';
       Alert.alert(
-        'Done',
+        t('successTitle'),
         nextFollowing
-          ? `Now following @${user.screen_name ?? user.name ?? ''}`
-          : `Stopped following @${user.screen_name ?? user.name ?? ''}`,
+          ? t('profileFollowSuccess', { name })
+          : t('profileUnfollowSuccess', { name }),
       );
     } catch (requestError) {
       Alert.alert(
-        'Request failed',
-        getErrorMessage(requestError, 'Unable to update following status.'),
+        t('operationFailed'),
+        getErrorMessage(requestError, t('profileFollowFailed')),
       );
     } finally {
       setIsFollowSubmitting(false);
     }
-  }, [isBlocked, isFollowSubmitting, isFollowing, updateUserCache, user]);
+  }, [isBlocked, isFollowSubmitting, isFollowing, t, updateUserCache, user]);
 
   const handleBlockToggle = useCallback(async () => {
     if (!user || isBlockSubmitting) {
@@ -454,21 +457,22 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       if (nextBlocked) {
         updateUserCache({ following: false });
       }
+      const name = user.screen_name ?? user.name ?? '';
       Alert.alert(
-        'Done',
+        t('successTitle'),
         nextBlocked
-          ? `Blocked @${user.screen_name ?? user.name ?? ''}`
-          : `Unblocked @${user.screen_name ?? user.name ?? ''}`,
+          ? t('profileBlockSuccess', { name })
+          : t('profileUnblockSuccess', { name }),
       );
     } catch (requestError) {
       Alert.alert(
-        'Request failed',
-        getErrorMessage(requestError, 'Unable to update block status.'),
+        t('operationFailed'),
+        getErrorMessage(requestError, t('profileBlockFailed')),
       );
     } finally {
       setIsBlockSubmitting(false);
     }
-  }, [isBlockSubmitting, isBlocked, updateBlockCache, updateUserCache, user]);
+  }, [isBlockSubmitting, isBlocked, t, updateBlockCache, updateUserCache, user]);
 
   const setBookmarkPending = useCallback(
     (statusId: string, pending: boolean) => {
@@ -490,14 +494,14 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     const userId = status.user.id.trim();
     const screenName = status.user.screen_name.trim();
     if (!userId || !screenName) {
-      Alert.alert('Cannot reply', 'Missing reply target.');
+      Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
 
     setComposeMode('reply');
     setComposeReplyTarget({ statusId, userId, screenName });
     setComposeRepostTarget(null);
-  }, []);
+  }, [t]);
 
   const handleOpenRepostComposer = useCallback((status: FanfouStatus) => {
     const statusId = getStatusId(status);
@@ -534,17 +538,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       const trimmedText = text.trim();
       const hasPhoto = Boolean(photo?.base64);
       if (composeMode === 'dm' && !trimmedText) {
-        Alert.alert('Cannot send', 'Please enter text first.');
+        Alert.alert(t('cannotSendTitle'), t('profileNeedsContent'));
         return;
       }
 
       if (composeMode === 'repost' && !composeRepostTarget) {
-        Alert.alert('Cannot repost', 'Missing repost target.');
+        Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
         return;
       }
 
       if (composeMode === 'reply' && !composeReplyTarget) {
-        Alert.alert('Cannot reply', 'Missing reply target.');
+        Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
         return;
       }
 
@@ -553,7 +557,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         !trimmedText &&
         !hasPhoto
       ) {
-        Alert.alert('Cannot send', 'Please enter text or attach a photo.');
+        Alert.alert(t('cannotSendTitle'), t('replyNeedsContent'));
         return;
       }
 
@@ -606,27 +610,27 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         setComposeReplyTarget(null);
         setComposeRepostTarget(null);
         Alert.alert(
-          'Sent',
+          t('sentTitle'),
           composeMode === 'mention'
-            ? 'Mention posted.'
+            ? t('profileMentionSent')
             : composeMode === 'dm'
-              ? 'Direct message sent.'
+              ? t('profileMessageSent')
               : composeMode === 'reply'
-                ? 'Reply posted.'
-                : 'Reposted.',
+                ? t('replySent')
+                : t('repostSent'),
         );
       } catch (requestError) {
         Alert.alert(
           composeMode === 'repost'
-            ? 'Repost failed'
+            ? t('repostFailedTitle')
             : composeMode === 'reply'
-              ? 'Reply failed'
-              : 'Send failed',
-          getErrorMessage(requestError, 'Unable to send message.'),
+              ? t('replyFailedTitle')
+              : t('profileSendFailed'),
+          getErrorMessage(requestError, t('profileSendFailedMessage')),
         );
       }
     },
-    [composeMode, composeReplyTarget, composeRepostTarget, user],
+    [composeMode, composeReplyTarget, composeRepostTarget, t, user],
   );
 
   const handleToggleBookmark = useCallback(
@@ -670,8 +674,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
           ),
         );
         Alert.alert(
-          'Bookmark failed',
-          getErrorMessage(requestError, 'Please try again.'),
+          t('bookmarkFailedTitle'),
+          getErrorMessage(requestError, t('retryMessage')),
         );
       } finally {
         setBookmarkPending(statusId, false);
@@ -682,15 +686,16 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       queryClient,
       recentStatusesQueryKey,
       setBookmarkPending,
+      t,
     ],
   );
 
   const profileErrorMessage = error
-    ? getErrorMessage(error, 'Failed to load profile.')
+    ? getErrorMessage(error, t('profileLoadFailed'))
     : null;
 
   const recentStatusesErrorMessage = recentStatusesError
-    ? getErrorMessage(recentStatusesError, 'Failed to load recent posts.')
+    ? getErrorMessage(recentStatusesError, t('recentActivityEmpty'))
     : null;
   useUserTimelineHeader({
     userId: routeUserId,
@@ -723,7 +728,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       <View className="flex-1 bg-background px-4 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            {profileErrorMessage ?? 'Failed to load profile.'}
+            {profileErrorMessage ?? t('profileLoadFailed')}
           </Text>
         </Surface>
       </View>
@@ -773,17 +778,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
 
   const statsPrimary: ProfileStatItem[] = [
     {
-      label: 'Posts',
+      label: t('profileStatPosts'),
       value: user.statuses_count,
       onPress: handleOpenTimeline,
     },
     {
-      label: 'Following',
+      label: t('profileStatFollowing'),
       value: user.friends_count,
       onPress: handleOpenFollowing,
     },
     {
-      label: 'Followers',
+      label: t('profileStatFollowers'),
       value: user.followers_count,
       onPress: handleOpenFollowers,
     },
@@ -791,12 +796,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
 
   const statsSecondary: ProfileStatItem[] = [
     {
-      label: 'Favorites',
+      label: t('profileStatFavorites'),
       value: user.favourites_count,
       onPress: handleOpenFavorites,
     },
     {
-      label: 'Photos',
+      label: t('profileStatPhotos'),
       value: user.photo_count,
       onPress: handleOpenPhotos,
     },
@@ -804,32 +809,32 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
 
   const composerTitle =
     composeMode === 'dm'
-      ? `Message ${handleName}`
+      ? t('profileMessageComposerTitle', { handle: handleName })
       : composeMode === 'reply'
         ? composeReplyTarget
-          ? `Reply @${composeReplyTarget.screenName}`
-          : 'Reply'
+          ? t('composerReplyTo', { name: composeReplyTarget.screenName })
+          : t('composerReply')
         : composeMode === 'repost'
           ? composeRepostTarget?.screenName
-            ? `Repost @${composeRepostTarget.screenName}`
-            : 'Repost'
-          : `Mention ${handleName}`;
+            ? t('composerRepostTo', { name: composeRepostTarget.screenName })
+            : t('composerRepost')
+          : t('profileMentionComposerTitle', { handle: handleName });
   const composerPlaceholder =
     composeMode === 'dm'
-      ? 'Write a private message...'
+      ? t('profileMessagePlaceholder')
       : composeMode === 'reply'
-        ? 'Write your reply...'
+        ? t('composerReplyPlaceholder')
         : composeMode === 'repost'
-          ? 'Add a comment (optional)...'
-          : 'Write your mention...';
+          ? t('composerCommentPlaceholder')
+          : t('composerReplyPlaceholder');
   const composerSubmitLabel =
     composeMode === 'dm'
-      ? 'Send'
+      ? t('messageSend')
       : composeMode === 'reply'
-        ? 'Reply'
+        ? t('composerSubmitReply')
         : composeMode === 'repost'
-          ? 'Repost'
-          : 'Post';
+          ? t('composerSubmitRepost')
+          : t('composerSubmitPost');
   const composerInitialText =
     composeMode === 'mention'
       ? `@${user.screen_name} `
@@ -899,7 +904,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                       }`}
                     accessibilityRole="button"
                     accessibilityLabel={
-                      isFollowing ? 'Unfollow user' : 'Follow user'
+                      isFollowing ? t('profileActionUnfollow') : t('profileActionFollow')
                     }
                   >
                     <Text
@@ -907,12 +912,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                         }`}
                     >
                       {isFollowSubmitting
-                        ? 'Updating...'
+                        ? t('profileActionUpdating')
                         : isBlocked
-                          ? 'Blocked'
+                          ? t('profileActionBlock')
                           : isFollowing
-                            ? 'Unfollow'
-                            : 'Follow'}
+                            ? t('profileActionUnfollow')
+                            : t('profileActionFollow')}
                     </Text>
                   </Pressable>
 
@@ -922,17 +927,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     className="flex-1 border border-border bg-surface px-3 py-2"
                     accessibilityRole="button"
                     accessibilityLabel={
-                      isBlocked ? 'Unblock user' : 'Block user'
+                      isBlocked ? t('profileActionUnblock') : t('profileActionBlock')
                     }
                   >
                     <Text className="text-[13px] text-center text-foreground">
                       {isBlockChecking
-                        ? 'Checking...'
+                        ? t('profileActionChecking')
                         : isBlockSubmitting
-                          ? 'Updating...'
+                          ? t('profileActionUpdating')
                           : isBlocked
-                            ? 'Unblock'
-                            : 'Block'}
+                            ? t('profileActionUnblock')
+                            : t('profileActionBlock')}
                     </Text>
                   </Pressable>
                 </View>
@@ -942,10 +947,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     onPress={handleOpenMentionComposer}
                     className="flex-1 border border-border bg-surface px-3 py-2"
                     accessibilityRole="button"
-                    accessibilityLabel="Mention user"
+                    accessibilityLabel={t('profileActionMention')}
                   >
                     <Text className="text-[13px] text-center text-foreground">
-                      Mention
+                      {t('profileActionMention')}
                     </Text>
                   </Pressable>
 
@@ -953,10 +958,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     onPress={handleOpenDmComposer}
                     className="flex-1 border border-border bg-surface px-3 py-2"
                     accessibilityRole="button"
-                    accessibilityLabel="Send direct message"
+                    accessibilityLabel={t('profileActionMessage')}
                   >
                     <Text className="text-[13px] text-center text-foreground">
-                      Message
+                      {t('profileActionMessage')}
                     </Text>
                   </Pressable>
                 </View>
@@ -980,7 +985,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 )} px-4 py-4`}
               >
                 <Text className="text-[14px] leading-6 text-warning">
-                  This account is protected. Follow to view recent posts.
+                  {t('protectedAccountNotice')}
                 </Text>
               </Surface>
             </DropShadowBox>
@@ -990,7 +995,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 className="mt-4 text-[24px] font-semibold text-foreground"
                 dynamicTypeRamp="title1"
               >
-                Recent posts
+                {t('recentActivity')}
               </Text>
               <View style={{ gap: TIMELINE_SPACING }}>
                 {isRecentStatusesLoading || isHydratingRecentStatuses ? (
@@ -1014,7 +1019,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   !isHydratingRecentStatuses &&
                   recentStatusItems.length === 0 &&
                   !recentStatusesErrorMessage ? (
-                  <TimelineSkeletonCard message="No recent posts yet." />
+                  <TimelineSkeletonCard message={t('recentActivityEmpty')} />
                 ) : null}
 
                 {recentStatusItems.map(status => (

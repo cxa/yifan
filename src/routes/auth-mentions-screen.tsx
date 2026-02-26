@@ -56,6 +56,7 @@ import {
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import type { FanfouStatus } from '@/types/fanfou';
 import { Text } from '@/components/app-text';
+import { useTranslation } from 'react-i18next';
 
 type PhotoViewerOriginRect = {
   x: number;
@@ -105,6 +106,7 @@ const mergeTimelineItems = (
 };
 
 const MentionsRoute = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
   const [accent, background, muted] = useThemeColor([
     'accent',
@@ -335,7 +337,7 @@ const MentionsRoute = () => {
   const errorMessage = error
     ? error instanceof Error
       ? error.message
-      : 'Failed to load mentions.'
+      : t('mentionsLoadFailed')
     : null;
 
   const setBookmarkPending = useCallback(
@@ -388,17 +390,17 @@ const MentionsRoute = () => {
 
       if (composeMode === 'reply') {
         if (!composeReplyTarget) {
-          Alert.alert('Cannot reply', 'Missing reply target.');
+          Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
           return;
         }
         if (!trimmedText && !hasPhoto) {
-          Alert.alert('Cannot reply', 'Please enter text or attach a photo.');
+          Alert.alert(t('cannotReplyTitle'), t('replyNeedsContent'));
           return;
         }
       }
 
       if (composeMode === 'repost' && !composeRepostTarget) {
-        Alert.alert('Cannot repost', 'Missing repost target.');
+        Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
         return;
       }
 
@@ -433,19 +435,19 @@ const MentionsRoute = () => {
         setComposeReplyTarget(null);
         setComposeRepostTarget(null);
         Alert.alert(
-          'Sent',
-          composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
+          t('sentTitle'),
+          composeMode === 'reply' ? t('replySent') : t('repostSent'),
         );
       } catch (requestError) {
         Alert.alert(
-          composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
+          composeMode === 'reply' ? t('replyFailedTitle') : t('repostFailedTitle'),
           requestError instanceof Error
             ? requestError.message
-            : 'Please try again.',
+            : t('retryMessage'),
         );
       }
     },
-    [composeMode, composeReplyTarget, composeRepostTarget],
+    [composeMode, composeReplyTarget, composeRepostTarget, t],
   );
 
   const handleToggleBookmark = useCallback(
@@ -478,16 +480,16 @@ const MentionsRoute = () => {
           ),
         );
         Alert.alert(
-          'Bookmark failed',
+          t('bookmarkFailedTitle'),
           requestError instanceof Error
             ? requestError.message
-            : 'Please try again.',
+            : t('retryMessage'),
         );
       } finally {
         setBookmarkPending(statusId, false);
       }
     },
-    [pendingBookmarkIds, setBookmarkPending],
+    [pendingBookmarkIds, setBookmarkPending, t],
   );
 
   const fetchMore = useCallback(async () => {
@@ -537,18 +539,18 @@ const MentionsRoute = () => {
   const composerTitle =
     composeMode === 'reply'
       ? composeReplyTarget
-        ? `Reply @${composeReplyTarget.screenName}`
-        : 'Reply'
+        ? t('composerReplyTo', { name: composeReplyTarget.screenName })
+        : t('composerReply')
       : composeMode === 'repost'
         ? composeRepostTarget?.screenName
-          ? `Repost @${composeRepostTarget.screenName}`
-          : 'Repost'
-        : 'Compose';
+          ? t('composerRepostTo', { name: composeRepostTarget.screenName })
+          : t('composerRepost')
+        : t('composerWritePost');
   const composerPlaceholder =
     composeMode === 'reply'
-      ? 'Write your reply...'
-      : 'Add a comment (optional)...';
-  const composerSubmitLabel = composeMode === 'reply' ? 'Reply' : 'Repost';
+      ? t('composerReplyPlaceholder')
+      : t('composerCommentPlaceholder');
+  const composerSubmitLabel = composeMode === 'reply' ? t('composerSubmitReply') : t('composerSubmitRepost');
   const composerInitialText =
     composeMode === 'reply' && composeReplyTarget
       ? `@${composeReplyTarget.screenName} `
@@ -597,7 +599,7 @@ const MentionsRoute = () => {
           }
           ListHeaderComponent={
             <TimelineTitleHeader
-              title="Mentions"
+              title={t('mentionsTitle')}
               titleContainerStyle={titleContainerStyle}
               titleTextStyle={titleTextStyle}
               errorMessage={errorMessage}
@@ -607,7 +609,7 @@ const MentionsRoute = () => {
             isLoading || isHydratingTimelineItems ? (
               <TimelineSkeletonList keyPrefix="mentions-skeleton" />
             ) : (
-              <TimelineSkeletonCard message="No mentions yet." />
+              <TimelineSkeletonCard message={t('mentionsEmpty')} />
             )
           }
           onEndReached={fetchMore}

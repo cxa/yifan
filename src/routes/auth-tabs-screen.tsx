@@ -27,6 +27,7 @@ import {
 import type { AuthTabParamList } from '@/navigation/types';
 import AuthHomeRoute from '@/routes/auth-home-screen';
 import { useAppFontFamily } from '@/settings/app-font-preference';
+import { useTranslation } from 'react-i18next';
 import MentionsRoute from '@/routes/auth-mentions-screen';
 import MoreRoute from '@/routes/auth-more-screen';
 
@@ -55,18 +56,18 @@ const iconForRoute = (routeName: keyof AuthTabParamList, color: string) => {
   }
 };
 
-const labelForRoute = (routeName: keyof AuthTabParamList) => {
+const tabRouteKey = (routeName: keyof AuthTabParamList): string => {
   switch (routeName) {
     case AUTH_TAB_ROUTE.HOME:
-      return 'Home';
+      return 'tabHome';
     case AUTH_TAB_ROUTE.MENTIONS:
-      return 'Mentions';
+      return 'tabMentions';
     case AUTH_TAB_ROUTE.MORE:
-      return 'More';
+      return 'tabMore';
     case AUTH_TAB_ROUTE.COMPOSE:
-      return 'Post';
+      return 'tabCompose';
     default:
-      return '';
+      return 'tabHome';
   }
 };
 
@@ -91,6 +92,7 @@ const AuthTabBar = ({
   isComposerVisible,
   onComposePress,
 }: AuthTabBarProps) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [accent, muted, accentForeground, background] = useThemeColor([
     'accent',
@@ -184,7 +186,7 @@ const AuthTabBar = ({
               style={{ color: textColor, fontFamily }}
               numberOfLines={1}
             >
-              {labelForRoute(route.name)}
+              {t(tabRouteKey(route.name))}
             </Animated.Text>
           )}
         </AnimatedPressable>
@@ -209,6 +211,7 @@ const AuthTabBar = ({
 };
 
 const AuthIndexRoute = () => {
+  const { t } = useTranslation();
   const auth = useAuthSession();
   const insets = useSafeAreaInsets();
   const [backgroundColor] = useThemeColor(['background']);
@@ -227,7 +230,7 @@ const AuthIndexRoute = () => {
       const trimmedText = text.trim();
       const hasPhoto = Boolean(photo?.base64);
       if (!trimmedText && !hasPhoto) {
-        Alert.alert('Cannot post', 'Please enter text or attach a photo.');
+        Alert.alert(t('postFailedTitle'), t('replyNeedsContent'));
         return;
       }
 
@@ -241,17 +244,17 @@ const AuthIndexRoute = () => {
           await post('/statuses/update', { status: trimmedText });
         }
         setComposeVisible(false);
-        Alert.alert('Posted', 'Your post was sent.');
+        Alert.alert(t('sentTitle'), t('postSent'));
       } catch (requestError) {
         Alert.alert(
-          'Post failed',
+          t('postFailedTitle'),
           requestError instanceof Error
             ? requestError.message
-            : 'Please try again.',
+            : t('retryMessage'),
         );
       }
     },
-    [],
+    [t],
   );
 
   const renderAuthTabBar = useCallback(
@@ -286,9 +289,9 @@ const AuthIndexRoute = () => {
 
       <ComposerModal
         visible={composeVisible}
-        title="Compose"
-        placeholder="What's happening?"
-        submitLabel="Post"
+        title={t('composerWritePost')}
+        placeholder={t('composerWhatsNew')}
+        submitLabel={t('composerSubmitPost')}
         topInset={insets.top}
         enablePhoto
         resetKey="root-compose"

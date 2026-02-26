@@ -25,6 +25,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
@@ -49,8 +50,6 @@ import {
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 
-const SCREEN_TITLE = 'My timeline';
-const TIMELINE_TITLE = 'Timeline';
 const TIMELINE_PAGE_SIZE = 60;
 
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
@@ -70,6 +69,7 @@ const MyTimelineRouteContent = ({
   isSelf,
   backCount,
 }: MyTimelineRouteContentProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
@@ -102,7 +102,7 @@ const MyTimelineRouteContent = ({
 
   useUserTimelineHeader({
     userId,
-    screenTitle: isSelf ? SCREEN_TITLE : TIMELINE_TITLE,
+    screenTitle: isSelf ? t('myTimelineTitle') : t('timelineTitle'),
     backCount,
   });
 
@@ -187,7 +187,7 @@ const MyTimelineRouteContent = ({
   );
 
   const errorMessage = error
-    ? getErrorMessage(error, 'Failed to load timeline.')
+    ? getErrorMessage(error, t('timelineLoadFailed'))
     : null;
 
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
@@ -267,7 +267,7 @@ const MyTimelineRouteContent = ({
             isPending ? (
               <TimelineSkeletonList keyPrefix="my-timeline-skeleton" />
             ) : (
-              <TimelineSkeletonCard message="No posts yet." />
+              <TimelineSkeletonCard message={t('myTimelineEmpty')} />
             )
           }
           renderItem={({ item }) => (
@@ -331,6 +331,7 @@ const MyTimelineRouteContent = ({
 };
 
 const MyTimelineRoute = () => {
+  const { t } = useTranslation();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
   const route =
@@ -346,7 +347,7 @@ const MyTimelineRoute = () => {
       <View className="flex-1 bg-background px-6 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            Missing authenticated user.
+            {t('notLoggedIn')}
           </Text>
         </Surface>
       </View>

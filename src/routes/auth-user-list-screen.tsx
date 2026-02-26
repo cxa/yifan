@@ -19,6 +19,7 @@ import {
 import { Surface, useThemeColor } from 'heroui-native';
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { get } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
@@ -35,10 +36,6 @@ const PAGE_BOTTOM_PADDING = 24;
 const AVATAR_SIZE = 44;
 const USERS_PAGE_SIZE = 60;
 
-const EMPTY_MESSAGE: Record<'following' | 'followers', string> = {
-  following: 'No following users yet.',
-  followers: 'No followers yet.',
-};
 const UserItemSeparator = () => <View className="h-6" />;
 
 const getErrorMessage = (error: unknown, fallback: string) =>
@@ -64,7 +61,8 @@ const UserListRoute = () => {
   const { userId, mode, backCount } = route.params;
   const insets = useSafeAreaInsets();
   const [background] = useThemeColor(['background']);
-  const screenTitle = mode === 'following' ? 'Following' : 'Followers';
+  const { t } = useTranslation();
+  const screenTitle = mode === 'following' ? t('followingTitle') : t('followersTitle');
 
   useUserTimelineHeader({
     userId,
@@ -107,7 +105,7 @@ const UserListRoute = () => {
     [data],
   );
   const errorMessage = error
-    ? getErrorMessage(error, 'Failed to load users.')
+    ? getErrorMessage(error, t('userListLoadFailed'))
     : null;
 
   const contentContainerStyle = useMemo(
@@ -234,7 +232,7 @@ const UserListRoute = () => {
               <DropShadowBox>
                 <Surface className="bg-surface border-2 border-foreground px-4 py-4 dark:border-border">
                   <Text className="text-[13px] text-muted">
-                    {EMPTY_MESSAGE[mode]}
+                    {mode === 'following' ? t('followingEmpty') : t('followersEmpty')}
                   </Text>
                 </Surface>
               </DropShadowBox>

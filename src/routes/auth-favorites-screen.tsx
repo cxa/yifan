@@ -22,6 +22,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
@@ -52,10 +53,10 @@ const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
-const SCREEN_TITLE = 'Favorites';
 const FAVORITES_PAGE_SIZE = 60;
 
 const FavoritesRoute = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const auth = useAuthSession();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
@@ -95,7 +96,7 @@ const FavoritesRoute = () => {
 
   useUserTimelineHeader({
     userId: resolvedUserId ?? '',
-    screenTitle: SCREEN_TITLE,
+    screenTitle: t('favoritesTitle'),
     backCount,
   });
 
@@ -183,7 +184,7 @@ const FavoritesRoute = () => {
   );
 
   const errorMessage = error
-    ? getErrorMessage(error, 'Failed to load favorites.')
+    ? getErrorMessage(error, t('favoritesLoadFailed'))
     : null;
 
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
@@ -233,7 +234,7 @@ const FavoritesRoute = () => {
       <View className="flex-1 bg-background px-6 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            Missing authenticated user.
+            {t('notLoggedIn')}
           </Text>
         </Surface>
       </View>
@@ -273,7 +274,7 @@ const FavoritesRoute = () => {
             isPending ? (
               <TimelineSkeletonList keyPrefix="favorite-skeleton" />
             ) : (
-              <TimelineSkeletonCard message="No favorites yet." />
+              <TimelineSkeletonCard message={t('favoritesEmpty')} />
             )
           }
           renderItem={({ item }) => (

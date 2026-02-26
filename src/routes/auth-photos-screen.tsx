@@ -20,6 +20,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
@@ -60,7 +61,6 @@ type PhotosRouteContentProps = {
   backCount?: number;
 };
 
-const SCREEN_TITLE = 'Photos';
 const PHOTO_PAGE_SIZE = 60;
 const PHOTO_FALLBACK_PAGE_SIZE = 80;
 
@@ -71,6 +71,7 @@ type PhotoTimelinePage = {
 };
 
 const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
@@ -103,7 +104,7 @@ const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
 
   useUserTimelineHeader({
     userId,
-    screenTitle: SCREEN_TITLE,
+    screenTitle: t('photosTitle'),
     backCount,
   });
 
@@ -213,7 +214,7 @@ const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
   );
 
   const errorMessage = error
-    ? getErrorMessage(error, 'Failed to load photos.')
+    ? getErrorMessage(error, t('photosLoadFailed'))
     : null;
 
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
@@ -293,7 +294,7 @@ const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
             isPending ? (
               <TimelineSkeletonList keyPrefix="photo-skeleton" />
             ) : (
-              <TimelineSkeletonCard message="No photos yet." />
+              <TimelineSkeletonCard message={t('photosEmpty')} />
             )
           }
           renderItem={({ item }) => (
@@ -352,6 +353,7 @@ const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
 };
 
 const PhotosRoute = () => {
+  const { t } = useTranslation();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
   const route =
@@ -364,7 +366,7 @@ const PhotosRoute = () => {
       <View className="flex-1 bg-background px-6 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            Missing authenticated user.
+            {t('notLoggedIn')}
           </Text>
         </Surface>
       </View>

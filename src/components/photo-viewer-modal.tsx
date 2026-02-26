@@ -29,6 +29,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
+import { useTranslation } from 'react-i18next';
+
 import { Text } from '@/components/app-text';
 
 type PhotoViewerOriginRect = {
@@ -143,6 +145,7 @@ const PhotoViewerModal = ({
   originRect,
   onClose,
 }: PhotoViewerModalProps) => {
+  const { t } = useTranslation();
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
   const [imageSize, setImageSize] = useState<ImageSize | null>(null);
@@ -845,10 +848,10 @@ const PhotoViewerModal = ({
             onPress={closeWithSharedTransition}
             style={styles.closeButton}
             accessibilityRole="button"
-            accessibilityLabel="Close photo viewer"
+            accessibilityLabel={t('photoViewerCloseA11y')}
           >
             <Text allowFontScaling style={styles.closeText}>
-              CLOSE
+              {t('photoViewerClose')}
             </Text>
           </Pressable>
         </Animated.View>

@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
@@ -159,6 +160,7 @@ const StatusDetailRoute = () => {
     'muted',
   ]);
   const routeStatusId = route.params.statusId.trim();
+  const { t } = useTranslation();
 
   const { pullScrollY, safeAreaTop, scrollInsetTop, updatePullScrollY } = usePullScrollY();
   const scrollHandler = useAnimatedScrollHandler({
@@ -275,10 +277,10 @@ const StatusDetailRoute = () => {
   }, [conversationItems, mainStatusId]);
 
   const statusErrorMessage = statusError
-    ? getErrorMessage(statusError, 'Failed to load status.')
+    ? getErrorMessage(statusError, t('statusLoadFailed'))
     : null;
   const contextErrorMessage = contextError
-    ? getErrorMessage(contextError, 'Failed to load conversation.')
+    ? getErrorMessage(contextError, t('conversationLoadFailed'))
     : null;
   const isHydratingStatus =
     !mainStatus && (isStatusLoading || isContextLoading);
@@ -456,14 +458,14 @@ const StatusDetailRoute = () => {
           [statusId]: currentFavorited,
         }));
         Alert.alert(
-          'Bookmark failed',
-          getErrorMessage(requestError, 'Please try again.'),
+          t('bookmarkFailedTitle'),
+          getErrorMessage(requestError, t('retryMessage')),
         );
       } finally {
         setBookmarkPending(statusId, false);
       }
     },
-    [getIsFavorited, pendingBookmarkIds, setBookmarkPending],
+    [getIsFavorited, pendingBookmarkIds, setBookmarkPending, t],
   );
 
   const handleOpenReplyComposer = useCallback((statusItem: FanfouStatus) => {
@@ -471,14 +473,14 @@ const StatusDetailRoute = () => {
     const userId = statusItem.user.id.trim();
     const screenName = statusItem.user.screen_name.trim();
     if (!userId || !screenName) {
-      Alert.alert('Cannot reply', 'Missing reply target.');
+      Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
 
     setComposeMode('reply');
     setComposeReplyTarget({ statusId, userId, screenName });
     setComposeRepostTarget(null);
-  }, []);
+  }, [t]);
 
   const handleOpenRepostComposer = useCallback((statusItem: FanfouStatus) => {
     const statusId = getStatusId(statusItem);
@@ -505,17 +507,17 @@ const StatusDetailRoute = () => {
 
       if (composeMode === 'reply') {
         if (!composeReplyTarget) {
-          Alert.alert('Cannot reply', 'Missing reply target.');
+          Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
           return;
         }
         if (!trimmedText && !hasPhoto) {
-          Alert.alert('Cannot reply', 'Please enter text or attach a photo.');
+          Alert.alert(t('cannotReplyTitle'), t('replyNeedsContent'));
           return;
         }
       }
 
       if (composeMode === 'repost' && !composeRepostTarget) {
-        Alert.alert('Cannot repost', 'Missing repost target.');
+        Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
         return;
       }
 
@@ -550,17 +552,17 @@ const StatusDetailRoute = () => {
         setComposeReplyTarget(null);
         setComposeRepostTarget(null);
         Alert.alert(
-          'Sent',
-          composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
+          t('sentTitle'),
+          composeMode === 'reply' ? t('replySent') : t('repostSent'),
         );
       } catch (requestError) {
         Alert.alert(
-          composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
-          getErrorMessage(requestError, 'Please try again.'),
+          composeMode === 'reply' ? t('replyFailedTitle') : t('repostFailedTitle'),
+          getErrorMessage(requestError, t('retryMessage')),
         );
       }
     },
-    [composeMode, composeReplyTarget, composeRepostTarget],
+    [composeMode, composeReplyTarget, composeRepostTarget, t],
   );
 
   const renderStatusCard = useCallback(
@@ -616,16 +618,16 @@ const StatusDetailRoute = () => {
   const composerTitle =
     composeMode === 'reply'
       ? composeReplyTarget
-        ? `Reply @${composeReplyTarget.screenName}`
-        : 'Reply'
+        ? t('composerReplyTo', { name: composeReplyTarget.screenName })
+        : t('composerReply')
       : composeRepostTarget?.screenName
-        ? `Repost @${composeRepostTarget.screenName}`
-        : 'Repost';
+        ? t('composerRepostTo', { name: composeRepostTarget.screenName })
+        : t('composerRepost');
   const composerPlaceholder =
     composeMode === 'reply'
-      ? 'Write your reply...'
-      : 'Add a comment (optional)...';
-  const composerSubmitLabel = composeMode === 'reply' ? 'Reply' : 'Repost';
+      ? t('composerReplyPlaceholder')
+      : t('composerCommentPlaceholder');
+  const composerSubmitLabel = composeMode === 'reply' ? t('composerSubmitReply') : t('composerSubmitRepost');
   const composerInitialText =
     composeMode === 'reply' && composeReplyTarget
       ? `@${composeReplyTarget.screenName} `
@@ -642,7 +644,7 @@ const StatusDetailRoute = () => {
       <View className="flex-1 bg-background px-4 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
-            Missing status id.
+            {t('statusMissingId')}
           </Text>
         </Surface>
       </View>
@@ -685,7 +687,7 @@ const StatusDetailRoute = () => {
                 )} px-4 py-3`}
               >
                 <Text className="text-[13px] text-danger">
-                  {statusErrorMessage ?? 'Failed to load status.'}
+                  {statusErrorMessage ?? t('statusLoadFailed')}
                 </Text>
               </Surface>
             </DropShadowBox>
@@ -711,7 +713,7 @@ const StatusDetailRoute = () => {
             <View className="items-center py-3 flex-row justify-center gap-2">
               <NeobrutalActivityIndicator size="small" />
               <Text className="text-[12px] text-muted">
-                Loading conversation...
+                {t('conversationLoading')}
               </Text>
             </View>
           ) : null}

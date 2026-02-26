@@ -10,6 +10,10 @@ import {
   normalizeLocaleTag,
   type LocaleKey,
 } from './translation-data';
+import {
+  getAppLanguagePreferenceSnapshot,
+  subscribeToAppLanguagePreference,
+} from '@/settings/app-language-preference';
 
 const supportedLookup = SUPPORTED_LOCALES.map(locale =>
   normalizeLocaleTag(locale).toLowerCase(),
@@ -24,7 +28,7 @@ const matchSupportedLocale = (value?: string) => {
   return index >= 0 ? SUPPORTED_LOCALES[index] : undefined;
 };
 
-const resolveLocale = (): LocaleKey => {
+export const resolveSystemLocale = (): LocaleKey => {
   const locales = getLocales();
 
   for (const locale of locales) {
@@ -55,6 +59,14 @@ const resolveLocale = (): LocaleKey => {
   return DEFAULT_LOCALE;
 };
 
+const resolveLocale = (): LocaleKey => {
+  const pref = getAppLanguagePreferenceSnapshot();
+  if (pref !== 'system') {
+    return pref;
+  }
+  return resolveSystemLocale();
+};
+
 i18n.use(initReactI18next).init({
   compatibilityJSON: 'v3',
   fallbackLng: DEFAULT_LOCALE,
@@ -70,10 +82,19 @@ i18n.use(initReactI18next).init({
   supportedLngs: [...SUPPORTED_LOCALES],
 });
 
+// Re-apply locale when system language changes while app is foregrounded
 AppState.addEventListener('change', nextState => {
   if (nextState !== 'active') {
     return;
   }
+  const nextLocale = resolveLocale();
+  if (i18n.language !== nextLocale) {
+    i18n.changeLanguage(nextLocale);
+  }
+});
+
+// Re-apply locale when user changes the in-app language preference
+subscribeToAppLanguagePreference(() => {
   const nextLocale = resolveLocale();
   if (i18n.language !== nextLocale) {
     i18n.changeLanguage(nextLocale);
