@@ -3,18 +3,6 @@ export type LocaleKey = 'en-US' | 'zh-CN';
 export const SUPPORTED_LOCALES: ReadonlyArray<LocaleKey> = ['en-US', 'zh-CN'];
 
 type BaseTranslations = {
-  // Legacy landing-page keys
-  brandName: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  cardTitle: string;
-  cardCopy: string;
-  chipTimeline: string;
-  chipMentions: string;
-  chipPhotoPosting: string;
-  ctaSignIn: string;
-  noticeSignIn: string;
-
   // Login screen
   loginButton: string;
   loginLoading: string;
@@ -154,8 +142,6 @@ type BaseTranslations = {
   messagesOutbox: string;
   messagesInboxEmpty: string;
   messagesOutboxEmpty: string;
-  messagesSender: string;
-  messagesRecipient: string;
   messagesLoadFailed: string;
   messageDeleteTitle: string;
   messageDeleteConfirm: string;
@@ -219,18 +205,6 @@ type BaseTranslations = {
 };
 
 const enUS: BaseTranslations = {
-  // Legacy landing-page keys
-  brandName: 'Fanfou',
-  heroTitle: 'A calmer way to read the timeline.',
-  heroSubtitle: 'Built for focus, crafted for speed, and ready for iOS and Android.',
-  cardTitle: 'Coming online soon',
-  cardCopy: "We're stitching the essentials: login, timeline, and posting.",
-  chipTimeline: 'Chronological timeline',
-  chipMentions: 'Smart mentions',
-  chipPhotoPosting: 'Photo-first posting',
-  ctaSignIn: 'Sign in with Fanfou',
-  noticeSignIn: 'OAuth sign-in will land here next.',
-
   // Login screen
   loginButton: 'Sign in with Fanfou',
   loginLoading: 'Signing in…',
@@ -370,8 +344,6 @@ const enUS: BaseTranslations = {
   messagesOutbox: 'Sent',
   messagesInboxEmpty: 'No messages in inbox.',
   messagesOutboxEmpty: 'No sent messages.',
-  messagesSender: 'From',
-  messagesRecipient: 'To',
   messagesLoadFailed: 'Failed to load messages.',
   messageDeleteTitle: 'Delete Message',
   messageDeleteConfirm: 'Delete message from {{name}}?',
@@ -435,18 +407,6 @@ const enUS: BaseTranslations = {
 };
 
 const zhCN: BaseTranslations = {
-  // Legacy landing-page keys
-  brandName: '饭否',
-  heroTitle: '更平静地阅读时间线。',
-  heroSubtitle: '为专注而生，速度优先，iOS 与 Android 即将就绪。',
-  cardTitle: '即将上线',
-  cardCopy: '我们正在拼好基础能力：登录、时间线和发布。',
-  chipTimeline: '时间顺序时间线',
-  chipMentions: '智能提及',
-  chipPhotoPosting: '以图片为先的发布',
-  ctaSignIn: '使用饭否登录',
-  noticeSignIn: 'OAuth 登录稍后会接入。',
-
   // Login screen
   loginButton: '使用饭否登录',
   loginLoading: '登录中…',
@@ -586,8 +546,6 @@ const zhCN: BaseTranslations = {
   messagesOutbox: '发件箱',
   messagesInboxEmpty: '收件箱没有消息。',
   messagesOutboxEmpty: '发件箱没有消息。',
-  messagesSender: '发件人',
-  messagesRecipient: '收件人',
   messagesLoadFailed: '加载私信失败。',
   messageDeleteTitle: '删除消息',
   messageDeleteConfirm: '确认删除来自 {{name}} 的消息？',
