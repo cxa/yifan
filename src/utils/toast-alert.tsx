@@ -98,3 +98,18 @@ export const showToastAlert = (
     },
   });
 };
+
+export const showVariantToast = (
+  variant: ToastVariant,
+  title?: string,
+  message?: string,
+  buttons?: ToastButton[],
+  options?: {
+    cancelable?: boolean;
+  },
+) => {
+  showToastAlert(title, message, buttons, {
+    ...options,
+    variant,
+  });
+};

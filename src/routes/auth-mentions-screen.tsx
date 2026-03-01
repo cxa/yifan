@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 import {
   FlatList,
   Image,
@@ -32,7 +32,7 @@ import {
   useSharedValue,
 } from 'react-native-reanimated';
 import { useAuthSession } from '@/auth/auth-session';
-import { get, post, uploadPhoto } from '@/auth/fanfou-client';
+import { get, post } from '@/auth/fanfou-client';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
@@ -56,6 +56,7 @@ import {
   AUTH_STATUS_ROUTE,
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
+import { useStatusUpdateMutation } from '@/query/post-mutations';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
@@ -142,6 +143,7 @@ const MentionsRoute = () => {
     useState<ReplyTarget | null>(null);
   const [composeRepostTarget, setComposeRepostTarget] =
     useState<RepostTarget | null>(null);
+  const statusUpdateMutation = useStatusUpdateMutation();
   useEffect(() => {
     setTimelineItems([]);
     setHasReachedTimelineEnd(false);
@@ -396,52 +398,60 @@ const MentionsRoute = () => {
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
+        showVariantToast(
+          'danger',
+          t('cannotReplyTitle'),
+          t('replyMissingTarget'),
+        );
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        showToastAlert(t('cannotReplyTitle'), t('replyNeedsContent'));
+        showVariantToast(
+          'danger',
+          t('cannotReplyTitle'),
+          t('replyNeedsContent'),
+        );
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showToastAlert(t('cannotRepostTitle'), t('repostMissingTarget'));
+      showVariantToast(
+        'danger',
+        t('cannotRepostTitle'),
+        t('repostMissingTarget'),
+      );
       return;
     }
     try {
       if (composeMode === 'reply' && composeReplyTarget) {
-        if (photo?.base64) {
-          await uploadPhoto({
-            photoBase64: photo.base64,
-            status: trimmedText || undefined,
-            params: {
-              in_reply_to_status_id: composeReplyTarget.statusId,
-              in_reply_to_user_id: composeReplyTarget.userId,
-            },
-          });
-        } else {
-          await post('/statuses/update', {
-            status: trimmedText,
+        await statusUpdateMutation.mutateAsync({
+          status: photo?.base64 ? trimmedText || undefined : trimmedText,
+          photoBase64: photo?.base64,
+          params: {
             in_reply_to_status_id: composeReplyTarget.statusId,
             in_reply_to_user_id: composeReplyTarget.userId,
-          });
-        }
+          },
+        });
       }
       if (composeMode === 'repost' && composeRepostTarget) {
-        await post('/statuses/update', {
+        await statusUpdateMutation.mutateAsync({
           status: trimmedText || undefined,
-          repost_status_id: composeRepostTarget.statusId,
+          params: {
+            repost_status_id: composeRepostTarget.statusId,
+          },
         });
       }
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      showToastAlert(
+      showVariantToast(
+        'success',
         t('sentTitle'),
         composeMode === 'reply' ? t('replySent') : t('repostSent'),
       );
     } catch (requestError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         composeMode === 'reply'
           ? t('replyFailedTitle')
           : t('repostFailedTitle'),
@@ -483,7 +493,8 @@ const MentionsRoute = () => {
             : item,
         ),
       );
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('bookmarkFailedTitle'),
         requestError instanceof Error
           ? requestError.message
@@ -686,6 +697,7 @@ const MentionsRoute = () => {
         initialText={composerInitialText}
         resetKey={composerResetKey}
         enablePhoto={composeMode === 'reply'}
+        isSubmitting={statusUpdateMutation.isPending}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />

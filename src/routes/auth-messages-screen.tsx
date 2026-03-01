@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showToastAlert, showVariantToast } from '@/utils/toast-alert';
 import {
   FlatList,
   Image,
@@ -42,6 +42,7 @@ import { countSkeletonItemsForHeight } from '@/components/timeline-skeleton-list
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import { AUTH_PROFILE_ROUTE, AUTH_STACK_ROUTE } from '@/navigation/route-names';
 import type { AuthStackParamList } from '@/navigation/types';
+import { useDirectMessageMutation } from '@/query/post-mutations';
 import type { FanfouUser } from '@/types/fanfou';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToText } from '@/utils/parse-html';
@@ -488,6 +489,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
     userId: string;
     displayName: string;
   } | null>(null);
+  const directMessageMutation = useDirectMessageMutation();
   const { pullScrollY, safeAreaTop, scrollInsetTop, updatePullScrollY } =
     usePullScrollY();
   const scrollHandler = useAnimatedScrollHandler({
@@ -576,7 +578,8 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         },
       );
     } catch (deleteError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('messageDeleteFailed'),
         getErrorMessage(deleteError, t('messageDeleteFailedMessage')),
       );
@@ -588,18 +591,23 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
     }
     const trimmedText = text.trim();
     if (!trimmedText) {
-      showToastAlert(t('cannotSendMessageTitle'), t('messageNeedsContent'));
+      showVariantToast(
+        'danger',
+        t('cannotSendMessageTitle'),
+        t('messageNeedsContent'),
+      );
       return;
     }
     try {
-      await post('/direct_messages/new', {
-        user: replyTarget.userId,
+      await directMessageMutation.mutateAsync({
+        userId: replyTarget.userId,
         text: trimmedText,
       });
       setReplyTarget(null);
       await refetch();
     } catch (replyError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('messageReplyFailed'),
         getErrorMessage(replyError, t('messageReplyFailedMessage')),
       );
@@ -738,6 +746,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         submitLabel={t('messageSend')}
         topInset={insets.top}
         resetKey={replyTarget ? `dm-reply:${replyTarget.userId}` : ''}
+        isSubmitting={directMessageMutation.isPending}
         onCancel={() => setReplyTarget(null)}
         onSubmit={handleSubmitReply}
       />

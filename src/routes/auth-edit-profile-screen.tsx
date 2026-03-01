@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -251,7 +251,8 @@ const EditProfileRoute = () => {
     const nextUrl = url.trim();
     const nextDescription = description.trim();
     if (!nextName) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('editProfileSaveFailedTitle'),
         t('editProfileNameRequired'),
       );
@@ -283,7 +284,8 @@ const EditProfileRoute = () => {
       });
       navigation.goBack();
     } catch (updateError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('editProfileUpdateFailedTitle'),
         getErrorMessage(updateError, t('editProfileUpdateFailed')),
       );

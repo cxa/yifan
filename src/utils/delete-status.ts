@@ -1,6 +1,6 @@
 import { post } from '@/auth/fanfou-client';
 import type { FanfouStatus } from '@/types/fanfou';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
@@ -35,17 +35,12 @@ export const deleteStatus = async ({
       id: statusId,
     });
     await onDeleted();
-    showToastAlert(t('successTitle'), t('statusDeleteSuccess'), undefined, {
-      variant: 'success',
-    });
+    showVariantToast('success', t('successTitle'), t('statusDeleteSuccess'));
   } catch (deleteError) {
-    showToastAlert(
+    showVariantToast(
+      'danger',
       t('statusDeleteFailedTitle'),
       getErrorMessage(deleteError, t('statusDeleteFailedMessage')),
-      undefined,
-      {
-        variant: 'danger',
-      },
     );
   }
 };

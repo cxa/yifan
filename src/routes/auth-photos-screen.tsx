@@ -132,6 +132,7 @@ const PhotosRouteContent = ({
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    isComposerSubmitting,
     pendingBookmarkIds,
     photoViewerUrl,
     photoViewerVisible,
@@ -362,6 +363,7 @@ const PhotosRouteContent = ({
         initialText={composerInitialText}
         resetKey={composerResetKey}
         enablePhoto={composeMode === 'reply'}
+        isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />

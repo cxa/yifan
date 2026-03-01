@@ -1,1 +1,3 @@
 src/route-tree.gen.ts
+ios/**
+android/**

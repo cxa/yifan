@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 import { Pressable, StyleSheet, View } from 'react-native';
 import {
   BottomTabBarProps,
@@ -9,7 +9,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { Home, AtSign, MoreHorizontal, SquarePen } from 'lucide-react-native';
 import { useAuthSession } from '@/auth/auth-session';
-import { post, uploadPhoto } from '@/auth/fanfou-client';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
@@ -31,6 +30,7 @@ import { useTranslation } from 'react-i18next';
 import MentionsRoute from '@/routes/auth-mentions-screen';
 import MoreRoute from '@/routes/auth-more-screen';
 import { usePhotoViewerLayerMode } from '@/navigation/photo-viewer-layer-state';
+import { useStatusUpdateMutation } from '@/query/post-mutations';
 const Tab = createBottomTabNavigator<AuthTabParamList>();
 const isTabRouteName = (
   routeName: string,
@@ -231,6 +231,7 @@ const AuthIndexRoute = () => {
   const insets = useSafeAreaInsets();
   const [backgroundColor] = useThemeColor(['background']);
   const [composeVisible, setComposeVisible] = useState(false);
+  const statusUpdateMutation = useStatusUpdateMutation();
   const handleOpenComposer = () => {
     setComposeVisible(true);
   };
@@ -244,24 +245,19 @@ const AuthIndexRoute = () => {
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
     if (!trimmedText && !hasPhoto) {
-      showToastAlert(t('postFailedTitle'), t('replyNeedsContent'));
+      showVariantToast('danger', t('postFailedTitle'), t('replyNeedsContent'));
       return;
     }
     try {
-      if (photo?.base64) {
-        await uploadPhoto({
-          photoBase64: photo.base64,
-          status: trimmedText || undefined,
-        });
-      } else {
-        await post('/statuses/update', {
-          status: trimmedText,
-        });
-      }
+      await statusUpdateMutation.mutateAsync({
+        status: photo?.base64 ? trimmedText || undefined : trimmedText,
+        photoBase64: photo?.base64,
+      });
       setComposeVisible(false);
-      showToastAlert(t('sentTitle'), t('postSent'));
+      showVariantToast('success', t('sentTitle'), t('postSent'));
     } catch (requestError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('postFailedTitle'),
         requestError instanceof Error
           ? requestError.message
@@ -307,6 +303,7 @@ const AuthIndexRoute = () => {
         topInset={insets.top}
         enablePhoto
         resetKey="root-compose"
+        isSubmitting={statusUpdateMutation.isPending}
         onCancel={handleCloseComposer}
         onSubmit={handleSubmitComposer}
       />

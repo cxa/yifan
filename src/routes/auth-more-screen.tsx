@@ -1,5 +1,5 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showToastAlert, showVariantToast } from '@/utils/toast-alert';
 import {
   Image,
   Platform,
@@ -599,7 +599,8 @@ const MoreRouteContent = ({
     try {
       await persistAppFontPreference(next);
     } catch (updateError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('moreFontUpdateFailed'),
         getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
       );
@@ -615,7 +616,8 @@ const MoreRouteContent = ({
     try {
       await setAppLanguagePreference(next);
     } catch (updateError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('moreFontUpdateFailed'),
         getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
       );

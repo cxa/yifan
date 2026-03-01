@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 import {
   Image,
   Platform,
@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
-import { get, post, uploadPhoto } from '@/auth/fanfou-client';
+import { get, post } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
@@ -66,6 +66,10 @@ import {
   profileUserQueryOptions,
   userQueryKeys,
 } from '@/query/user-query-options';
+import {
+  useDirectMessageMutation,
+  useStatusUpdateMutation,
+} from '@/query/post-mutations';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
@@ -148,6 +152,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     useState<ReplyTarget | null>(null);
   const [composeRepostTarget, setComposeRepostTarget] =
     useState<RepostTarget | null>(null);
+  const statusUpdateMutation = useStatusUpdateMutation();
+  const directMessageMutation = useDirectMessageMutation();
   const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -391,7 +397,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         following: nextFollowing,
       });
       const name = user.screen_name ?? user.name ?? '';
-      showToastAlert(
+      showVariantToast(
+        'success',
         t('successTitle'),
         nextFollowing
           ? t('profileFollowSuccess', {
@@ -402,7 +409,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             }),
       );
     } catch (requestError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('operationFailed'),
         getErrorMessage(requestError, t('profileFollowFailed')),
       );
@@ -427,7 +435,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         });
       }
       const name = user.screen_name ?? user.name ?? '';
-      showToastAlert(
+      showVariantToast(
+        'success',
         t('successTitle'),
         nextBlocked
           ? t('profileBlockSuccess', {
@@ -438,7 +447,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             }),
       );
     } catch (requestError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('operationFailed'),
         getErrorMessage(requestError, t('profileBlockFailed')),
       );
@@ -462,7 +472,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     const userId = status.user.id.trim();
     const screenName = status.user.screen_name.trim();
     if (!userId || !screenName) {
-      showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
+      showVariantToast(
+        'danger',
+        t('cannotReplyTitle'),
+        t('replyMissingTarget'),
+      );
       return;
     }
     setComposeMode('reply');
@@ -508,15 +522,27 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'dm' && !trimmedText) {
-      showToastAlert(t('cannotSendTitle'), t('profileNeedsContent'));
+      showVariantToast(
+        'danger',
+        t('cannotSendTitle'),
+        t('profileNeedsContent'),
+      );
       return;
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showToastAlert(t('cannotRepostTitle'), t('repostMissingTarget'));
+      showVariantToast(
+        'danger',
+        t('cannotRepostTitle'),
+        t('repostMissingTarget'),
+      );
       return;
     }
     if (composeMode === 'reply' && !composeReplyTarget) {
-      showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
+      showVariantToast(
+        'danger',
+        t('cannotReplyTitle'),
+        t('replyMissingTarget'),
+      );
       return;
     }
     if (
@@ -524,57 +550,45 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       !trimmedText &&
       !hasPhoto
     ) {
-      showToastAlert(t('cannotSendTitle'), t('replyNeedsContent'));
+      showVariantToast('danger', t('cannotSendTitle'), t('replyNeedsContent'));
       return;
     }
     try {
       if (composeMode === 'mention') {
-        if (photo?.base64) {
-          await uploadPhoto({
-            photoBase64: photo.base64,
-            status: trimmedText || undefined,
-            params: {
-              in_reply_to_user_id: user.id,
-            },
-          });
-        } else {
-          await post('/statuses/update', {
-            status: trimmedText,
+        await statusUpdateMutation.mutateAsync({
+          status: photo?.base64 ? trimmedText || undefined : trimmedText,
+          photoBase64: photo?.base64,
+          params: {
             in_reply_to_user_id: user.id,
-          });
-        }
+          },
+        });
       } else if (composeMode === 'reply' && composeReplyTarget) {
-        if (photo?.base64) {
-          await uploadPhoto({
-            photoBase64: photo.base64,
-            status: trimmedText || undefined,
-            params: {
-              in_reply_to_status_id: composeReplyTarget.statusId,
-              in_reply_to_user_id: composeReplyTarget.userId,
-            },
-          });
-        } else {
-          await post('/statuses/update', {
-            status: trimmedText,
+        await statusUpdateMutation.mutateAsync({
+          status: photo?.base64 ? trimmedText || undefined : trimmedText,
+          photoBase64: photo?.base64,
+          params: {
             in_reply_to_status_id: composeReplyTarget.statusId,
             in_reply_to_user_id: composeReplyTarget.userId,
-          });
-        }
+          },
+        });
       } else if (composeMode === 'repost' && composeRepostTarget) {
-        await post('/statuses/update', {
+        await statusUpdateMutation.mutateAsync({
           status: trimmedText || undefined,
-          repost_status_id: composeRepostTarget.statusId,
+          params: {
+            repost_status_id: composeRepostTarget.statusId,
+          },
         });
       } else {
-        await post('/direct_messages/new', {
-          user: user.id,
+        await directMessageMutation.mutateAsync({
+          userId: user.id,
           text: trimmedText,
         });
       }
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      showToastAlert(
+      showVariantToast(
+        'success',
         t('sentTitle'),
         composeMode === 'mention'
           ? t('profileMentionSent')
@@ -585,7 +599,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
           : t('repostSent'),
       );
     } catch (requestError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         composeMode === 'repost'
           ? t('repostFailedTitle')
           : composeMode === 'reply'
@@ -641,7 +656,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             : item,
         ),
       );
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('bookmarkFailedTitle'),
         getErrorMessage(requestError, t('retryMessage')),
       );
@@ -1098,6 +1114,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         initialText={composerInitialText}
         resetKey={composerResetKey}
         enablePhoto={composeMode === 'mention' || composeMode === 'reply'}
+        isSubmitting={
+          statusUpdateMutation.isPending || directMessageMutation.isPending
+        }
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />

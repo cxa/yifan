@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 import { Image, View, useWindowDimensions } from 'react-native';
-import { post, uploadPhoto } from '@/auth/fanfou-client';
+import { post } from '@/auth/fanfou-client';
 import type { ComposerModalSubmitPayload } from '@/components/composer-modal';
 import type { FanfouStatus } from '@/types/fanfou';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
+import { useStatusUpdateMutation } from '@/query/post-mutations';
 type PhotoViewerOriginRect = {
   x: number;
   y: number;
@@ -57,6 +58,7 @@ const useTimelineStatusInteractions = ({
   const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const statusUpdateMutation = useStatusUpdateMutation();
   const registerPhotoPreviewRef = (
     key: string,
     node: React.ComponentRef<typeof View> | null,
@@ -166,52 +168,52 @@ const useTimelineStatusInteractions = ({
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        showToastAlert('Cannot reply', 'Missing reply target.');
+        showVariantToast('danger', 'Cannot reply', 'Missing reply target.');
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        showToastAlert('Cannot reply', 'Please enter text or attach a photo.');
+        showVariantToast(
+          'danger',
+          'Cannot reply',
+          'Please enter text or attach a photo.',
+        );
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showToastAlert('Cannot repost', 'Missing repost target.');
+      showVariantToast('danger', 'Cannot repost', 'Missing repost target.');
       return;
     }
     try {
       if (composeMode === 'reply' && composeReplyTarget) {
-        if (photo?.base64) {
-          await uploadPhoto({
-            photoBase64: photo.base64,
-            status: trimmedText || undefined,
-            params: {
-              in_reply_to_status_id: composeReplyTarget.statusId,
-              in_reply_to_user_id: composeReplyTarget.userId,
-            },
-          });
-        } else {
-          await post('/statuses/update', {
-            status: trimmedText,
+        await statusUpdateMutation.mutateAsync({
+          status: photo?.base64 ? trimmedText || undefined : trimmedText,
+          photoBase64: photo?.base64,
+          params: {
             in_reply_to_status_id: composeReplyTarget.statusId,
             in_reply_to_user_id: composeReplyTarget.userId,
-          });
-        }
+          },
+        });
       }
       if (composeMode === 'repost' && composeRepostTarget) {
-        await post('/statuses/update', {
+        await statusUpdateMutation.mutateAsync({
           status: trimmedText || undefined,
-          repost_status_id: composeRepostTarget.statusId,
+          params: {
+            repost_status_id: composeRepostTarget.statusId,
+          },
         });
       }
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      showToastAlert(
+      showVariantToast(
+        'success',
         'Sent',
         composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
       );
     } catch (requestError) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
         getErrorMessage(requestError, 'Please try again.'),
       );
@@ -237,7 +239,8 @@ const useTimelineStatusInteractions = ({
         ...item,
         favorited: !nextFavorited,
       }));
-      showToastAlert(
+      showVariantToast(
+        'danger',
         'Bookmark failed',
         getErrorMessage(requestError, 'Please try again.'),
       );
@@ -277,6 +280,7 @@ const useTimelineStatusInteractions = ({
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    isComposerSubmitting: statusUpdateMutation.isPending,
     pendingBookmarkIds,
     photoViewerUrl,
     photoViewerVisible,

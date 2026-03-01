@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { showToastAlert } from '@/utils/toast-alert';
+import { showVariantToast } from '@/utils/toast-alert';
 import { ImagePlus, X } from 'lucide-react-native';
 import {
   Image,
@@ -30,6 +30,7 @@ type ComposerModalProps = {
   initialText?: string;
   resetKey?: string | null;
   enablePhoto?: boolean;
+  isSubmitting?: boolean;
   onCancel: () => void;
   onSubmit: (payload: ComposerModalSubmitPayload) => Promise<void> | void;
 };
@@ -42,6 +43,7 @@ const ComposerModal = ({
   initialText = '',
   resetKey = null,
   enablePhoto = false,
+  isSubmitting: controlledIsSubmitting,
   onCancel,
   onSubmit,
 }: ComposerModalProps) => {
@@ -54,7 +56,8 @@ const ComposerModal = ({
   const [value, setValue] = useState(initialText);
   const [photo, setPhoto] = useState<PickedImage | null>(null);
   const [isPhotoPicking, setIsPhotoPicking] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+  const isSubmitting = controlledIsSubmitting ?? internalIsSubmitting;
   const canDismiss = !isSubmitting && !isPhotoPicking;
   const containerStyle = {
     marginTop: Math.max(topInset + 10, 24),
@@ -67,7 +70,7 @@ const ComposerModal = ({
     setValue(initialText);
     setPhoto(null);
     setIsPhotoPicking(false);
-    setIsSubmitting(false);
+    setInternalIsSubmitting(false);
   }, [initialText, resetKey, visible]);
   const handlePickPhoto = async () => {
     if (!enablePhoto || !canDismiss) {
@@ -80,7 +83,8 @@ const ComposerModal = ({
         setPhoto(pickedPhoto);
       }
     } catch (error) {
-      showToastAlert(
+      showVariantToast(
+        'danger',
         t('composerPhotoError'),
         error instanceof Error ? error.message : t('retryMessage'),
       );
@@ -98,14 +102,21 @@ const ComposerModal = ({
     if (isSubmitting || isPhotoPicking) {
       return;
     }
-    setIsSubmitting(true);
+    if (controlledIsSubmitting !== undefined) {
+      await onSubmit({
+        text: value,
+        photo,
+      });
+      return;
+    }
+    setInternalIsSubmitting(true);
     try {
       await onSubmit({
         text: value,
         photo,
       });
     } finally {
-      setIsSubmitting(false);
+      setInternalIsSubmitting(false);
     }
   };
   return (
@@ -123,7 +134,7 @@ const ComposerModal = ({
         >
           <Pressable
             onPress={event => event.stopPropagation()}
-            className="relative border-2 border-border bg-surface p-[14px] gap-[10px]"
+            className="relative border-4 border-border bg-surface p-[14px] gap-[10px]"
             style={containerStyle}
           >
             <Pressable
