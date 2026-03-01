@@ -30,6 +30,7 @@ import { useAppFontFamily } from '@/settings/app-font-preference';
 import { useTranslation } from 'react-i18next';
 import MentionsRoute from '@/routes/auth-mentions-screen';
 import MoreRoute from '@/routes/auth-more-screen';
+import { usePhotoViewerLayerMode } from '@/navigation/photo-viewer-layer-state';
 const Tab = createBottomTabNavigator<AuthTabParamList>();
 const isTabRouteName = (
   routeName: string,
@@ -92,6 +93,7 @@ const AuthTabBar = ({
     'accent-foreground',
     'background',
   ]);
+  const photoViewerLayerMode = usePhotoViewerLayerMode();
   const leftRoutesGroup = state.routes.filter(
     r => r.name !== AUTH_TAB_ROUTE.COMPOSE,
   );
@@ -195,9 +197,17 @@ const AuthTabBar = ({
   return (
     <View
       className="absolute left-0 right-0 flex-row justify-between pointer-events-box-none items-center px-4"
-      style={{
-        bottom: Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_GAP),
-      }}
+      style={[
+        styles.tabBarContainer,
+        photoViewerLayerMode === 'viewer-open'
+          ? styles.tabBarViewerOpen
+          : photoViewerLayerMode === 'viewer-closing'
+          ? styles.tabBarViewerClosing
+          : styles.tabBarFront,
+        {
+          bottom: Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_GAP),
+        },
+      ]}
       pointerEvents="box-none"
     >
       <View
@@ -307,5 +317,21 @@ export default AuthIndexRoute;
 const styles = StyleSheet.create({
   tabButton: {
     height: TAB_BAR_BUTTON_HEIGHT,
+  },
+  tabBarContainer: {
+    zIndex: 8,
+    elevation: 8,
+  },
+  tabBarFront: {
+    zIndex: 8,
+    elevation: 8,
+  },
+  tabBarViewerOpen: {
+    zIndex: 9,
+    elevation: 9,
+  },
+  tabBarViewerClosing: {
+    zIndex: 8,
+    elevation: 8,
   },
 });

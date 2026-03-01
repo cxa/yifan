@@ -33,7 +33,9 @@ import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
 import ComposerModal from '@/components/composer-modal';
-import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
+import NativeEdgeScrollShadow, {
+  resolveNativeEdgeScrollShadowSize,
+} from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
@@ -88,6 +90,9 @@ const MyTimelineRouteContent = ({
   ]);
   const queryKey: [string, string] = ['my-timeline', userId];
   const headerHeight = useHeaderHeight();
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const timelineListSettings = useTimelineListSettings(insets, {
     hasBottomTabBar: false,
   });
@@ -146,6 +151,9 @@ const MyTimelineRouteContent = ({
     handleToggleBookmark,
   } = useTimelineStatusInteractions({
     updateStatusById,
+    topInset: insets.top,
+    bottomOccludedHeight: getTabBarOccludedHeight(insets.bottom),
+    scrollShadowSize,
   });
   const {
     data: queryData,
@@ -310,6 +318,15 @@ const MyTimelineRouteContent = ({
             ) : null
           }
         />
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
+          scrollShadowSize={scrollShadowSize}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
       </NativeEdgeScrollShadow>
       <NeobrutalRefreshIndicator
         refreshing={isPullRefreshing}
@@ -317,14 +334,6 @@ const MyTimelineRouteContent = ({
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
       <ComposerModal
         visible={composeMode !== null}

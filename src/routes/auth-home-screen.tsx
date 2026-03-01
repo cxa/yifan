@@ -19,7 +19,7 @@ import {
 } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScrollShadow, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
 import { scheduleOnRN } from 'react-native-worklets';
 import {
@@ -33,11 +33,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
-import LinearGradient from 'react-native-linear-gradient';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
+import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
@@ -60,6 +60,7 @@ import {
 import type { FanfouStatus } from '@/types/fanfou';
 import { Text } from '@/components/app-text';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
+import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 type PhotoViewerOriginRect = {
   x: number;
@@ -80,6 +81,7 @@ type RepostTarget = {
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
+const TIMELINE_SCROLL_SHADOW_SIZE = 100;
 const mergeTimelineItems = (
   existing: FanfouStatus[],
   incoming: FanfouStatus[],
@@ -268,9 +270,16 @@ const AuthHomeRoute = () => {
     originRect: PhotoViewerOriginRect | null,
     previewKey: string,
   ) => {
+    const useSharedTransition = shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight: windowHeight,
+      topInset: insets.top,
+      bottomOccludedHeight: getTabBarOccludedHeight(insets.bottom),
+      scrollShadowSize: TIMELINE_SCROLL_SHADOW_SIZE,
+    });
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerPreviewKey(previewKey);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerPreviewKey(useSharedTransition ? previewKey : null);
+    setPhotoViewerOriginRect(useSharedTransition ? originRect : null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };
@@ -647,9 +656,9 @@ const AuthHomeRoute = () => {
       : 'closed';
   return (
     <>
-      <ScrollShadow
-        LinearGradientComponent={LinearGradient}
-        size={100}
+      <NativeEdgeScrollShadow
+        className="flex-1"
+        size={TIMELINE_SCROLL_SHADOW_SIZE}
         color={background}
       >
         <FlatList
@@ -716,21 +725,22 @@ const AuthHomeRoute = () => {
             />
           )}
         />
-      </ScrollShadow>
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
+          scrollShadowSize={TIMELINE_SCROLL_SHADOW_SIZE}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
+      </NativeEdgeScrollShadow>
       <NeobrutalRefreshIndicator
         refreshing={isRefreshing}
         scrollY={pullScrollY}
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
       <ComposerModal
         visible={composeMode !== null}

@@ -22,9 +22,8 @@ import {
 } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScrollShadow, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
-import LinearGradient from 'react-native-linear-gradient';
 import {
   Extrapolation,
   interpolate,
@@ -44,6 +43,7 @@ import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
+import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import {
   TIMELINE_INITIAL_PAGE_SIZE,
   TIMELINE_PAGE_SIZE,
@@ -57,6 +57,7 @@ import {
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
+import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import type { FanfouStatus } from '@/types/fanfou';
 import { Text } from '@/components/app-text';
@@ -80,6 +81,7 @@ type RepostTarget = {
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
+const TIMELINE_SCROLL_SHADOW_SIZE = 100;
 const mergeTimelineItems = (
   existing: FanfouStatus[],
   incoming: FanfouStatus[],
@@ -256,9 +258,16 @@ const MentionsRoute = () => {
     originRect: PhotoViewerOriginRect | null,
     previewKey: string,
   ) => {
+    const useSharedTransition = shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight: windowHeight,
+      topInset: insets.top,
+      bottomOccludedHeight: getTabBarOccludedHeight(insets.bottom),
+      scrollShadowSize: TIMELINE_SCROLL_SHADOW_SIZE,
+    });
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerPreviewKey(previewKey);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerPreviewKey(useSharedTransition ? previewKey : null);
+    setPhotoViewerOriginRect(useSharedTransition ? originRect : null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };
@@ -581,9 +590,9 @@ const MentionsRoute = () => {
   });
   return (
     <>
-      <ScrollShadow
-        LinearGradientComponent={LinearGradient}
-        size={100}
+      <NativeEdgeScrollShadow
+        className="flex-1"
+        size={TIMELINE_SCROLL_SHADOW_SIZE}
         color={background}
       >
         <FlatList
@@ -651,21 +660,22 @@ const MentionsRoute = () => {
             />
           )}
         />
-      </ScrollShadow>
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
+          scrollShadowSize={TIMELINE_SCROLL_SHADOW_SIZE}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
+      </NativeEdgeScrollShadow>
       <NeobrutalRefreshIndicator
         refreshing={isPullRefreshing}
         scrollY={pullScrollY}
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
       <ComposerModal
         visible={composeMode !== null}

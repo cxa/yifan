@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import { showToastAlert } from '@/utils/toast-alert';
-import { Image, View } from 'react-native';
+import { Image, View, useWindowDimensions } from 'react-native';
 import { post, uploadPhoto } from '@/auth/fanfou-client';
 import type { ComposerModalSubmitPayload } from '@/components/composer-modal';
 import type { FanfouStatus } from '@/types/fanfou';
+import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 type PhotoViewerOriginRect = {
   x: number;
   y: number;
@@ -25,12 +26,19 @@ type UseTimelineStatusInteractionsParams = {
     statusId: string,
     updater: (status: FanfouStatus) => FanfouStatus,
   ) => void;
+  topInset: number;
+  bottomOccludedHeight?: number;
+  scrollShadowSize: number;
 };
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const useTimelineStatusInteractions = ({
   updateStatusById,
+  topInset,
+  bottomOccludedHeight = 0,
+  scrollShadowSize,
 }: UseTimelineStatusInteractionsParams) => {
+  const { height: viewportHeight } = useWindowDimensions();
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerPreviewKey, setPhotoViewerPreviewKey] = useState<
@@ -64,9 +72,16 @@ const useTimelineStatusInteractions = ({
     originRect: PhotoViewerOriginRect | null,
     previewKey: string,
   ) => {
+    const useSharedTransition = shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight,
+      topInset,
+      bottomOccludedHeight,
+      scrollShadowSize,
+    });
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerPreviewKey(previewKey);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerPreviewKey(useSharedTransition ? previewKey : null);
+    setPhotoViewerOriginRect(useSharedTransition ? originRect : null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };

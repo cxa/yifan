@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { showToastAlert } from '@/utils/toast-alert';
-import { Image, Platform, Pressable, RefreshControl, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  Pressable,
+  RefreshControl,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
@@ -29,8 +36,11 @@ import ComposerModal, {
 import DropShadowBox, {
   getDropShadowBorderClass,
 } from '@/components/drop-shadow-box';
-import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
+import NativeEdgeScrollShadow, {
+  resolveNativeEdgeScrollShadowSize,
+} from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
+import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import ProfileStatRow, {
   type ProfileStatItem,
@@ -100,7 +110,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
+  const { height: viewportHeight } = useWindowDimensions();
   const headerHeight = useHeaderHeight();
+  const tabBarOccludedHeight = getTabBarOccludedHeight(insets.bottom);
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const queryClient = useQueryClient();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
@@ -307,9 +322,16 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     originRect: PhotoViewerOriginRect | null,
     previewKey: string,
   ) => {
+    const useSharedTransition = shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight,
+      topInset: insets.top,
+      bottomOccludedHeight: tabBarOccludedHeight,
+      scrollShadowSize,
+    });
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerPreviewKey(previewKey);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerPreviewKey(useSharedTransition ? previewKey : null);
+    setPhotoViewerOriginRect(useSharedTransition ? originRect : null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };
@@ -1049,6 +1071,15 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             </View>
           ) : null}
         </Animated.ScrollView>
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          bottomOccludedHeight={tabBarOccludedHeight}
+          scrollShadowSize={scrollShadowSize}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
       </NativeEdgeScrollShadow>
       <NeobrutalRefreshIndicator
         refreshing={isPullRefreshing}
@@ -1056,15 +1087,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
 
       <ComposerModal

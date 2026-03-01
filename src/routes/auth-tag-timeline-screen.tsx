@@ -35,8 +35,11 @@ import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
-import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
+import NativeEdgeScrollShadow, {
+  resolveNativeEdgeScrollShadowSize,
+} from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
+import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
@@ -210,9 +213,16 @@ const TagTimelineRoute = () => {
     originRect: PhotoViewerOriginRect | null,
     previewKey: string,
   ) => {
+    const useSharedTransition = shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight: windowHeight,
+      topInset: insets.top,
+      bottomOccludedHeight: getTabBarOccludedHeight(insets.bottom),
+      scrollShadowSize,
+    });
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerPreviewKey(previewKey);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerPreviewKey(useSharedTransition ? previewKey : null);
+    setPhotoViewerOriginRect(useSharedTransition ? originRect : null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };
@@ -495,6 +505,9 @@ const TagTimelineRoute = () => {
     />
   );
   const headerHeight = useHeaderHeight();
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const timelineListSettings = useTimelineListSettings(insets, {
     hasBottomTabBar: false,
   });
@@ -623,6 +636,15 @@ const TagTimelineRoute = () => {
             />
           )}
         />
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
+          scrollShadowSize={scrollShadowSize}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
       </NativeEdgeScrollShadow>
 
       <NeobrutalRefreshIndicator
@@ -631,15 +653,6 @@ const TagTimelineRoute = () => {
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        bottomOccludedHeight={getTabBarOccludedHeight(insets.bottom)}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
 
       <ComposerModal

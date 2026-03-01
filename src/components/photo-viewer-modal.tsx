@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  BackHandler,
   Image,
   Modal,
   Pressable,
-  StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -15,7 +15,6 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withDecay,
   withSpring,
   withTiming,
@@ -23,17 +22,18 @@ import Animated, {
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/app-text';
-type PhotoViewerOriginRect = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+import { useThemeColor } from 'heroui-native';
+import { setPhotoViewerLayerMode } from '@/navigation/photo-viewer-layer-state';
+import {
+  shouldUsePhotoSharedTransition,
+  type PhotoViewerOriginRect,
+} from '@/components/photo-viewer-shared-transition';
 type PhotoViewerModalProps = {
   visible: boolean;
   photoUrl: string | null;
   topInset: number;
   bottomOccludedHeight?: number;
+  scrollShadowSize?: number;
   originRect?: PhotoViewerOriginRect | null;
   onClose: () => void;
 };
@@ -67,11 +67,35 @@ const CLOSE_ORIGIN_FADE_IN_TIMING = {
   duration: 170,
   easing: Easing.out(Easing.quad),
 } as const;
+const CLOSE_CONTENT_FADE_OUT_TIMING = {
+  duration: 150,
+  easing: Easing.out(Easing.quad),
+} as const;
 const CLOSE_BACKDROP_FADE_OUT_TIMING = {
   duration: 100,
   easing: Easing.out(Easing.quad),
 } as const;
+const OVERLAY_FRONT_LAYER = 220;
+const OVERLAY_CLOSING_LAYER = 8;
+const OVERLAY_FRONT_STYLE = {
+  zIndex: OVERLAY_FRONT_LAYER,
+  elevation: OVERLAY_FRONT_LAYER,
+} as const;
+const OVERLAY_CLOSING_STYLE = {
+  zIndex: OVERLAY_CLOSING_LAYER,
+  elevation: OVERLAY_CLOSING_LAYER,
+} as const;
 const LOADING_FALLBACK_MS = 8000;
+type TimeoutRef = {
+  current: ReturnType<typeof setTimeout> | null;
+};
+const clearLoadingFallbackTimeout = (loadingFallbackRef: TimeoutRef) => {
+  if (!loadingFallbackRef.current) {
+    return;
+  }
+  clearTimeout(loadingFallbackRef.current);
+  loadingFallbackRef.current = null;
+};
 const clampValue = (value: number, min: number, max: number) => {
   'worklet';
 
@@ -115,12 +139,16 @@ const PhotoViewerModal = ({
   photoUrl,
   topInset,
   bottomOccludedHeight = 0,
+  scrollShadowSize = 0,
   originRect,
   onClose,
 }: PhotoViewerModalProps) => {
   const { t } = useTranslation();
+  const [accentForeground] = useThemeColor(['accent-foreground']);
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
+  const [isClosing, setIsClosing] = useState(false);
+  const [renderInline, setRenderInline] = useState(false);
   const [imageSize, setImageSize] = useState<ImageSize | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const loadingFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,6 +172,17 @@ const PhotoViewerModal = ({
       height: Math.max(1, imageSize.height * scale),
     };
   })();
+  const sharedTransitionOriginRect =
+    originRect &&
+    shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight,
+      topInset,
+      bottomOccludedHeight,
+      scrollShadowSize,
+    })
+      ? originRect
+      : null;
   baseSizeRef.current = baseImageSize;
   const baseWidth = useSharedValue(baseImageSize.width);
   const baseHeight = useSharedValue(baseImageSize.height);
@@ -165,21 +204,17 @@ const PhotoViewerModal = ({
   const originY = useSharedValue(0);
   const originWidth = useSharedValue(0);
   const originHeight = useSharedValue(0);
-  const bottomOccludedHeightSV = useSharedValue(bottomOccludedHeight);
   useEffect(() => {
     baseWidth.value = baseImageSize.width;
     baseHeight.value = baseImageSize.height;
   }, [baseHeight, baseImageSize.height, baseImageSize.width, baseWidth]);
   useEffect(() => {
-    bottomOccludedHeightSV.value = bottomOccludedHeight;
-  }, [bottomOccludedHeight, bottomOccludedHeightSV]);
-  useEffect(() => {
-    if (originRect) {
+    if (sharedTransitionOriginRect) {
       hasOriginRect.value = true;
-      originX.value = originRect.x;
-      originY.value = originRect.y;
-      originWidth.value = originRect.width;
-      originHeight.value = originRect.height;
+      originX.value = sharedTransitionOriginRect.x;
+      originY.value = sharedTransitionOriginRect.y;
+      originWidth.value = sharedTransitionOriginRect.width;
+      originHeight.value = sharedTransitionOriginRect.height;
       return;
     }
     hasOriginRect.value = false;
@@ -187,21 +222,21 @@ const PhotoViewerModal = ({
     originY.value = 0;
     originWidth.value = 0;
     originHeight.value = 0;
-  }, [hasOriginRect, originHeight, originRect, originWidth, originX, originY]);
-  const clearLoadingFallback = () => {
-    if (!loadingFallbackRef.current) {
-      return;
-    }
-    clearTimeout(loadingFallbackRef.current);
-    loadingFallbackRef.current = null;
-  };
+  }, [
+    hasOriginRect,
+    originHeight,
+    sharedTransitionOriginRect,
+    originWidth,
+    originX,
+    originY,
+  ]);
   const markImageLoaded = () => {
-    clearLoadingFallback();
+    clearLoadingFallbackTimeout(loadingFallbackRef);
     setIsImageLoading(false);
   };
   useEffect(() => {
     if (!visible || !photoUrl) {
-      clearLoadingFallback();
+      clearLoadingFallbackTimeout(loadingFallbackRef);
       return;
     }
     setImageSize(null);
@@ -215,7 +250,7 @@ const PhotoViewerModal = ({
     isDismissing.value = false;
     const initialBaseSize = baseSizeRef.current;
     const startTransform = resolveOriginTransform({
-      originRect,
+      originRect: sharedTransitionOriginRect,
       targetWidth: initialBaseSize.width,
       targetHeight: initialBaseSize.height,
       viewportWidth,
@@ -258,19 +293,18 @@ const PhotoViewerModal = ({
       .then(() => {
         if (!isCancelled) {
           setIsImageLoading(false);
-          clearLoadingFallback();
+          clearLoadingFallbackTimeout(loadingFallbackRef);
         }
       })
       .catch(() => undefined);
     return () => {
       isCancelled = true;
-      clearLoadingFallback();
+      clearLoadingFallbackTimeout(loadingFallbackRef);
     };
   }, [
     backdropOpacity,
-    clearLoadingFallback,
     isDismissing,
-    originRect,
+    sharedTransitionOriginRect,
     photoUrl,
     presentationScale,
     presentationTranslateX,
@@ -287,6 +321,18 @@ const PhotoViewerModal = ({
     viewportWidth,
     visible,
   ]);
+  useEffect(() => {
+    if (visible && photoUrl) {
+      setIsClosing(false);
+      setRenderInline(false);
+      setPhotoViewerLayerMode('viewer-open');
+      return () => {
+        setPhotoViewerLayerMode('default');
+      };
+    }
+    setPhotoViewerLayerMode('default');
+    return;
+  }, [photoUrl, visible]);
   const clamp = (value: number, min: number, max: number) => {
     'worklet';
 
@@ -330,6 +376,11 @@ const PhotoViewerModal = ({
   const closeOnRN = () => {
     onClose();
   };
+  const closeStartOnRN = () => {
+    setIsClosing(true);
+    setRenderInline(true);
+    setPhotoViewerLayerMode('viewer-closing');
+  };
   const startCloseTransition = () => {
     'worklet';
 
@@ -337,13 +388,13 @@ const PhotoViewerModal = ({
       return;
     }
     isDismissing.value = true;
+    scheduleOnRN(closeStartOnRN);
     const originExists = hasOriginRect.value;
+    const originCenterY = originY.value + originHeight.value / 2;
     const endTranslateX = originExists
       ? originX.value + originWidth.value / 2 - viewportWidth / 2
       : 0;
-    const endTranslateY = originExists
-      ? originY.value + originHeight.value / 2 - viewportHeight / 2
-      : 0;
+    const endTranslateY = originExists ? originCenterY - viewportHeight / 2 : 0;
     const endScale = originExists
       ? clamp(
           Math.min(
@@ -360,30 +411,36 @@ const PhotoViewerModal = ({
     presentationTranslateX.value = withTiming(endTranslateX, CLOSE_MOVE_TIMING);
     presentationTranslateY.value = withTiming(endTranslateY, CLOSE_MOVE_TIMING);
     presentationScale.value = withTiming(endScale, CLOSE_MOVE_TIMING);
-    // Only show the originPreview when the origin thumbnail is fully visible
-    // (not occluded by the tab bar). If the origin sits behind the tab bar,
-    // fade the image out instead — showing the preview above the tab bar and
-    // then having it vanish when the modal closes would look wrong.
-    const originBottom = originY.value + originHeight.value;
-    const occludedThreshold = viewportHeight - bottomOccludedHeightSV.value;
-    const originBehindTabBar = originExists && originBottom > occludedThreshold;
-    contentOpacity.value = withTiming(0, CLOSE_MOVE_TIMING);
-    originPreviewOpacity.value =
-      originExists && !originBehindTabBar
-        ? withTiming(1, CLOSE_ORIGIN_FADE_IN_TIMING)
-        : withTiming(0, CLOSE_ORIGIN_FADE_IN_TIMING);
-    backdropOpacity.value = withDelay(
-      140,
-      withTiming(0, CLOSE_BACKDROP_FADE_OUT_TIMING, finished => {
+    contentOpacity.value = withTiming(0, CLOSE_CONTENT_FADE_OUT_TIMING);
+    originPreviewOpacity.value = originExists
+      ? withTiming(1, CLOSE_ORIGIN_FADE_IN_TIMING)
+      : withTiming(0, CLOSE_ORIGIN_FADE_IN_TIMING);
+    backdropOpacity.value = withTiming(
+      0,
+      CLOSE_BACKDROP_FADE_OUT_TIMING,
+      finished => {
         if (finished) {
           scheduleOnRN(closeOnRN);
         }
-      }),
+      },
     );
   };
   const closeWithSharedTransition = () => {
     scheduleOnUI(startCloseTransition);
   };
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    const backSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        closeWithSharedTransition();
+        return true;
+      },
+    );
+    return () => backSubscription.remove();
+  }, [visible]);
   const snapBack = (currentScale: number) => {
     'worklet';
 
@@ -641,73 +698,92 @@ const PhotoViewerModal = ({
   if (!photoUrl) {
     return null;
   }
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      onRequestClose={closeWithSharedTransition}
+  const viewerContent = (
+    <View
+      className="absolute inset-0"
+      style={[
+        isClosing ? OVERLAY_CLOSING_STYLE : OVERLAY_FRONT_STYLE,
+        isClosing && bottomOccludedHeight > 0
+          ? {
+              bottom: bottomOccludedHeight,
+            }
+          : null,
+      ]}
+      pointerEvents="box-none"
     >
-      <View style={styles.root}>
+      <View className="flex-1">
         <GestureDetector gesture={gesture}>
-          <View style={StyleSheet.absoluteFill}>
-            <Animated.View style={[styles.backdrop, backdropStyle]} />
-            <View style={styles.imageCenter} pointerEvents="box-none">
-              <Animated.View style={presentationStyle}>
-                <Animated.View style={imageTransformStyle}>
-                  <Image
-                    source={{
-                      uri: photoUrl,
-                    }}
+          <View className="absolute inset-0">
+            <Animated.View
+              className="absolute inset-0 bg-foreground/70 dark:bg-background/85"
+              style={backdropStyle}
+            />
+            <View
+              className="absolute inset-0 overflow-hidden"
+              pointerEvents="box-none"
+            >
+              <View className="absolute inset-0">
+                <View
+                  className="flex-1 items-center justify-center"
+                  pointerEvents="box-none"
+                >
+                  <Animated.View style={presentationStyle}>
+                    <Animated.View style={imageTransformStyle}>
+                      <Image
+                        source={{
+                          uri: photoUrl,
+                        }}
+                        className="bg-transparent"
+                        style={{
+                          width: baseImageSize.width,
+                          height: baseImageSize.height,
+                        }}
+                        resizeMode="contain"
+                        onLoad={markImageLoaded}
+                        onError={markImageLoaded}
+                        onLoadEnd={markImageLoaded}
+                      />
+                    </Animated.View>
+                  </Animated.View>
+                </View>
+                {sharedTransitionOriginRect ? (
+                  <Animated.View
+                    className="absolute overflow-hidden"
+                    pointerEvents="none"
                     style={[
-                      styles.image,
                       {
-                        width: baseImageSize.width,
-                        height: baseImageSize.height,
+                        left: sharedTransitionOriginRect.x,
+                        top: sharedTransitionOriginRect.y,
+                        width: sharedTransitionOriginRect.width,
+                        height: sharedTransitionOriginRect.height,
                       },
+                      originPreviewStyle,
                     ]}
-                    resizeMode="contain"
-                    onLoad={markImageLoaded}
-                    onError={markImageLoaded}
-                    onLoadEnd={markImageLoaded}
-                  />
-                </Animated.View>
-              </Animated.View>
+                  >
+                    <Image
+                      source={{
+                        uri: photoUrl,
+                      }}
+                      className="h-full w-full bg-transparent"
+                      resizeMode="cover"
+                    />
+                  </Animated.View>
+                ) : null}
+              </View>
             </View>
-            {originRect ? (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.originPreview,
-                  {
-                    left: originRect.x,
-                    top: originRect.y,
-                    width: originRect.width,
-                    height: originRect.height,
-                  },
-                  originPreviewStyle,
-                ]}
-              >
-                <Image
-                  source={{
-                    uri: photoUrl,
-                  }}
-                  style={styles.originPreviewImage}
-                  resizeMode="cover"
-                />
-              </Animated.View>
-            ) : null}
           </View>
         </GestureDetector>
         {isImageLoading ? (
-          <View style={styles.loading} pointerEvents="none">
-            <NeobrutalActivityIndicator size="small" color="#FFFFFF" />
+          <View
+            className="absolute inset-0 items-center justify-center"
+            pointerEvents="none"
+          >
+            <NeobrutalActivityIndicator size="small" color={accentForeground} />
           </View>
         ) : null}
         <Animated.View
+          className="absolute right-4"
           style={[
-            styles.closeWrap,
             {
               top: Math.max(topInset + 8, 16),
             },
@@ -716,70 +792,35 @@ const PhotoViewerModal = ({
         >
           <Pressable
             onPress={closeWithSharedTransition}
-            style={styles.closeButton}
+            className="border border-border/70 bg-background/70 px-3 py-2"
             accessibilityRole="button"
             accessibilityLabel={t('photoViewerCloseA11y')}
           >
-            <Text allowFontScaling style={styles.closeText}>
+            <Text allowFontScaling className="text-foreground">
               {t('photoViewerClose')}
             </Text>
           </Pressable>
         </Animated.View>
       </View>
+    </View>
+  );
+  if (!visible) {
+    return null;
+  }
+  if (renderInline) {
+    return viewerContent;
+  }
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={closeWithSharedTransition}
+    >
+      {viewerContent}
     </Modal>
   );
 };
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
-  },
-  imageCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  image: {
-    backgroundColor: 'transparent',
-  },
-  originPreview: {
-    position: 'absolute',
-    overflow: 'hidden',
-  },
-  originPreviewImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'transparent',
-  },
-  loading: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeWrap: {
-    position: 'absolute',
-    right: 16,
-  },
-  closeButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  closeText: {
-    color: '#FFFFFF',
-  },
-});
 export default PhotoViewerModal;

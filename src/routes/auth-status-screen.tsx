@@ -1,6 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { showToastAlert } from '@/utils/toast-alert';
-import { Image, Platform, RefreshControl, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  RefreshControl,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
@@ -31,8 +37,11 @@ import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import DropShadowBox, {
   getDropShadowBorderClass,
 } from '@/components/drop-shadow-box';
-import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
+import NativeEdgeScrollShadow, {
+  resolveNativeEdgeScrollShadowSize,
+} from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
+import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import {
   AUTH_PROFILE_ROUTE,
@@ -142,7 +151,11 @@ const StatusDetailRoute = () => {
       RouteProp<AuthStatusStackParamList, typeof AUTH_STATUS_ROUTE.DETAIL>
     >();
   const insets = useSafeAreaInsets();
+  const { height: viewportHeight } = useWindowDimensions();
   const headerHeight = useHeaderHeight();
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const [accent, background, muted] = useThemeColor([
     'accent',
     'background',
@@ -318,9 +331,15 @@ const StatusDetailRoute = () => {
     originRect: PhotoViewerOriginRect | null,
     previewKey: string,
   ) => {
+    const useSharedTransition = shouldUsePhotoSharedTransition({
+      originRect,
+      viewportHeight,
+      topInset: insets.top,
+      scrollShadowSize,
+    });
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerPreviewKey(previewKey);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerPreviewKey(useSharedTransition ? previewKey : null);
+    setPhotoViewerOriginRect(useSharedTransition ? originRect : null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };
@@ -660,6 +679,14 @@ const StatusDetailRoute = () => {
             </View>
           ) : null}
         </Animated.ScrollView>
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          scrollShadowSize={scrollShadowSize}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
       </NativeEdgeScrollShadow>
 
       <NeobrutalRefreshIndicator
@@ -668,14 +695,6 @@ const StatusDetailRoute = () => {
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
 
       <ComposerModal

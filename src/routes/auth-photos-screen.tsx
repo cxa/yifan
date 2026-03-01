@@ -28,7 +28,9 @@ import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
 import ComposerModal from '@/components/composer-modal';
-import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
+import NativeEdgeScrollShadow, {
+  resolveNativeEdgeScrollShadowSize,
+} from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
@@ -81,6 +83,9 @@ const PhotosRouteContent = ({
   ]);
   const queryKey: [string, string] = ['photos', userId];
   const headerHeight = useHeaderHeight();
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const timelineListSettings = useTimelineListSettings(insets, {
     hasBottomTabBar: false,
   });
@@ -142,6 +147,8 @@ const PhotosRouteContent = ({
     handleToggleBookmark,
   } = useTimelineStatusInteractions({
     updateStatusById,
+    topInset: insets.top,
+    scrollShadowSize,
   });
   const {
     data,
@@ -329,6 +336,14 @@ const PhotosRouteContent = ({
             ) : null
           }
         />
+        <PhotoViewerModal
+          visible={photoViewerVisible}
+          photoUrl={photoViewerUrl}
+          topInset={insets.top}
+          scrollShadowSize={scrollShadowSize}
+          originRect={photoViewerOriginRect}
+          onClose={handleClosePhotoViewer}
+        />
       </NativeEdgeScrollShadow>
 
       <NeobrutalRefreshIndicator
@@ -337,13 +352,6 @@ const PhotosRouteContent = ({
         safeAreaTop={safeAreaTop}
         scrollInsetTop={scrollInsetTop}
         pullThreshold={COMPACT_PULL_THRESHOLD}
-      />
-      <PhotoViewerModal
-        visible={photoViewerVisible}
-        photoUrl={photoViewerUrl}
-        topInset={insets.top}
-        originRect={photoViewerOriginRect}
-        onClose={handleClosePhotoViewer}
       />
       <ComposerModal
         visible={composeMode !== null}
