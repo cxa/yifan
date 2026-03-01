@@ -40,6 +40,7 @@ import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import {
   AUTH_PROFILE_ROUTE,
   AUTH_STACK_ROUTE,
@@ -62,6 +63,7 @@ const FavoritesRoute = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const auth = useAuthSession();
+  const authUserId = auth.accessToken?.userId ?? null;
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const route =
     useRoute<
@@ -217,6 +219,27 @@ const FavoritesRoute = () => {
       },
     });
   };
+  const removeStatusById = (statusId: string) => {
+    queryClient.setQueryData<InfiniteData<FanfouStatus[]>>(queryKey, previous =>
+      previous
+        ? {
+            ...previous,
+            pages: previous.pages.map(pageItems =>
+              pageItems.filter(item => item.id !== statusId),
+            ),
+          }
+        : previous,
+    );
+  };
+  const handleDeleteStatus = (status: FanfouStatus) => {
+    return deleteStatus({
+      statusId: status.id,
+      t,
+      onDeleted: () => {
+        removeStatusById(status.id);
+      },
+    });
+  };
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
@@ -284,6 +307,8 @@ const FavoritesRoute = () => {
               onReply={handleOpenReplyComposer}
               onRepost={handleOpenRepostComposer}
               onToggleBookmark={handleToggleBookmark}
+              canDelete={isStatusOwnedByUser(item, authUserId)}
+              onDelete={handleDeleteStatus}
             />
           )}
           ListFooterComponent={

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Alert, Image, View } from 'react-native';
+import { showToastAlert } from '@/utils/toast-alert';
+import { Image, View } from 'react-native';
 import { post, uploadPhoto } from '@/auth/fanfou-client';
 import type { ComposerModalSubmitPayload } from '@/components/composer-modal';
 import type { FanfouStatus } from '@/types/fanfou';
@@ -20,29 +21,49 @@ type RepostTarget = {
   screenName: string;
 };
 type UseTimelineStatusInteractionsParams = {
-  updateStatusById: (statusId: string, updater: (status: FanfouStatus) => FanfouStatus) => void;
+  updateStatusById: (
+    statusId: string,
+    updater: (status: FanfouStatus) => FanfouStatus,
+  ) => void;
 };
-const getErrorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 const useTimelineStatusInteractions = ({
-  updateStatusById
+  updateStatusById,
 }: UseTimelineStatusInteractionsParams) => {
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
-  const [photoViewerPreviewKey, setPhotoViewerPreviewKey] = useState<string | null>(null);
-  const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
-  const photoPreviewRefs = useRef(new Map<string, React.ComponentRef<typeof View>>());
+  const [photoViewerPreviewKey, setPhotoViewerPreviewKey] = useState<
+    string | null
+  >(null);
+  const [photoViewerOriginRect, setPhotoViewerOriginRect] =
+    useState<PhotoViewerOriginRect | null>(null);
+  const photoPreviewRefs = useRef(
+    new Map<string, React.ComponentRef<typeof View>>(),
+  );
   const [composeMode, setComposeMode] = useState<ComposerMode>(null);
-  const [composeReplyTarget, setComposeReplyTarget] = useState<ReplyTarget | null>(null);
-  const [composeRepostTarget, setComposeRepostTarget] = useState<RepostTarget | null>(null);
-  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(() => new Set());
-  const registerPhotoPreviewRef = (key: string, node: React.ComponentRef<typeof View> | null) => {
+  const [composeReplyTarget, setComposeReplyTarget] =
+    useState<ReplyTarget | null>(null);
+  const [composeRepostTarget, setComposeRepostTarget] =
+    useState<RepostTarget | null>(null);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const registerPhotoPreviewRef = (
+    key: string,
+    node: React.ComponentRef<typeof View> | null,
+  ) => {
     if (node) {
       photoPreviewRefs.current.set(key, node);
       return;
     }
     photoPreviewRefs.current.delete(key);
   };
-  const openPhotoViewer = (photoUrl: string, originRect: PhotoViewerOriginRect | null, previewKey: string) => {
+  const openPhotoViewer = (
+    photoUrl: string,
+    originRect: PhotoViewerOriginRect | null,
+    previewKey: string,
+  ) => {
     Image.prefetch(photoUrl).catch(() => undefined);
     setPhotoViewerPreviewKey(previewKey);
     setPhotoViewerOriginRect(originRect);
@@ -56,13 +77,25 @@ const useTimelineStatusInteractions = ({
       return;
     }
     previewNode.measureInWindow((x, y, width, height) => {
-      const hasValidRect = Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
-      openPhotoViewer(photoUrl, hasValidRect ? {
-        x,
-        y,
-        width,
-        height
-      } : null, previewKey);
+      const hasValidRect =
+        Number.isFinite(x) &&
+        Number.isFinite(y) &&
+        Number.isFinite(width) &&
+        Number.isFinite(height) &&
+        width > 0 &&
+        height > 0;
+      openPhotoViewer(
+        photoUrl,
+        hasValidRect
+          ? {
+              x,
+              y,
+              width,
+              height,
+            }
+          : null,
+        previewKey,
+      );
     });
   };
   const handleClosePhotoViewer = () => {
@@ -88,7 +121,7 @@ const useTimelineStatusInteractions = ({
     setComposeReplyTarget({
       statusId: status.id,
       userId,
-      screenName
+      screenName,
     });
     setComposeRepostTarget(null);
     setComposeMode('reply');
@@ -97,7 +130,7 @@ const useTimelineStatusInteractions = ({
     const screenName = status.user.screen_name || status.user.id;
     setComposeRepostTarget({
       statusId: status.id,
-      screenName
+      screenName,
     });
     setComposeReplyTarget(null);
     setComposeMode('repost');
@@ -109,7 +142,7 @@ const useTimelineStatusInteractions = ({
   };
   const handleSendComposer = async ({
     text,
-    photo
+    photo,
   }: ComposerModalSubmitPayload) => {
     if (!composeMode) {
       return;
@@ -118,16 +151,16 @@ const useTimelineStatusInteractions = ({
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        Alert.alert('Cannot reply', 'Missing reply target.');
+        showToastAlert('Cannot reply', 'Missing reply target.');
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        Alert.alert('Cannot reply', 'Please enter text or attach a photo.');
+        showToastAlert('Cannot reply', 'Please enter text or attach a photo.');
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      Alert.alert('Cannot repost', 'Missing repost target.');
+      showToastAlert('Cannot repost', 'Missing repost target.');
       return;
     }
     try {
@@ -138,29 +171,35 @@ const useTimelineStatusInteractions = ({
             status: trimmedText || undefined,
             params: {
               in_reply_to_status_id: composeReplyTarget.statusId,
-              in_reply_to_user_id: composeReplyTarget.userId
-            }
+              in_reply_to_user_id: composeReplyTarget.userId,
+            },
           });
         } else {
           await post('/statuses/update', {
             status: trimmedText,
             in_reply_to_status_id: composeReplyTarget.statusId,
-            in_reply_to_user_id: composeReplyTarget.userId
+            in_reply_to_user_id: composeReplyTarget.userId,
           });
         }
       }
       if (composeMode === 'repost' && composeRepostTarget) {
         await post('/statuses/update', {
           status: trimmedText || undefined,
-          repost_status_id: composeRepostTarget.statusId
+          repost_status_id: composeRepostTarget.statusId,
         });
       }
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      Alert.alert('Sent', composeMode === 'reply' ? 'Reply posted.' : 'Reposted.');
+      showToastAlert(
+        'Sent',
+        composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
+      );
     } catch (requestError) {
-      Alert.alert(composeMode === 'reply' ? 'Reply failed' : 'Repost failed', getErrorMessage(requestError, 'Please try again.'));
+      showToastAlert(
+        composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
+        getErrorMessage(requestError, 'Please try again.'),
+      );
     }
   };
   const handleToggleBookmark = async (status: FanfouStatus) => {
@@ -172,27 +211,50 @@ const useTimelineStatusInteractions = ({
     setBookmarkPending(statusId, true);
     updateStatusById(statusId, item => ({
       ...item,
-      favorited: nextFavorited
+      favorited: nextFavorited,
     }));
     try {
       await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', {
-        id: statusId
+        id: statusId,
       });
     } catch (requestError) {
       updateStatusById(statusId, item => ({
         ...item,
-        favorited: !nextFavorited
+        favorited: !nextFavorited,
       }));
-      Alert.alert('Bookmark failed', getErrorMessage(requestError, 'Please try again.'));
+      showToastAlert(
+        'Bookmark failed',
+        getErrorMessage(requestError, 'Please try again.'),
+      );
     } finally {
       setBookmarkPending(statusId, false);
     }
   };
-  const composerTitle = composeMode === 'reply' ? composeReplyTarget ? `Reply @${composeReplyTarget.screenName}` : 'Reply' : composeMode === 'repost' ? composeRepostTarget?.screenName ? `Repost @${composeRepostTarget.screenName}` : 'Repost' : 'Compose';
-  const composerPlaceholder = composeMode === 'reply' ? 'Write your reply...' : 'Add a comment (optional)...';
+  const composerTitle =
+    composeMode === 'reply'
+      ? composeReplyTarget
+        ? `Reply @${composeReplyTarget.screenName}`
+        : 'Reply'
+      : composeMode === 'repost'
+      ? composeRepostTarget?.screenName
+        ? `Repost @${composeRepostTarget.screenName}`
+        : 'Repost'
+      : 'Compose';
+  const composerPlaceholder =
+    composeMode === 'reply'
+      ? 'Write your reply...'
+      : 'Add a comment (optional)...';
   const composerSubmitLabel = composeMode === 'reply' ? 'Reply' : 'Repost';
-  const composerInitialText = composeMode === 'reply' && composeReplyTarget ? `@${composeReplyTarget.screenName} ` : '';
-  const composerResetKey = composeMode === 'reply' ? `reply:${composeReplyTarget?.statusId ?? ''}` : composeMode === 'repost' ? `repost:${composeRepostTarget?.statusId ?? ''}` : 'closed';
+  const composerInitialText =
+    composeMode === 'reply' && composeReplyTarget
+      ? `@${composeReplyTarget.screenName} `
+      : '';
+  const composerResetKey =
+    composeMode === 'reply'
+      ? `reply:${composeReplyTarget?.statusId ?? ''}`
+      : composeMode === 'repost'
+      ? `repost:${composeRepostTarget?.statusId ?? ''}`
+      : 'closed';
   return {
     composeMode,
     composerTitle,
@@ -212,7 +274,7 @@ const useTimelineStatusInteractions = ({
     handleOpenRepostComposer,
     handleCloseComposer,
     handleSendComposer,
-    handleToggleBookmark
+    handleToggleBookmark,
   };
 };
 export default useTimelineStatusInteractions;

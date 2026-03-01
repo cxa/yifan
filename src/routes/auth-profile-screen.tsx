@@ -1,12 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Image,
-  Platform,
-  Pressable,
-  RefreshControl,
-  View,
-} from 'react-native';
+import { showToastAlert } from '@/utils/toast-alert';
+import { Image, Platform, Pressable, RefreshControl, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
@@ -62,6 +56,7 @@ import {
   profileUserQueryOptions,
   userQueryKeys,
 } from '@/query/user-query-options';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
@@ -374,7 +369,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         following: nextFollowing,
       });
       const name = user.screen_name ?? user.name ?? '';
-      Alert.alert(
+      showToastAlert(
         t('successTitle'),
         nextFollowing
           ? t('profileFollowSuccess', {
@@ -385,7 +380,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             }),
       );
     } catch (requestError) {
-      Alert.alert(
+      showToastAlert(
         t('operationFailed'),
         getErrorMessage(requestError, t('profileFollowFailed')),
       );
@@ -410,7 +405,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         });
       }
       const name = user.screen_name ?? user.name ?? '';
-      Alert.alert(
+      showToastAlert(
         t('successTitle'),
         nextBlocked
           ? t('profileBlockSuccess', {
@@ -421,7 +416,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             }),
       );
     } catch (requestError) {
-      Alert.alert(
+      showToastAlert(
         t('operationFailed'),
         getErrorMessage(requestError, t('profileBlockFailed')),
       );
@@ -445,7 +440,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     const userId = status.user.id.trim();
     const screenName = status.user.screen_name.trim();
     if (!userId || !screenName) {
-      Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
+      showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
     setComposeMode('reply');
@@ -491,15 +486,15 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'dm' && !trimmedText) {
-      Alert.alert(t('cannotSendTitle'), t('profileNeedsContent'));
+      showToastAlert(t('cannotSendTitle'), t('profileNeedsContent'));
       return;
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
+      showToastAlert(t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
     if (composeMode === 'reply' && !composeReplyTarget) {
-      Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
+      showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
     if (
@@ -507,7 +502,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       !trimmedText &&
       !hasPhoto
     ) {
-      Alert.alert(t('cannotSendTitle'), t('replyNeedsContent'));
+      showToastAlert(t('cannotSendTitle'), t('replyNeedsContent'));
       return;
     }
     try {
@@ -557,7 +552,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      Alert.alert(
+      showToastAlert(
         t('sentTitle'),
         composeMode === 'mention'
           ? t('profileMentionSent')
@@ -568,7 +563,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
           : t('repostSent'),
       );
     } catch (requestError) {
-      Alert.alert(
+      showToastAlert(
         composeMode === 'repost'
           ? t('repostFailedTitle')
           : composeMode === 'reply'
@@ -624,13 +619,32 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             : item,
         ),
       );
-      Alert.alert(
+      showToastAlert(
         t('bookmarkFailedTitle'),
         getErrorMessage(requestError, t('retryMessage')),
       );
     } finally {
       setBookmarkPending(statusId, false);
     }
+  };
+  const handleDeleteStatus = (status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    return deleteStatus({
+      statusId,
+      t,
+      onDeleted: () => {
+        setRecentStatusItems(previous =>
+          previous.filter(item => getStatusId(item) !== statusId),
+        );
+        queryClient.setQueryData<FanfouStatus[]>(
+          recentStatusesQueryKey,
+          previous =>
+            previous
+              ? previous.filter(item => getStatusId(item) !== statusId)
+              : previous,
+        );
+      },
+    });
   };
   const profileErrorMessage = error
     ? getErrorMessage(error, t('profileLoadFailed'))
@@ -1021,6 +1035,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     onReply={handleOpenReplyComposer}
                     onRepost={handleOpenRepostComposer}
                     onToggleBookmark={handleToggleBookmark}
+                    canDelete={isStatusOwnedByUser(status, authUserId)}
+                    onDelete={handleDeleteStatus}
                   />
                 ))}
               </View>

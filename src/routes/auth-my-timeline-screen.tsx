@@ -40,6 +40,7 @@ import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import {
   AUTH_PROFILE_ROUTE,
   AUTH_STACK_ROUTE,
@@ -60,11 +61,13 @@ const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 type MyTimelineRouteContentProps = {
   userId: string;
+  authUserId: string | null;
   isSelf: boolean;
   backCount?: number;
 };
 const MyTimelineRouteContent = ({
   userId,
+  authUserId,
   isSelf,
   backCount,
 }: MyTimelineRouteContentProps) => {
@@ -216,6 +219,27 @@ const MyTimelineRouteContent = ({
       },
     });
   };
+  const removeStatusById = (statusId: string) => {
+    queryClient.setQueryData<InfiniteData<FanfouStatus[]>>(queryKey, previous =>
+      previous
+        ? {
+            ...previous,
+            pages: previous.pages.map(pageItems =>
+              pageItems.filter(item => item.id !== statusId),
+            ),
+          }
+        : previous,
+    );
+  };
+  const handleDeleteStatus = (status: FanfouStatus) => {
+    return deleteStatus({
+      statusId: status.id,
+      t,
+      onDeleted: () => {
+        removeStatusById(status.id);
+      },
+    });
+  };
   return (
     <>
       <NativeEdgeScrollShadow className="flex-1" color={background}>
@@ -274,6 +298,8 @@ const MyTimelineRouteContent = ({
               onReply={handleOpenReplyComposer}
               onRepost={handleOpenRepostComposer}
               onToggleBookmark={handleToggleBookmark}
+              canDelete={isStatusOwnedByUser(item, authUserId)}
+              onDelete={handleDeleteStatus}
             />
           )}
           ListFooterComponent={
@@ -319,6 +345,7 @@ const MyTimelineRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
+  const authUserId = accessToken?.userId ?? null;
   const route =
     useRoute<
       RouteProp<AuthStackParamList, typeof AUTH_STACK_ROUTE.MY_TIMELINE>
@@ -340,6 +367,7 @@ const MyTimelineRoute = () => {
   return (
     <MyTimelineRouteContent
       userId={resolvedUserId}
+      authUserId={authUserId}
       isSelf={Boolean(accessToken && resolvedUserId === accessToken.userId)}
       backCount={backCount}
     />

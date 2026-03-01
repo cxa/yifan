@@ -2,6 +2,7 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HeroUINativeProvider } from 'heroui-native';
+import ToastManagerSync from '@/components/toast-manager-sync';
 import QueryProvider from '@/query/query-provider';
 
 type RootLayoutProps = {
@@ -11,11 +12,14 @@ type RootLayoutProps = {
 const RootLayout = ({ children }: RootLayoutProps) => {
   return (
     <GestureHandlerRootView className="flex-1">
-      <HeroUINativeProvider config={{ devInfo: { stylingPrinciples: false } }}>
-        <QueryProvider>
-          <SafeAreaProvider>{children}</SafeAreaProvider>
-        </QueryProvider>
-      </HeroUINativeProvider>
+      <SafeAreaProvider>
+        <HeroUINativeProvider
+          config={{ devInfo: { stylingPrinciples: false } }}
+        >
+          <ToastManagerSync />
+          <QueryProvider>{children}</QueryProvider>
+        </HeroUINativeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { showToastAlert } from '@/utils/toast-alert';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -251,7 +251,7 @@ const EditProfileRoute = () => {
     const nextUrl = url.trim();
     const nextDescription = description.trim();
     if (!nextName) {
-      Alert.alert(
+      showToastAlert(
         t('editProfileSaveFailedTitle'),
         t('editProfileNameRequired'),
       );
@@ -277,13 +277,13 @@ const EditProfileRoute = () => {
                 description: nextDescription,
               }
             : previous,
-      ),
-        await queryClient.invalidateQueries({
-          queryKey: accountUserQueryKey,
-        });
+      );
+      await queryClient.invalidateQueries({
+        queryKey: accountUserQueryKey,
+      });
       navigation.goBack();
     } catch (updateError) {
-      Alert.alert(
+      showToastAlert(
         t('editProfileUpdateFailedTitle'),
         getErrorMessage(updateError, t('editProfileUpdateFailed')),
       );

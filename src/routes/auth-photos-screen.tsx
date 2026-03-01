@@ -34,6 +34,7 @@ import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import {
   AUTH_PROFILE_ROUTE,
   AUTH_STACK_ROUTE,
@@ -54,6 +55,7 @@ const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 type PhotosRouteContentProps = {
   userId: string;
+  authUserId: string | null;
   backCount?: number;
 };
 const PHOTO_PAGE_SIZE = 60;
@@ -63,7 +65,11 @@ type PhotoTimelinePage = {
   sourceCount: number;
   sourcePageSize: number;
 };
-const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
+const PhotosRouteContent = ({
+  userId,
+  authUserId,
+  backCount,
+}: PhotosRouteContentProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
@@ -232,6 +238,30 @@ const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
       },
     });
   };
+  const removeStatusById = (statusId: string) => {
+    queryClient.setQueryData<InfiniteData<PhotoTimelinePage>>(
+      queryKey,
+      previous =>
+        previous
+          ? {
+              ...previous,
+              pages: previous.pages.map(pageItems => ({
+                ...pageItems,
+                items: pageItems.items.filter(item => item.id !== statusId),
+              })),
+            }
+          : previous,
+    );
+  };
+  const handleDeleteStatus = (status: FanfouStatus) => {
+    return deleteStatus({
+      statusId: status.id,
+      t,
+      onDeleted: () => {
+        removeStatusById(status.id);
+      },
+    });
+  };
   return (
     <>
       <NativeEdgeScrollShadow className="flex-1" color={background}>
@@ -287,6 +317,8 @@ const PhotosRouteContent = ({ userId, backCount }: PhotosRouteContentProps) => {
               onReply={handleOpenReplyComposer}
               onRepost={handleOpenRepostComposer}
               onToggleBookmark={handleToggleBookmark}
+              canDelete={isStatusOwnedByUser(item, authUserId)}
+              onDelete={handleDeleteStatus}
             />
           )}
           ListFooterComponent={
@@ -332,6 +364,7 @@ const PhotosRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
+  const authUserId = accessToken?.userId ?? null;
   const route =
     useRoute<RouteProp<AuthStackParamList, typeof AUTH_STACK_ROUTE.PHOTOS>>();
   const resolvedUserId = route.params?.userId ?? accessToken?.userId;
@@ -347,6 +380,12 @@ const PhotosRoute = () => {
       </View>
     );
   }
-  return <PhotosRouteContent userId={resolvedUserId} backCount={backCount} />;
+  return (
+    <PhotosRouteContent
+      userId={resolvedUserId}
+      authUserId={authUserId}
+      backCount={backCount}
+    />
+  );
 };
 export default PhotosRoute;

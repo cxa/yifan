@@ -55,6 +55,13 @@ type BaseTranslations = {
 
   // Bookmark
   bookmarkFailedTitle: string;
+  statusDeleteTitle: string;
+  statusDeleteConfirm: string;
+  statusDeleteConfirmButton: string;
+  statusDeleting: string;
+  statusDeleteSuccess: string;
+  statusDeleteFailedTitle: string;
+  statusDeleteFailedMessage: string;
 
   // Home screen
   homeTitle: string;
@@ -258,6 +265,13 @@ const enUS: BaseTranslations = {
 
   // Bookmark
   bookmarkFailedTitle: 'Bookmark Failed',
+  statusDeleteTitle: 'Delete Post',
+  statusDeleteConfirm: 'Delete this post?',
+  statusDeleteConfirmButton: 'Delete',
+  statusDeleting: 'Deleting…',
+  statusDeleteSuccess: 'Post deleted.',
+  statusDeleteFailedTitle: 'Delete Failed',
+  statusDeleteFailedMessage: 'Cannot delete post.',
 
   // Home screen
   homeTitle: 'Home',
@@ -313,7 +327,8 @@ const enUS: BaseTranslations = {
   profileStatPhotos: 'Photos',
   recentActivity: 'Recent Activity',
   recentActivityEmpty: 'No recent activity.',
-  protectedAccountNotice: 'This account is protected. Follow to see recent activity.',
+  protectedAccountNotice:
+    'This account is protected. Follow to see recent activity.',
   profileLoadFailed: 'Failed to load profile.',
   profileActionMention: 'Mention',
   profileActionMessage: 'Message',
@@ -461,6 +476,13 @@ const zhCN: BaseTranslations = {
 
   // Bookmark
   bookmarkFailedTitle: '收藏失败',
+  statusDeleteTitle: '删除动态',
+  statusDeleteConfirm: '确认删除这条动态？',
+  statusDeleteConfirmButton: '删除',
+  statusDeleting: '删除中…',
+  statusDeleteSuccess: '动态已删除。',
+  statusDeleteFailedTitle: '删除失败',
+  statusDeleteFailedMessage: '无法删除动态。',
 
   // Home screen
   homeTitle: '首页',

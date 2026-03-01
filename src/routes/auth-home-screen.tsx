@@ -1,6 +1,6 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { showToastAlert } from '@/utils/toast-alert';
 import {
-  Alert,
   FlatList,
   Image,
   RefreshControl,
@@ -37,6 +37,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
@@ -497,16 +498,16 @@ const AuthHomeRoute = () => {
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
+        showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        Alert.alert(t('cannotReplyTitle'), t('replyNeedsContent'));
+        showToastAlert(t('cannotReplyTitle'), t('replyNeedsContent'));
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
+      showToastAlert(t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
     try {
@@ -537,12 +538,12 @@ const AuthHomeRoute = () => {
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      Alert.alert(
+      showToastAlert(
         t('sentTitle'),
         composeMode === 'reply' ? t('replySent') : t('repostSent'),
       );
     } catch (requestError) {
-      Alert.alert(
+      showToastAlert(
         composeMode === 'reply'
           ? t('replyFailedTitle')
           : t('repostFailedTitle'),
@@ -584,7 +585,7 @@ const AuthHomeRoute = () => {
             : item,
         ),
       );
-      Alert.alert(
+      showToastAlert(
         t('bookmarkFailedTitle'),
         requestError instanceof Error
           ? requestError.message
@@ -593,6 +594,18 @@ const AuthHomeRoute = () => {
     } finally {
       setBookmarkPending(statusId, false);
     }
+  };
+  const handleDeleteStatus = (status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    return deleteStatus({
+      statusId,
+      t,
+      onDeleted: () => {
+        setTimelineItems(previous =>
+          previous.filter(item => getStatusId(item) !== statusId),
+        );
+      },
+    });
   };
   const timelineListSettings = useTimelineListSettings(insets);
   const isHydratingTimelineItems = isHydratingTimeline({
@@ -698,6 +711,8 @@ const AuthHomeRoute = () => {
               onReply={handleOpenReplyComposer}
               onRepost={handleOpenRepostComposer}
               onToggleBookmark={handleToggleBookmark}
+              canDelete={isStatusOwnedByUser(item, authUserId)}
+              onDelete={handleDeleteStatus}
             />
           )}
         />

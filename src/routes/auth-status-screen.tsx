@@ -1,25 +1,51 @@
 import React, { useRef, useState } from 'react';
-import { Alert, Image, Platform, RefreshControl, View } from 'react-native';
+import { showToastAlert } from '@/utils/toast-alert';
+import { Image, Platform, RefreshControl, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useHeaderHeight } from '@react-navigation/elements';
-import NeobrutalActivityIndicator, { COMPACT_PULL_THRESHOLD, NeobrutalRefreshIndicator } from '@/components/neobrutal-activity-indicator';
-import { usePullScrollY, usePullRefreshState } from '@/components/use-pull-to-refresh';
-import { useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
+import NeobrutalActivityIndicator, {
+  COMPACT_PULL_THRESHOLD,
+  NeobrutalRefreshIndicator,
+} from '@/components/neobrutal-activity-indicator';
+import {
+  usePullScrollY,
+  usePullRefreshState,
+} from '@/components/use-pull-to-refresh';
+import {
+  useNavigation,
+  useRoute,
+  type NavigationProp,
+  type RouteProp,
+} from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useAuthSession } from '@/auth/auth-session';
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
-import ComposerModal, { type ComposerModalSubmitPayload } from '@/components/composer-modal';
-import DropShadowBox, { getDropShadowBorderClass } from '@/components/drop-shadow-box';
+import ComposerModal, {
+  type ComposerModalSubmitPayload,
+} from '@/components/composer-modal';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
+import DropShadowBox, {
+  getDropShadowBorderClass,
+} from '@/components/drop-shadow-box';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineStatusCard from '@/components/timeline-status-card';
-import { AUTH_PROFILE_ROUTE, AUTH_STACK_ROUTE, AUTH_STATUS_ROUTE, AUTH_TAG_TIMELINE_ROUTE } from '@/navigation/route-names';
+import {
+  AUTH_PROFILE_ROUTE,
+  AUTH_STACK_ROUTE,
+  AUTH_STATUS_ROUTE,
+  AUTH_TAG_TIMELINE_ROUTE,
+} from '@/navigation/route-names';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { TIMELINE_SPACING } from '@/components/timeline-list-settings';
-import type { AuthStackParamList, AuthStatusStackParamList } from '@/navigation/types';
+import type {
+  AuthStackParamList,
+  AuthStatusStackParamList,
+} from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 import { parseFanfouDate } from '@/utils/fanfou-date';
 const STATUS_DETAIL_SECTION_GAP = 16;
@@ -39,9 +65,12 @@ type RepostTarget = {
   statusId: string;
   screenName: string;
 };
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-const normalizeStatus = (value: unknown): FanfouStatus | null => isRecord(value) ? value as FanfouStatus : null;
-const normalizeTimelineItems = (value: unknown): FanfouStatus[] => Array.isArray(value) ? value as FanfouStatus[] : [];
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+const normalizeStatus = (value: unknown): FanfouStatus | null =>
+  isRecord(value) ? (value as FanfouStatus) : null;
+const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
+  Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
 const getStatusCreatedAtMs = (status: FanfouStatus) => {
   const parsed = parseFanfouDate(status.created_at);
@@ -51,7 +80,10 @@ const getStatusCreatedAtMs = (status: FanfouStatus) => {
   const fallback = new Date(status.created_at);
   return Number.isNaN(fallback.getTime()) ? 0 : fallback.getTime();
 };
-const mergeConversationStatuses = (contextItems: FanfouStatus[], status: FanfouStatus | null) => {
+const mergeConversationStatuses = (
+  contextItems: FanfouStatus[],
+  status: FanfouStatus | null,
+) => {
   const dedupedById = new Map<string, FanfouStatus>();
   for (const item of contextItems) {
     dedupedById.set(getStatusId(item), item);
@@ -68,7 +100,9 @@ const extractErrorField = (value: unknown) => {
     return null;
   }
   const message = value.error;
-  return typeof message === 'string' && message.trim().length > 0 ? message.trim() : null;
+  return typeof message === 'string' && message.trim().length > 0
+    ? message.trim()
+    : null;
 };
 const parseErrorPayloadFromMessage = (message: string) => {
   const firstBraceIndex = message.indexOf('{');
@@ -101,128 +135,149 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 const StatusDetailRoute = () => {
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
-  const route = useRoute<RouteProp<AuthStatusStackParamList, typeof AUTH_STATUS_ROUTE.DETAIL>>();
+  const auth = useAuthSession();
+  const authUserId = auth.accessToken?.userId ?? null;
+  const route =
+    useRoute<
+      RouteProp<AuthStatusStackParamList, typeof AUTH_STATUS_ROUTE.DETAIL>
+    >();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const [accent, background, muted] = useThemeColor(['accent', 'background', 'muted']);
+  const [accent, background, muted] = useThemeColor([
+    'accent',
+    'background',
+    'muted',
+  ]);
   const routeStatusId = route.params.statusId.trim();
-  const {
-    t
-  } = useTranslation();
-  const {
-    pullScrollY,
-    safeAreaTop,
-    scrollInsetTop,
-    updatePullScrollY
-  } = usePullScrollY();
+  const { t } = useTranslation();
+  const { pullScrollY, safeAreaTop, scrollInsetTop, updatePullScrollY } =
+    usePullScrollY();
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
       updatePullScrollY(event.contentOffset.y);
-    }
+    },
   });
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
-  const [photoViewerPreviewKey, setPhotoViewerPreviewKey] = useState<string | null>(null);
-  const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
-  const photoPreviewRefs = useRef(new Map<string, React.ComponentRef<typeof View>>());
+  const [photoViewerPreviewKey, setPhotoViewerPreviewKey] = useState<
+    string | null
+  >(null);
+  const [photoViewerOriginRect, setPhotoViewerOriginRect] =
+    useState<PhotoViewerOriginRect | null>(null);
+  const photoPreviewRefs = useRef(
+    new Map<string, React.ComponentRef<typeof View>>(),
+  );
   const [composeMode, setComposeMode] = useState<ComposerMode>(null);
-  const [composeReplyTarget, setComposeReplyTarget] = useState<ReplyTarget | null>(null);
-  const [composeRepostTarget, setComposeRepostTarget] = useState<RepostTarget | null>(null);
-  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(() => new Set());
-  const [favoritedOverrides, setFavoritedOverrides] = useState<Record<string, boolean>>({});
+  const [composeReplyTarget, setComposeReplyTarget] =
+    useState<ReplyTarget | null>(null);
+  const [composeRepostTarget, setComposeRepostTarget] =
+    useState<RepostTarget | null>(null);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [favoritedOverrides, setFavoritedOverrides] = useState<
+    Record<string, boolean>
+  >({});
   const statusQueryKey = ['status', 'detail', routeStatusId] as const;
   const contextQueryKey = ['status', 'context', routeStatusId] as const;
   const {
     data: status,
     isLoading: isStatusLoading,
     error: statusError,
-    refetch: refetchStatus
+    refetch: refetchStatus,
   } = useQuery<FanfouStatus | null>({
     queryKey: statusQueryKey,
     queryFn: async () => {
       const data = await get('/statuses/show', {
         id: routeStatusId,
-        mode: 'default'
+        mode: 'default',
       });
       return normalizeStatus(data);
     },
-    enabled: Boolean(routeStatusId)
+    enabled: Boolean(routeStatusId),
   });
   const {
     data: contextStatuses,
     isLoading: isContextLoading,
     error: contextError,
-    refetch: refetchContext
+    refetch: refetchContext,
   } = useQuery<FanfouStatus[]>({
     queryKey: contextQueryKey,
     queryFn: async () => {
       const data = await get('/statuses/context_timeline', {
         id: routeStatusId,
-        mode: 'default'
+        mode: 'default',
       });
       return normalizeTimelineItems(data);
     },
-    enabled: Boolean(routeStatusId)
+    enabled: Boolean(routeStatusId),
   });
   const contextItems = contextStatuses ?? [];
-  const conversationItems = mergeConversationStatuses(contextItems, status ?? null);
+  const conversationItems = mergeConversationStatuses(
+    contextItems,
+    status ?? null,
+  );
   const mainStatus = (() => {
-    const fromConversation = conversationItems.find(item => getStatusId(item) === routeStatusId);
+    const fromConversation = conversationItems.find(
+      item => getStatusId(item) === routeStatusId,
+    );
     return fromConversation ?? status;
   })();
   const mainStatusId = mainStatus ? getStatusId(mainStatus) : routeStatusId;
-  const {
-    beforeStatuses,
-    afterStatuses
-  } = (() => {
+  const { beforeStatuses, afterStatuses } = (() => {
     if (conversationItems.length === 0) {
       return {
         beforeStatuses: [] as FanfouStatus[],
-        afterStatuses: [] as FanfouStatus[]
+        afterStatuses: [] as FanfouStatus[],
       };
     }
-    const pivotIndex = conversationItems.findIndex(item => getStatusId(item) === mainStatusId);
+    const pivotIndex = conversationItems.findIndex(
+      item => getStatusId(item) === mainStatusId,
+    );
     if (pivotIndex === -1) {
       return {
         beforeStatuses: [] as FanfouStatus[],
-        afterStatuses: conversationItems
+        afterStatuses: conversationItems,
       };
     }
     return {
       beforeStatuses: conversationItems.slice(0, pivotIndex),
-      afterStatuses: conversationItems.slice(pivotIndex + 1)
+      afterStatuses: conversationItems.slice(pivotIndex + 1),
     };
   })();
-  const statusErrorMessage = statusError ? getErrorMessage(statusError, t('statusLoadFailed')) : null;
-  const contextErrorMessage = contextError ? getErrorMessage(contextError, t('conversationLoadFailed')) : null;
-  const isHydratingStatus = !mainStatus && (isStatusLoading || isContextLoading);
+  const statusErrorMessage = statusError
+    ? getErrorMessage(statusError, t('statusLoadFailed'))
+    : null;
+  const contextErrorMessage = contextError
+    ? getErrorMessage(contextError, t('conversationLoadFailed'))
+    : null;
+  const isHydratingStatus =
+    !mainStatus && (isStatusLoading || isContextLoading);
   const contentContainerStyle = {
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + TIMELINE_SPACING,
-    gap: STATUS_DETAIL_SECTION_GAP
+    gap: STATUS_DETAIL_SECTION_GAP,
   };
   const handleRefresh = async () => {
     await Promise.all([refetchStatus(), refetchContext()]);
   };
-  const {
-    isPullRefreshing,
-    handlePullRefresh
-  } = usePullRefreshState(handleRefresh);
+  const { isPullRefreshing, handlePullRefresh } =
+    usePullRefreshState(handleRefresh);
   const handleMentionPress = (userId: string) => {
     navigation.navigate(AUTH_STACK_ROUTE.PROFILE, {
       screen: AUTH_PROFILE_ROUTE.DETAIL,
       params: {
-        userId
-      }
+        userId,
+      },
     });
   };
   const handleProfilePress = (userId: string) => {
     navigation.navigate(AUTH_STACK_ROUTE.PROFILE, {
       screen: AUTH_PROFILE_ROUTE.DETAIL,
       params: {
-        userId
-      }
+        userId,
+      },
     });
   };
   const handleOpenStatusDetail = (statusId: string) => {
@@ -232,8 +287,8 @@ const StatusDetailRoute = () => {
     navigation.navigate(AUTH_STACK_ROUTE.STATUS, {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
-        statusId
-      }
+        statusId,
+      },
     });
   };
   const handleTagPress = (tag: string) => {
@@ -244,18 +299,25 @@ const StatusDetailRoute = () => {
     navigation.navigate(AUTH_STACK_ROUTE.TAG_TIMELINE, {
       screen: AUTH_TAG_TIMELINE_ROUTE.DETAIL,
       params: {
-        tag: normalizedTag
-      }
+        tag: normalizedTag,
+      },
     });
   };
-  const registerPhotoPreviewRef = (key: string, node: React.ComponentRef<typeof View> | null) => {
+  const registerPhotoPreviewRef = (
+    key: string,
+    node: React.ComponentRef<typeof View> | null,
+  ) => {
     if (node) {
       photoPreviewRefs.current.set(key, node);
       return;
     }
     photoPreviewRefs.current.delete(key);
   };
-  const openPhotoViewer = (photoUrl: string, originRect: PhotoViewerOriginRect | null, previewKey: string) => {
+  const openPhotoViewer = (
+    photoUrl: string,
+    originRect: PhotoViewerOriginRect | null,
+    previewKey: string,
+  ) => {
     Image.prefetch(photoUrl).catch(() => undefined);
     setPhotoViewerPreviewKey(previewKey);
     setPhotoViewerOriginRect(originRect);
@@ -269,13 +331,25 @@ const StatusDetailRoute = () => {
       return;
     }
     previewNode.measureInWindow((x, y, width, height) => {
-      const hasValidRect = Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
-      openPhotoViewer(photoUrl, hasValidRect ? {
-        x,
-        y,
-        width,
-        height
-      } : null, previewKey);
+      const hasValidRect =
+        Number.isFinite(x) &&
+        Number.isFinite(y) &&
+        Number.isFinite(width) &&
+        Number.isFinite(height) &&
+        width > 0 &&
+        height > 0;
+      openPhotoViewer(
+        photoUrl,
+        hasValidRect
+          ? {
+              x,
+              y,
+              width,
+              height,
+            }
+          : null,
+        previewKey,
+      );
     });
   };
   const handleClosePhotoViewer = () => {
@@ -309,35 +383,52 @@ const StatusDetailRoute = () => {
     setBookmarkPending(statusId, true);
     setFavoritedOverrides(previous => ({
       ...previous,
-      [statusId]: nextFavorited
+      [statusId]: nextFavorited,
     }));
     try {
       await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', {
-        id: statusId
+        id: statusId,
       });
     } catch (requestError) {
       setFavoritedOverrides(previous => ({
         ...previous,
-        [statusId]: currentFavorited
+        [statusId]: currentFavorited,
       }));
-      Alert.alert(t('bookmarkFailedTitle'), getErrorMessage(requestError, t('retryMessage')));
+      showToastAlert(
+        t('bookmarkFailedTitle'),
+        getErrorMessage(requestError, t('retryMessage')),
+      );
     } finally {
       setBookmarkPending(statusId, false);
     }
+  };
+  const handleDeleteStatus = (statusItem: FanfouStatus) => {
+    const statusId = getStatusId(statusItem);
+    return deleteStatus({
+      statusId,
+      t,
+      onDeleted: async () => {
+        if (statusId === routeStatusId) {
+          navigation.goBack();
+          return;
+        }
+        await Promise.all([refetchStatus(), refetchContext()]);
+      },
+    });
   };
   const handleOpenReplyComposer = (statusItem: FanfouStatus) => {
     const statusId = getStatusId(statusItem);
     const userId = statusItem.user.id.trim();
     const screenName = statusItem.user.screen_name.trim();
     if (!userId || !screenName) {
-      Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
+      showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
     setComposeMode('reply');
     setComposeReplyTarget({
       statusId,
       userId,
-      screenName
+      screenName,
     });
     setComposeRepostTarget(null);
   };
@@ -347,7 +438,7 @@ const StatusDetailRoute = () => {
     setComposeMode('repost');
     setComposeRepostTarget({
       statusId,
-      screenName
+      screenName,
     });
     setComposeReplyTarget(null);
   };
@@ -358,7 +449,7 @@ const StatusDetailRoute = () => {
   };
   const handleSendComposer = async ({
     text,
-    photo
+    photo,
   }: ComposerModalSubmitPayload) => {
     if (!composeMode) {
       return;
@@ -367,16 +458,16 @@ const StatusDetailRoute = () => {
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
+        showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        Alert.alert(t('cannotReplyTitle'), t('replyNeedsContent'));
+        showToastAlert(t('cannotReplyTitle'), t('replyNeedsContent'));
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
+      showToastAlert(t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
     try {
@@ -387,99 +478,219 @@ const StatusDetailRoute = () => {
             status: trimmedText || undefined,
             params: {
               in_reply_to_status_id: composeReplyTarget.statusId,
-              in_reply_to_user_id: composeReplyTarget.userId
-            }
+              in_reply_to_user_id: composeReplyTarget.userId,
+            },
           });
         } else {
           await post('/statuses/update', {
             status: trimmedText,
             in_reply_to_status_id: composeReplyTarget.statusId,
-            in_reply_to_user_id: composeReplyTarget.userId
+            in_reply_to_user_id: composeReplyTarget.userId,
           });
         }
       }
       if (composeMode === 'repost' && composeRepostTarget) {
         await post('/statuses/update', {
           status: trimmedText || undefined,
-          repost_status_id: composeRepostTarget.statusId
+          repost_status_id: composeRepostTarget.statusId,
         });
       }
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      Alert.alert(t('sentTitle'), composeMode === 'reply' ? t('replySent') : t('repostSent'));
+      showToastAlert(
+        t('sentTitle'),
+        composeMode === 'reply' ? t('replySent') : t('repostSent'),
+      );
     } catch (requestError) {
-      Alert.alert(composeMode === 'reply' ? t('replyFailedTitle') : t('repostFailedTitle'), getErrorMessage(requestError, t('retryMessage')));
+      showToastAlert(
+        composeMode === 'reply'
+          ? t('replyFailedTitle')
+          : t('repostFailedTitle'),
+        getErrorMessage(requestError, t('retryMessage')),
+      );
     }
   };
-  const renderStatusCard = (statusItem: FanfouStatus, isMainStatus: boolean) => {
+  const renderStatusCard = (
+    statusItem: FanfouStatus,
+    isMainStatus: boolean,
+  ) => {
     const statusId = getStatusId(statusItem);
     const isFavorited = getIsFavorited(statusItem);
-    const cardStatus = statusItem.favorited === isFavorited ? statusItem : {
-      ...statusItem,
-      favorited: isFavorited
-    };
-    return <TimelineStatusCard key={`${statusId}-${isMainStatus ? 'main' : 'context'}`} status={cardStatus} accent={accent} muted={muted} shadowType={isMainStatus ? 'accent' : 'default'} isBookmarkPending={pendingBookmarkIds.has(statusId)} photoViewerVisible={photoViewerVisible} photoViewerPreviewKey={photoViewerPreviewKey} registerPhotoPreviewRef={registerPhotoPreviewRef} onOpenPhoto={handlePhotoPress} onPressStatus={handleOpenStatusDetail} onPressProfile={handleProfilePress} onPressMention={handleMentionPress} onPressTag={handleTagPress} onReply={handleOpenReplyComposer} onRepost={handleOpenRepostComposer} onToggleBookmark={handleToggleBookmark} />;
+    const cardStatus =
+      statusItem.favorited === isFavorited
+        ? statusItem
+        : {
+            ...statusItem,
+            favorited: isFavorited,
+          };
+    return (
+      <TimelineStatusCard
+        key={`${statusId}-${isMainStatus ? 'main' : 'context'}`}
+        status={cardStatus}
+        accent={accent}
+        muted={muted}
+        shadowType={isMainStatus ? 'accent' : 'default'}
+        isBookmarkPending={pendingBookmarkIds.has(statusId)}
+        photoViewerVisible={photoViewerVisible}
+        photoViewerPreviewKey={photoViewerPreviewKey}
+        registerPhotoPreviewRef={registerPhotoPreviewRef}
+        onOpenPhoto={handlePhotoPress}
+        onPressStatus={handleOpenStatusDetail}
+        onPressProfile={handleProfilePress}
+        onPressMention={handleMentionPress}
+        onPressTag={handleTagPress}
+        onReply={handleOpenReplyComposer}
+        onRepost={handleOpenRepostComposer}
+        onToggleBookmark={handleToggleBookmark}
+        canDelete={isStatusOwnedByUser(cardStatus, authUserId)}
+        onDelete={handleDeleteStatus}
+      />
+    );
   };
-  const composerTitle = composeMode === 'reply' ? composeReplyTarget ? t('composerReplyTo', {
-    name: composeReplyTarget.screenName
-  }) : t('composerReply') : composeRepostTarget?.screenName ? t('composerRepostTo', {
-    name: composeRepostTarget.screenName
-  }) : t('composerRepost');
-  const composerPlaceholder = composeMode === 'reply' ? t('composerReplyPlaceholder') : t('composerCommentPlaceholder');
-  const composerSubmitLabel = composeMode === 'reply' ? t('composerSubmitReply') : t('composerSubmitRepost');
-  const composerInitialText = composeMode === 'reply' && composeReplyTarget ? `@${composeReplyTarget.screenName} ` : '';
-  const composerResetKey = composeMode === 'reply' ? `reply:${composeReplyTarget?.statusId ?? ''}` : composeMode === 'repost' ? `repost:${composeRepostTarget?.statusId ?? ''}` : 'closed';
+  const composerTitle =
+    composeMode === 'reply'
+      ? composeReplyTarget
+        ? t('composerReplyTo', {
+            name: composeReplyTarget.screenName,
+          })
+        : t('composerReply')
+      : composeRepostTarget?.screenName
+      ? t('composerRepostTo', {
+          name: composeRepostTarget.screenName,
+        })
+      : t('composerRepost');
+  const composerPlaceholder =
+    composeMode === 'reply'
+      ? t('composerReplyPlaceholder')
+      : t('composerCommentPlaceholder');
+  const composerSubmitLabel =
+    composeMode === 'reply'
+      ? t('composerSubmitReply')
+      : t('composerSubmitRepost');
+  const composerInitialText =
+    composeMode === 'reply' && composeReplyTarget
+      ? `@${composeReplyTarget.screenName} `
+      : '';
+  const composerResetKey =
+    composeMode === 'reply'
+      ? `reply:${composeReplyTarget?.statusId ?? ''}`
+      : composeMode === 'repost'
+      ? `repost:${composeRepostTarget?.statusId ?? ''}`
+      : 'closed';
   if (!routeStatusId) {
-    return <View className="flex-1 bg-background px-4 pt-8">
+    return (
+      <View className="flex-1 bg-background px-4 pt-8">
         <Surface className="bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('statusMissingId')}
           </Text>
         </Surface>
-      </View>;
+      </View>
+    );
   }
-  return <>
-      <NativeEdgeScrollShadow className="flex-1 bg-background" color={background}>
-        <Animated.ScrollView className="flex-1 bg-background" contentInsetAdjustmentBehavior="automatic" contentContainerStyle={contentContainerStyle} onScroll={scrollHandler} scrollEventThrottle={16} refreshControl={<RefreshControl refreshing={isPullRefreshing} onRefresh={handlePullRefresh} tintColor="transparent" colors={['transparent']} />}>
-          {isHydratingStatus ? <TimelineSkeletonList keyPrefix="status-detail-skeleton" count={1} /> : null}
+  return (
+    <>
+      <NativeEdgeScrollShadow
+        className="flex-1 bg-background"
+        color={background}
+      >
+        <Animated.ScrollView
+          className="flex-1 bg-background"
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={contentContainerStyle}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={isPullRefreshing}
+              onRefresh={handlePullRefresh}
+              tintColor="transparent"
+              colors={['transparent']}
+            />
+          }
+        >
+          {isHydratingStatus ? (
+            <TimelineSkeletonList
+              keyPrefix="status-detail-skeleton"
+              count={1}
+            />
+          ) : null}
 
-          {!mainStatus && !isStatusLoading && !isContextLoading ? <DropShadowBox type="danger" containerClassName="pb-2">
-              <Surface className={`bg-surface border-2 ${getDropShadowBorderClass('danger')} px-4 py-3`}>
+          {!mainStatus && !isStatusLoading && !isContextLoading ? (
+            <DropShadowBox type="danger" containerClassName="pb-2">
+              <Surface
+                className={`bg-surface border-2 ${getDropShadowBorderClass(
+                  'danger',
+                )} px-4 py-3`}
+              >
                 <Text className="text-[13px] text-danger">
                   {statusErrorMessage ?? t('statusLoadFailed')}
                 </Text>
               </Surface>
-            </DropShadowBox> : null}
+            </DropShadowBox>
+          ) : null}
 
-          {mainStatus ? <View style={{
-          gap: TIMELINE_SPACING
-        }}>
+          {mainStatus ? (
+            <View
+              style={{
+                gap: TIMELINE_SPACING,
+              }}
+            >
               {beforeStatuses.map(item => renderStatusCard(item, false))}
               {renderStatusCard(mainStatus, true)}
               {afterStatuses.map(item => renderStatusCard(item, false))}
-            </View> : null}
+            </View>
+          ) : null}
 
-          {contextErrorMessage && mainStatus ? <Surface className="bg-danger-soft px-4 py-3">
+          {contextErrorMessage && mainStatus ? (
+            <Surface className="bg-danger-soft px-4 py-3">
               <Text className="text-[13px] text-danger-foreground">
                 {contextErrorMessage}
               </Text>
-            </Surface> : null}
+            </Surface>
+          ) : null}
 
-          {isContextLoading && mainStatus ? <View className="items-center py-3 flex-row justify-center gap-2">
+          {isContextLoading && mainStatus ? (
+            <View className="items-center py-3 flex-row justify-center gap-2">
               <NeobrutalActivityIndicator size="small" />
               <Text className="text-[12px] text-muted">
                 {t('conversationLoading')}
               </Text>
-            </View> : null}
+            </View>
+          ) : null}
         </Animated.ScrollView>
       </NativeEdgeScrollShadow>
 
-      <NeobrutalRefreshIndicator refreshing={isPullRefreshing} scrollY={pullScrollY} safeAreaTop={safeAreaTop} scrollInsetTop={scrollInsetTop} pullThreshold={COMPACT_PULL_THRESHOLD} />
+      <NeobrutalRefreshIndicator
+        refreshing={isPullRefreshing}
+        scrollY={pullScrollY}
+        safeAreaTop={safeAreaTop}
+        scrollInsetTop={scrollInsetTop}
+        pullThreshold={COMPACT_PULL_THRESHOLD}
+      />
 
-      <PhotoViewerModal visible={photoViewerVisible} photoUrl={photoViewerUrl} topInset={insets.top} originRect={photoViewerOriginRect} onClose={handleClosePhotoViewer} />
+      <PhotoViewerModal
+        visible={photoViewerVisible}
+        photoUrl={photoViewerUrl}
+        topInset={insets.top}
+        originRect={photoViewerOriginRect}
+        onClose={handleClosePhotoViewer}
+      />
 
-      <ComposerModal visible={composeMode !== null} title={composerTitle} placeholder={composerPlaceholder} submitLabel={composerSubmitLabel} topInset={insets.top} initialText={composerInitialText} resetKey={composerResetKey} enablePhoto={composeMode === 'reply'} onCancel={handleCloseComposer} onSubmit={handleSendComposer} />
-    </>;
+      <ComposerModal
+        visible={composeMode !== null}
+        title={composerTitle}
+        placeholder={composerPlaceholder}
+        submitLabel={composerSubmitLabel}
+        topInset={insets.top}
+        initialText={composerInitialText}
+        resetKey={composerResetKey}
+        enablePhoto={composeMode === 'reply'}
+        onCancel={handleCloseComposer}
+        onSubmit={handleSendComposer}
+      />
+    </>
+  );
 };
 export default StatusDetailRoute;

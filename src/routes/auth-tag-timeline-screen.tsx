@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { showToastAlert } from '@/utils/toast-alert';
 import {
-  Alert,
   FlatList,
   Image,
   Platform,
@@ -28,11 +28,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useAuthSession } from '@/auth/auth-session';
 import { get, post, uploadPhoto } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
+import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
@@ -109,6 +111,8 @@ const mergeTimelineItems = (
 };
 const TagTimelineRoute = () => {
   const { t } = useTranslation();
+  const auth = useAuthSession();
+  const authUserId = auth.accessToken?.userId ?? null;
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const route =
     useRoute<
@@ -335,16 +339,16 @@ const TagTimelineRoute = () => {
     const hasPhoto = Boolean(photo?.base64);
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        Alert.alert(t('cannotReplyTitle'), t('replyMissingTarget'));
+        showToastAlert(t('cannotReplyTitle'), t('replyMissingTarget'));
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        Alert.alert(t('cannotReplyTitle'), t('replyNeedsContent'));
+        showToastAlert(t('cannotReplyTitle'), t('replyNeedsContent'));
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      Alert.alert(t('cannotRepostTitle'), t('repostMissingTarget'));
+      showToastAlert(t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
     try {
@@ -375,12 +379,12 @@ const TagTimelineRoute = () => {
       setComposeMode(null);
       setComposeReplyTarget(null);
       setComposeRepostTarget(null);
-      Alert.alert(
+      showToastAlert(
         t('sentTitle'),
         composeMode === 'reply' ? t('replySent') : t('repostSent'),
       );
     } catch (requestError) {
-      Alert.alert(
+      showToastAlert(
         composeMode === 'reply'
           ? t('replyFailedTitle')
           : t('repostFailedTitle'),
@@ -422,7 +426,7 @@ const TagTimelineRoute = () => {
             : item,
         ),
       );
-      Alert.alert(
+      showToastAlert(
         t('bookmarkFailedTitle'),
         requestError instanceof Error
           ? requestError.message
@@ -431,6 +435,18 @@ const TagTimelineRoute = () => {
     } finally {
       setBookmarkPending(statusId, false);
     }
+  };
+  const handleDeleteStatus = (status: FanfouStatus) => {
+    const statusId = getStatusId(status);
+    return deleteStatus({
+      statusId,
+      t,
+      onDeleted: () => {
+        setTimelineItems(previous =>
+          previous.filter(item => getStatusId(item) !== statusId),
+        );
+      },
+    });
   };
   const fetchMore = async () => {
     if (isFetchingMore || isLoading || hasReachedTimelineEnd) {
@@ -602,6 +618,8 @@ const TagTimelineRoute = () => {
               onReply={handleOpenReplyComposer}
               onRepost={handleOpenRepostComposer}
               onToggleBookmark={handleToggleBookmark}
+              canDelete={isStatusOwnedByUser(item, authUserId)}
+              onDelete={handleDeleteStatus}
             />
           )}
         />

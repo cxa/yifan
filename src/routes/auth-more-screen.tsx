@@ -1,6 +1,6 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { showToastAlert } from '@/utils/toast-alert';
 import {
-  Alert,
   Image,
   Platform,
   Pressable,
@@ -563,7 +563,7 @@ const MoreRouteContent = ({
     if (isSigningOut) {
       return;
     }
-    Alert.alert(
+    showToastAlert(
       t('moreSignOutConfirmTitle'),
       t('moreSignOutConfirmMessage'),
       [
@@ -599,7 +599,7 @@ const MoreRouteContent = ({
     try {
       await persistAppFontPreference(next);
     } catch (updateError) {
-      Alert.alert(
+      showToastAlert(
         t('moreFontUpdateFailed'),
         getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
       );
@@ -615,7 +615,7 @@ const MoreRouteContent = ({
     try {
       await setAppLanguagePreference(next);
     } catch (updateError) {
-      Alert.alert(
+      showToastAlert(
         t('moreFontUpdateFailed'),
         getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
       );

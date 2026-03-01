@@ -1,4 +1,5 @@
-import { Alert, Linking } from 'react-native';
+import { Linking } from 'react-native';
+import { showToastAlert } from '@/utils/toast-alert';
 
 const URL_SCHEME_REGEX = /^[a-zA-Z][a-zA-Z\d+\-.]*:/;
 
@@ -24,11 +25,11 @@ export const openLink = async (value: string) => {
   try {
     const canOpen = await Linking.canOpenURL(normalizedUrl);
     if (!canOpen) {
-      Alert.alert('Unable to open link', normalizedUrl);
+      showToastAlert('Unable to open link', normalizedUrl);
       return;
     }
     await Linking.openURL(normalizedUrl);
   } catch {
-    Alert.alert('Unable to open link', normalizedUrl);
+    showToastAlert('Unable to open link', normalizedUrl);
   }
 };
