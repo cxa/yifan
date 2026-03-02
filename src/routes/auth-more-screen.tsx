@@ -5,8 +5,11 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  type StyleProp,
+  type TextStyle,
   useColorScheme,
   View,
+  type ViewStyle,
 } from 'react-native';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import {
@@ -27,6 +30,7 @@ import { saveAuthAccessToken } from '@/auth/secure-token-storage';
 import AuthActionButton from '@/components/auth-action-button';
 import { Text } from '@/components/app-text';
 import DropShadowBox from '@/components/drop-shadow-box';
+import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import ProfileStatRow from '@/components/profile-stat-row';
 import ProfileSummaryCard from '@/components/profile-summary-card';
 import {
@@ -58,6 +62,10 @@ import {
 } from '@/settings/app-language-preference';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
+import {
+  createProfileThemeStyles,
+  resolveProfileThemePalette,
+} from '@/utils/profile-theme';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const SECTION_TOP_MARGIN = 16;
@@ -199,6 +207,9 @@ type MoreEntry = {
 };
 type EntryRowProps = MoreEntry & {
   iconColor: string;
+  panelStyle?: StyleProp<ViewStyle>;
+  primaryTextStyle?: StyleProp<TextStyle>;
+  mutedTextStyle?: StyleProp<TextStyle>;
 };
 type FontSettingRowProps = {
   option: {
@@ -209,6 +220,7 @@ type FontSettingRowProps = {
   isSelected: boolean;
   isBusy: boolean;
   onPress: (next: AppFontOption) => void;
+  primaryTextStyle?: StyleProp<TextStyle>;
 };
 type LanguageSettingRowProps = {
   option: {
@@ -220,6 +232,7 @@ type LanguageSettingRowProps = {
   isSelected: boolean;
   isBusy: boolean;
   onPress: (next: AppLanguageOption) => void;
+  primaryTextStyle?: StyleProp<TextStyle>;
 };
 type MoreRouteContentProps = {
   userId: string;
@@ -234,6 +247,9 @@ const EntryRow = ({
   noIconBox,
   onPress,
   iconColor,
+  panelStyle,
+  primaryTextStyle,
+  mutedTextStyle,
 }: EntryRowProps) => {
   const isDisabled = !onPress;
   return (
@@ -248,7 +264,10 @@ const EntryRow = ({
             : 'active:translate-x-[-4px] active:translate-y-[4px]'
         }
       >
-        <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
+        <Surface
+          className="bg-surface border-2 border-foreground dark:border-border px-4 py-4"
+          style={panelStyle}
+        >
           <View className="flex-row items-center gap-4">
             {noIconBox ? (
               <Icon color={iconColor} size={ENTRY_ICON_WRAPPER} />
@@ -264,17 +283,30 @@ const EntryRow = ({
               </View>
             )}
             <View className="flex-1">
-              <Text className="text-[15px] font-semibold text-foreground">
+              <Text
+                className="text-[15px] font-semibold text-foreground"
+                style={primaryTextStyle}
+              >
                 {label}
               </Text>
               {helper ? (
-                <Text className="mt-0.5 text-[12px] text-muted">{helper}</Text>
+                <Text
+                  className="mt-0.5 text-[12px] text-muted"
+                  style={mutedTextStyle}
+                >
+                  {helper}
+                </Text>
               ) : null}
             </View>
             {showChevron ? (
               <ChevronRight size={16} color={iconColor} />
             ) : (
-              <Text className="text-[14px] text-foreground">{value}</Text>
+              <Text
+                className="text-[14px] text-foreground"
+                style={primaryTextStyle}
+              >
+                {value}
+              </Text>
             )}
           </View>
         </Surface>
@@ -288,6 +320,7 @@ const FontSettingRow = ({
   isSelected,
   isBusy,
   onPress,
+  primaryTextStyle,
 }: FontSettingRowProps) => {
   const isDisabled = isSelected || isBusy;
   const previewFamily = getFontPreviewFamily(option.value);
@@ -309,13 +342,14 @@ const FontSettingRow = ({
       </View>
       <Text
         className="flex-1 text-[15px] text-foreground"
-        style={
+        style={[
+          primaryTextStyle,
           previewFamily
             ? {
                 fontFamily: previewFamily,
               }
-            : undefined
-        }
+            : undefined,
+        ]}
       >
         {option.label}
       </Text>
@@ -328,6 +362,7 @@ const LanguageSettingRow = ({
   isSelected,
   isBusy,
   onPress,
+  primaryTextStyle,
 }: LanguageSettingRowProps) => {
   const { t } = useTranslation();
   const isDisabled = isSelected || isBusy;
@@ -351,7 +386,12 @@ const LanguageSettingRow = ({
       >
         {isSelected ? <View className="h-2 w-2 bg-accent-foreground" /> : null}
       </View>
-      <Text className="flex-1 text-[15px] text-foreground">{label}</Text>
+      <Text
+        className="flex-1 text-[15px] text-foreground"
+        style={primaryTextStyle}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 };
@@ -406,6 +446,11 @@ const MoreRouteContent = ({
   const errorMessage = error
     ? getErrorMessage(error, t('moreAccountLoadFailed'))
     : null;
+  const profileThemePalette = resolveProfileThemePalette(user);
+  const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
+  const pageBackgroundColor =
+    profileThemePalette.pageBackgroundColor ?? background;
+  const entryIconColor = profileThemePalette.linkColor ?? muted;
   const displayName = user
     ? user.name || user.screen_name || displayNameFallback
     : displayNameFallback;
@@ -626,169 +671,237 @@ const MoreRouteContent = ({
     }
   };
   return (
-    <ScrollShadow
-      className="flex-1"
-      LinearGradientComponent={LinearGradient}
-      size={SCROLL_SHADOW_SIZE}
-      color={background}
+    <ProfilePageBackdrop
+      backgroundColor={pageBackgroundColor}
+      backgroundImageUrl={profileThemePalette.backgroundImageUrl}
+      isBackgroundImageTiled={profileThemePalette.isBackgroundImageTiled}
     >
-      <ScrollView
-        ref={scrollRef}
+      <ScrollShadow
         className="flex-1"
-        scrollIndicatorInsets={{
-          bottom: scrollIndicatorBottom,
-        }}
-        contentContainerStyle={contentContainerStyle}
+        LinearGradientComponent={LinearGradient}
+        size={SCROLL_SHADOW_SIZE}
+        color={pageBackgroundColor}
       >
-        <View
+        <ScrollView
+          ref={scrollRef}
           className="flex-1"
-          style={{
-            marginTop: SECTION_TOP_MARGIN,
+          scrollIndicatorInsets={{
+            bottom: scrollIndicatorBottom,
           }}
+          contentContainerStyle={contentContainerStyle}
         >
           <View
+            className="flex-1"
             style={{
-              gap: SECTION_GAP,
+              marginTop: SECTION_TOP_MARGIN,
             }}
           >
-            <DropShadowBox>
-              {showLoadingState ? (
-                <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
-                  <View className="flex-row items-center gap-4">
-                    <View
-                      className="items-center justify-center rounded-full border-2 border-foreground dark:border-border bg-surface-secondary"
-                      style={{
-                        width: AVATAR_SIZE,
-                        height: AVATAR_SIZE,
-                      }}
-                    >
-                      <NeobrutalActivityIndicator size="small" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-[16px] font-semibold text-foreground">
-                        {t('moreAccountLoading')}
-                      </Text>
-                      {handleName ? (
-                        <Text className="mt-1 text-[12px] text-muted">
-                          {handleName}
+            <View
+              style={{
+                gap: SECTION_GAP,
+              }}
+            >
+              <DropShadowBox>
+                {showLoadingState ? (
+                  <Surface
+                    className="bg-surface border-2 border-foreground dark:border-border px-5 py-6"
+                    style={profileThemeStyles.panelStyle}
+                  >
+                    <View className="flex-row items-center gap-4">
+                      <View
+                        className="items-center justify-center rounded-full border-2 border-foreground dark:border-border bg-surface-secondary"
+                        style={{
+                          width: AVATAR_SIZE,
+                          height: AVATAR_SIZE,
+                        }}
+                      >
+                        <NeobrutalActivityIndicator size="small" />
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className="text-[16px] font-semibold text-foreground"
+                          style={profileThemeStyles.primaryTextStyle}
+                        >
+                          {t('moreAccountLoading')}
                         </Text>
-                      ) : null}
+                        {handleName ? (
+                          <Text
+                            className="mt-1 text-[12px] text-muted"
+                            style={profileThemeStyles.mutedTextStyle}
+                          >
+                            {handleName}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
-                  </View>
-                  {errorMessage ? (
-                    <View className="mt-4 rounded-sm border border-danger bg-danger-soft px-3 py-2">
-                      <Text className="text-[12px] text-danger">
-                        {errorMessage}
-                      </Text>
-                    </View>
-                  ) : null}
-                </Surface>
-              ) : (
-                <ProfileSummaryCard
-                  avatar={accountAvatar}
-                  displayName={displayName}
-                  handleName={handleName}
-                  location={location}
-                  joinedAt={joinedAt}
-                  profileUrl={profileUrl}
-                  description={description}
-                  footer={
-                    errorMessage ? (
+                    {errorMessage ? (
                       <View className="mt-4 rounded-sm border border-danger bg-danger-soft px-3 py-2">
                         <Text className="text-[12px] text-danger">
                           {errorMessage}
                         </Text>
                       </View>
-                    ) : null
-                  }
-                />
-              )}
-            </DropShadowBox>
+                    ) : null}
+                  </Surface>
+                ) : (
+                  <ProfileSummaryCard
+                    avatar={accountAvatar}
+                    displayName={displayName}
+                    handleName={handleName}
+                    location={location}
+                    joinedAt={joinedAt}
+                    profileUrl={profileUrl}
+                    description={description}
+                    panelStyle={profileThemeStyles.panelStyle}
+                    primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                    mutedTextStyle={profileThemeStyles.mutedTextStyle}
+                    linkTextStyle={profileThemeStyles.linkTextStyle}
+                    footer={
+                      errorMessage ? (
+                        <View className="mt-4 rounded-sm border border-danger bg-danger-soft px-3 py-2">
+                          <Text className="text-[12px] text-danger">
+                            {errorMessage}
+                          </Text>
+                        </View>
+                      ) : null
+                    }
+                  />
+                )}
+              </DropShadowBox>
 
-            {user ? (
-              <>
-                <ProfileStatRow stats={profileStatsPrimary} />
-                <ProfileStatRow stats={profileStatsSecondary} />
-              </>
-            ) : showLoadingState ? (
-              <>
-                <ProfileStatRow stats={[]} skeleton itemCount={3} />
-                <ProfileStatRow stats={[]} skeleton itemCount={2} />
-              </>
-            ) : null}
+              {user ? (
+                <>
+                  <ProfileStatRow
+                    stats={profileStatsPrimary}
+                    panelStyle={profileThemeStyles.panelStyle}
+                    valueTextStyle={profileThemeStyles.primaryTextStyle}
+                    labelTextStyle={profileThemeStyles.primaryTextStyle}
+                  />
+                  <ProfileStatRow
+                    stats={profileStatsSecondary}
+                    panelStyle={profileThemeStyles.panelStyle}
+                    valueTextStyle={profileThemeStyles.primaryTextStyle}
+                    labelTextStyle={profileThemeStyles.primaryTextStyle}
+                  />
+                </>
+              ) : showLoadingState ? (
+                <>
+                  <ProfileStatRow
+                    stats={[]}
+                    skeleton
+                    itemCount={3}
+                    panelStyle={profileThemeStyles.panelStyle}
+                  />
+                  <ProfileStatRow
+                    stats={[]}
+                    skeleton
+                    itemCount={2}
+                    panelStyle={profileThemeStyles.panelStyle}
+                  />
+                </>
+              ) : null}
 
-            <View
-              style={{
-                gap: ENTRY_GAP,
-              }}
-            >
-              {entries.map(entry => {
-                const { key, ...entryProps } = entry;
-                return <EntryRow key={key} {...entryProps} iconColor={muted} />;
-              })}
+              <View
+                style={{
+                  gap: ENTRY_GAP,
+                }}
+              >
+                {entries.map(entry => {
+                  const { key, ...entryProps } = entry;
+                  return (
+                    <EntryRow
+                      key={key}
+                      {...entryProps}
+                      iconColor={entryIconColor}
+                      panelStyle={profileThemeStyles.panelStyle}
+                      primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                      mutedTextStyle={profileThemeStyles.mutedTextStyle}
+                    />
+                  );
+                })}
+              </View>
+
+              <DropShadowBox>
+                <Surface
+                  className="bg-surface border-2 border-foreground dark:border-border"
+                  style={profileThemeStyles.panelStyle}
+                >
+                  <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
+                    <Text
+                      className="text-[15px] font-semibold text-foreground"
+                      style={profileThemeStyles.primaryTextStyle}
+                    >
+                      {t('moreFontStyle')}
+                    </Text>
+                    <Text
+                      className="mt-0.5 text-[12px] text-muted"
+                      style={profileThemeStyles.mutedTextStyle}
+                    >
+                      {t('moreFontStyleHelper')}
+                    </Text>
+                  </View>
+                  {APP_FONT_OPTIONS.map((option, index) => (
+                    <FontSettingRow
+                      key={option.value}
+                      option={option}
+                      isLast={index === APP_FONT_OPTIONS.length - 1}
+                      isSelected={appFontPreference === option.value}
+                      isBusy={Boolean(updatingFontOption)}
+                      onPress={handleSelectFontPreference}
+                      primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                    />
+                  ))}
+                </Surface>
+              </DropShadowBox>
+
+              <DropShadowBox>
+                <Surface
+                  className="bg-surface border-2 border-foreground dark:border-border"
+                  style={profileThemeStyles.panelStyle}
+                >
+                  <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
+                    <Text
+                      className="text-[15px] font-semibold text-foreground"
+                      style={profileThemeStyles.primaryTextStyle}
+                    >
+                      {t('moreLanguage')}
+                    </Text>
+                    <Text
+                      className="mt-0.5 text-[12px] text-muted"
+                      style={profileThemeStyles.mutedTextStyle}
+                    >
+                      {t('moreLanguageHelper')}
+                    </Text>
+                  </View>
+                  {APP_LANGUAGE_OPTIONS.map((option, index) => (
+                    <LanguageSettingRow
+                      key={option.value}
+                      option={option}
+                      isLast={index === APP_LANGUAGE_OPTIONS.length - 1}
+                      isSelected={appLanguagePreference === option.value}
+                      isBusy={Boolean(updatingLanguageOption)}
+                      onPress={handleSelectLanguagePreference}
+                      primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                    />
+                  ))}
+                </Surface>
+              </DropShadowBox>
             </View>
 
-            <DropShadowBox>
-              <Surface className="bg-surface border-2 border-foreground dark:border-border">
-                <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
-                  <Text className="text-[15px] font-semibold text-foreground">
-                    {t('moreFontStyle')}
-                  </Text>
-                  <Text className="mt-0.5 text-[12px] text-muted">
-                    {t('moreFontStyleHelper')}
-                  </Text>
-                </View>
-                {APP_FONT_OPTIONS.map((option, index) => (
-                  <FontSettingRow
-                    key={option.value}
-                    option={option}
-                    isLast={index === APP_FONT_OPTIONS.length - 1}
-                    isSelected={appFontPreference === option.value}
-                    isBusy={Boolean(updatingFontOption)}
-                    onPress={handleSelectFontPreference}
-                  />
-                ))}
-              </Surface>
-            </DropShadowBox>
+            <View className="flex-1" />
 
-            <DropShadowBox>
-              <Surface className="bg-surface border-2 border-foreground dark:border-border">
-                <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
-                  <Text className="text-[15px] font-semibold text-foreground">
-                    {t('moreLanguage')}
-                  </Text>
-                  <Text className="mt-0.5 text-[12px] text-muted">
-                    {t('moreLanguageHelper')}
-                  </Text>
-                </View>
-                {APP_LANGUAGE_OPTIONS.map((option, index) => (
-                  <LanguageSettingRow
-                    key={option.value}
-                    option={option}
-                    isLast={index === APP_LANGUAGE_OPTIONS.length - 1}
-                    isSelected={appLanguagePreference === option.value}
-                    isBusy={Boolean(updatingLanguageOption)}
-                    onPress={handleSelectLanguagePreference}
-                  />
-                ))}
-              </Surface>
-            </DropShadowBox>
+            <View className="mt-6">
+              <AuthActionButton
+                label={t('moreSignOut')}
+                loadingLabel={t('moreSigningOut')}
+                variant="danger"
+                onPress={handleSignOut}
+                isLoading={isSigningOut}
+              />
+            </View>
           </View>
-
-          <View className="flex-1" />
-
-          <View className="mt-6">
-            <AuthActionButton
-              label={t('moreSignOut')}
-              loadingLabel={t('moreSigningOut')}
-              variant="danger"
-              onPress={handleSignOut}
-              isLoading={isSigningOut}
-            />
-          </View>
-        </View>
-      </ScrollView>
-    </ScrollShadow>
+        </ScrollView>
+      </ScrollShadow>
+    </ProfilePageBackdrop>
   );
 };
 const MissingUserIdPlaceholder = () => {

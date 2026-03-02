@@ -106,14 +106,20 @@ type BaseTranslations = {
   // User list screen
   followingTitle: string;
   followersTitle: string;
+  followingTitleOther: string;
+  followersTitleOther: string;
   followingEmpty: string;
   followersEmpty: string;
+  followingEmptyOther: string;
+  followersEmptyOther: string;
   userListLoadFailed: string;
 
   // Profile screen
   profileStatPosts: string;
   profileStatFollowing: string;
   profileStatFollowers: string;
+  profileStatFollowingOther: string;
+  profileStatFollowersOther: string;
   profileStatFavorites: string;
   profileStatPhotos: string;
   recentActivity: string;
@@ -319,14 +325,20 @@ const enUS: BaseTranslations = {
   // User list screen
   followingTitle: 'Following',
   followersTitle: 'Followers',
+  followingTitleOther: 'Following',
+  followersTitleOther: 'Followers',
   followingEmpty: 'Not following anyone.',
   followersEmpty: 'No followers yet.',
+  followingEmptyOther: 'Not following anyone yet.',
+  followersEmptyOther: 'No followers yet.',
   userListLoadFailed: 'Failed to load user list.',
 
   // Profile screen
   profileStatPosts: 'Posts',
   profileStatFollowing: 'Following',
   profileStatFollowers: 'Followers',
+  profileStatFollowingOther: 'Following',
+  profileStatFollowersOther: 'Followers',
   profileStatFavorites: 'Favorites',
   profileStatPhotos: 'Photos',
   recentActivity: 'Recent Activity',
@@ -534,14 +546,20 @@ const zhCN: BaseTranslations = {
   // User list screen
   followingTitle: '我关注的人',
   followersTitle: '关注我的人',
+  followingTitleOther: 'TA关注的人',
+  followersTitleOther: '关注TA的人',
   followingEmpty: '还没有关注任何人。',
   followersEmpty: '还没有关注我的人。',
+  followingEmptyOther: 'TA还没有关注任何人。',
+  followersEmptyOther: '还没有人关注TA。',
   userListLoadFailed: '加载用户列表失败。',
 
   // Profile screen
   profileStatPosts: '消息',
   profileStatFollowing: '我关注的人',
   profileStatFollowers: '关注我的人',
+  profileStatFollowingOther: 'TA关注的人',
+  profileStatFollowersOther: '关注TA的人',
   profileStatFavorites: '收藏',
   profileStatPhotos: '照片',
   recentActivity: '最近动态',

@@ -51,7 +51,10 @@ import {
 } from '@/navigation/route-names';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
-import { TIMELINE_SPACING } from '@/components/timeline-list-settings';
+import {
+  getTimelineStatusStackStyle,
+  TIMELINE_SPACING,
+} from '@/components/timeline-list-settings';
 import type {
   AuthStackParamList,
   AuthStatusStackParamList,
@@ -666,11 +669,7 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {mainStatus ? (
-            <View
-              style={{
-                gap: TIMELINE_SPACING,
-              }}
-            >
+            <View style={getTimelineStatusStackStyle()}>
               {beforeStatuses.map(item => renderStatusCard(item, false))}
               {renderStatusCard(mainStatus, true)}
               {afterStatuses.map(item => renderStatusCard(item, false))}

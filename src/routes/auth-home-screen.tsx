@@ -44,9 +44,11 @@ import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
 import {
+  getTimelineItemSeparatorStyle,
   TIMELINE_AUTO_REFRESH_INTERVAL_MS,
   TIMELINE_INITIAL_PAGE_SIZE,
   TIMELINE_PAGE_SIZE,
+  TIMELINE_SPACING,
   TIMELINE_SCROLL_TOP_THRESHOLD,
   TIMELINE_TOP_CONTENT_GAP,
   useTimelineListSettings,
@@ -83,6 +85,9 @@ const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
 const TIMELINE_SCROLL_SHADOW_SIZE = 100;
+const TimelineItemSeparator = () => (
+  <View style={getTimelineItemSeparatorStyle()} />
+);
 const mergeTimelineItems = (
   existing: FanfouStatus[],
   incoming: FanfouStatus[],
@@ -665,6 +670,13 @@ const AuthHomeRoute = () => {
       : composeMode === 'repost'
       ? `repost:${composeRepostTarget?.statusId ?? ''}`
       : 'closed';
+  const timelineContentContainerStyle = {
+    ...timelineListSettings.contentContainerStyle,
+    gap: undefined,
+  };
+  const timelineHeaderStyle = {
+    marginBottom: TIMELINE_SPACING,
+  };
   return (
     <>
       <NativeEdgeScrollShadow
@@ -680,7 +692,9 @@ const AuthHomeRoute = () => {
           onScroll={scrollHandler}
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
           scrollIndicatorInsets={timelineListSettings.scrollIndicatorInsets}
-          contentContainerStyle={timelineListSettings.contentContainerStyle}
+          contentContainerStyle={timelineContentContainerStyle}
+          ListHeaderComponentStyle={timelineHeaderStyle}
+          ItemSeparatorComponent={TimelineItemSeparator}
           ListFooterComponent={
             isFetchingMore ? (
               <View className="items-center py-6">

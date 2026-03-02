@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { Surface } from 'heroui-native';
 
 import { Text } from '@/components/app-text';
@@ -16,26 +17,54 @@ type ProfileStatRowProps = {
   stats: ProfileStatItem[];
   skeleton?: boolean;
   itemCount?: number;
+  panelStyle?: StyleProp<ViewStyle>;
+  shadowStyle?: StyleProp<ViewStyle>;
+  valueTextStyle?: StyleProp<TextStyle>;
+  labelTextStyle?: StyleProp<TextStyle>;
 };
 
 const getStatValue = (value: ProfileStatItem['value']) => value ?? '--';
 
-const ProfileStatSkeletonCell = () => (
-  <DropShadowBox containerClassName="flex-1">
-    <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
+const ProfileStatSkeletonCell = ({
+  panelStyle,
+  shadowStyle,
+}: {
+  panelStyle?: StyleProp<ViewStyle>;
+  shadowStyle?: StyleProp<ViewStyle>;
+}) => (
+  <DropShadowBox containerClassName="flex-1" shadowStyle={shadowStyle}>
+    <Surface
+      className="bg-surface border-2 border-foreground dark:border-border px-4 py-4"
+      style={panelStyle}
+    >
       <ShimmerBar className="h-8 w-12 bg-surface-secondary" isActive />
-      <ShimmerBar className="mt-2 h-5 w-16 bg-surface-secondary" isActive={false} />
+      <ShimmerBar
+        className="mt-2 h-5 w-16 bg-surface-secondary"
+        isActive={false}
+      />
     </Surface>
   </DropShadowBox>
 );
 
-const ProfileStatRow = ({ stats, skeleton, itemCount }: ProfileStatRowProps) => {
+const ProfileStatRow = ({
+  stats,
+  skeleton,
+  itemCount,
+  panelStyle,
+  shadowStyle,
+  valueTextStyle,
+  labelTextStyle,
+}: ProfileStatRowProps) => {
   if (skeleton) {
     const count = itemCount ?? 3;
     return (
       <View className="flex-row gap-4">
         {Array.from({ length: count }).map((_, i) => (
-          <ProfileStatSkeletonCell key={i} />
+          <ProfileStatSkeletonCell
+            key={i}
+            panelStyle={panelStyle}
+            shadowStyle={shadowStyle}
+          />
         ))}
       </View>
     );
@@ -44,7 +73,11 @@ const ProfileStatRow = ({ stats, skeleton, itemCount }: ProfileStatRowProps) => 
   return (
     <View className="flex-row gap-4">
       {stats.map(stat => (
-        <DropShadowBox key={stat.label} containerClassName="flex-1">
+        <DropShadowBox
+          key={stat.label}
+          containerClassName="flex-1"
+          shadowStyle={shadowStyle}
+        >
           <Pressable
             onPress={stat.onPress}
             disabled={!stat.onPress}
@@ -55,16 +88,24 @@ const ProfileStatRow = ({ stats, skeleton, itemCount }: ProfileStatRowProps) => 
                 : ''
             }
           >
-            <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
+            <Surface
+              className="bg-surface border-2 border-foreground dark:border-border px-4 py-4"
+              style={panelStyle}
+            >
               <Text
                 className="text-2xl text-foreground"
                 numberOfLines={1}
                 minimumFontScale={0.7}
                 allowFontScaling
+                style={valueTextStyle}
               >
                 {getStatValue(stat.value)}
               </Text>
-              <Text className="mt-2 text-sm text-foreground" numberOfLines={1}>
+              <Text
+                className="mt-2 text-sm text-foreground"
+                numberOfLines={1}
+                style={labelTextStyle}
+              >
                 {stat.label}
               </Text>
             </Surface>

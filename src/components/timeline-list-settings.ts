@@ -1,6 +1,9 @@
-import type { ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
-import { getContentBottomPadding, getScrollIndicatorBottomInset } from '@/navigation/tab-bar-layout';
+import {
+  getContentBottomPadding,
+  getScrollIndicatorBottomInset,
+} from '@/navigation/tab-bar-layout';
 export const TIMELINE_SPACING = 24;
 export const TIMELINE_HORIZONTAL_PADDING = 24;
 export const TIMELINE_TOP_CONTENT_GAP = 16;
@@ -18,23 +21,41 @@ export type TimelineListSettings = {
   };
   scrollEventThrottle: number;
 };
+const TIMELINE_STATUS_STACK_STYLE: StyleProp<ViewStyle> = {
+  gap: TIMELINE_SPACING,
+};
+export const getTimelineStatusStackStyle = () => TIMELINE_STATUS_STACK_STYLE;
+const TIMELINE_ITEM_SEPARATOR_STYLE: StyleProp<ViewStyle> = {
+  height: TIMELINE_SPACING,
+};
+export const getTimelineItemSeparatorStyle = () =>
+  TIMELINE_ITEM_SEPARATOR_STYLE;
 type TimelineListSettingsOptions = {
   hasBottomTabBar?: boolean;
 };
-export const useTimelineListSettings = (insets: EdgeInsets, options?: TimelineListSettingsOptions): TimelineListSettings => (() => {
-  const hasBottomTabBar = options?.hasBottomTabBar ?? true;
-  const contentBottomPadding = getContentBottomPadding(insets.bottom, hasBottomTabBar) + TIMELINE_SPACING;
-  const indicatorBottomInset = getScrollIndicatorBottomInset(insets.bottom, hasBottomTabBar);
-  return {
-    contentContainerStyle: {
-      paddingHorizontal: TIMELINE_HORIZONTAL_PADDING,
-      paddingTop: insets.top,
-      paddingBottom: contentBottomPadding,
-      gap: TIMELINE_SPACING
-    },
-    scrollIndicatorInsets: {
-      bottom: indicatorBottomInset
-    },
-    scrollEventThrottle: 16
-  };
-})();
+export const useTimelineListSettings = (
+  insets: EdgeInsets,
+  options?: TimelineListSettingsOptions,
+): TimelineListSettings =>
+  (() => {
+    const hasBottomTabBar = options?.hasBottomTabBar ?? true;
+    const contentBottomPadding =
+      getContentBottomPadding(insets.bottom, hasBottomTabBar) +
+      TIMELINE_SPACING;
+    const indicatorBottomInset = getScrollIndicatorBottomInset(
+      insets.bottom,
+      hasBottomTabBar,
+    );
+    return {
+      contentContainerStyle: {
+        paddingHorizontal: TIMELINE_HORIZONTAL_PADDING,
+        paddingTop: insets.top,
+        paddingBottom: contentBottomPadding,
+        gap: TIMELINE_SPACING,
+      },
+      scrollIndicatorInsets: {
+        bottom: indicatorBottomInset,
+      },
+      scrollEventThrottle: 16,
+    };
+  })();

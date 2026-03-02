@@ -1,4 +1,5 @@
 import React from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
 import { $ } from '@cxa/twx';
 
@@ -15,6 +16,7 @@ type DropShadowBoxProps = {
   containerClassName?: string;
   shadowClassName?: string;
   shadowOffsetClassName?: string;
+  shadowStyle?: StyleProp<ViewStyle>;
 };
 
 const SHADOW_CLASS_BY_TYPE: Record<DropShadowBoxType, string> = {
@@ -42,6 +44,7 @@ const DropShadowBox = ({
   containerClassName,
   shadowClassName,
   shadowOffsetClassName = '-translate-x-2 translate-y-2',
+  shadowStyle,
 }: DropShadowBoxProps) => (
   <View className={$('relative', containerClassName)}>
     <View
@@ -51,6 +54,7 @@ const DropShadowBox = ({
         SHADOW_CLASS_BY_TYPE[type],
         shadowClassName,
       )}
+      style={shadowStyle}
     />
     {children}
   </View>

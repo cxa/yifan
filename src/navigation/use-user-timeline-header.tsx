@@ -15,6 +15,9 @@ type UseUserTimelineHeaderOptions = {
   user?: FanfouUser | null;
   backCount?: number;
   useParentNavigation?: boolean;
+  headerTintColor?: string;
+  headerBackgroundColor?: string;
+  showHeaderTitle?: boolean;
 };
 const useUserTimelineHeader = ({
   userId,
@@ -22,6 +25,9 @@ const useUserTimelineHeader = ({
   user: providedUser,
   backCount,
   useParentNavigation = false,
+  headerTintColor,
+  headerBackgroundColor,
+  showHeaderTitle = true,
 }: UseUserTimelineHeaderOptions) => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const [foreground] = useThemeColor(['foreground']);
@@ -45,12 +51,21 @@ const useUserTimelineHeader = ({
     typeof backCount === 'number'
       ? new Intl.NumberFormat().format(backCount)
       : undefined;
+  const resolvedHeaderTintColor = headerTintColor ?? foreground;
+  const headerBackgroundStyle = headerBackgroundColor
+    ? { backgroundColor: headerBackgroundColor }
+    : undefined;
+  const headerBackground = headerBackgroundStyle
+    ? () => <View pointerEvents="none" style={headerBackgroundStyle} />
+    : undefined;
   const headerTitle = () => (
     <UserTimelineHeaderTitle
       displayName={displayName}
       handleName={handleName}
       avatarUrl={avatarUrl}
       avatarInitial={avatarInitial}
+      textColor={resolvedHeaderTintColor}
+      isVisible={showHeaderTitle}
     />
   );
   const headerRightItems = rightSubtitle
@@ -62,7 +77,7 @@ const useUserTimelineHeader = ({
               <Text
                 className="text-right text-[14px] leading-4"
                 style={{
-                  color: foreground,
+                  color: resolvedHeaderTintColor,
                   fontFamily: headerFontFamily,
                 }}
                 numberOfLines={1}
@@ -87,6 +102,8 @@ const useUserTimelineHeader = ({
         unstable_headerRightItems: headerRightItems,
         headerTitleAlign: 'center',
         headerBackTitle: backTitle,
+        headerTintColor: resolvedHeaderTintColor,
+        headerBackground,
       });
       return undefined;
     }
@@ -96,6 +113,8 @@ const useUserTimelineHeader = ({
       unstable_headerRightItems: headerRightItems,
       headerTitleAlign: 'center',
       headerBackTitle: backTitle,
+      headerTintColor: resolvedHeaderTintColor,
+      headerBackground,
     });
     return () => {
       targetNavigation.setOptions({
@@ -103,15 +122,20 @@ const useUserTimelineHeader = ({
         unstable_headerRightItems: undefined,
         headerTitleAlign: undefined,
         headerBackTitle: undefined,
+        headerTintColor: undefined,
+        headerBackground: undefined,
       });
     };
   }, [
     backTitle,
+    headerBackground,
+    resolvedHeaderTintColor,
     headerRightItems,
     headerTitle,
     navigation,
     screenTitle,
     semanticTitle,
+    showHeaderTitle,
     useParentNavigation,
     userId,
   ]);

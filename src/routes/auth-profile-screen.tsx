@@ -8,7 +8,11 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
   COMPACT_PULL_THRESHOLD,
@@ -40,6 +44,7 @@ import NativeEdgeScrollShadow, {
   resolveNativeEdgeScrollShadowSize,
 } from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
+import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import ProfileStatRow, {
@@ -50,7 +55,11 @@ import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
-import { TIMELINE_SPACING } from '@/components/timeline-list-settings';
+import {
+  getTimelineItemSeparatorStyle,
+  getTimelineStatusStackStyle,
+  TIMELINE_SPACING,
+} from '@/components/timeline-list-settings';
 import {
   AUTH_PROFILE_ROUTE,
   AUTH_STACK_ROUTE,
@@ -74,6 +83,12 @@ import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
+import {
+  createProfileThemeStyles,
+  isColorDark,
+  resolveReadableTextColor,
+  resolveProfileThemePalette,
+} from '@/utils/profile-theme';
 import { useTranslation } from 'react-i18next';
 const PROFILE_CARD_GAP = 16;
 type PhotoViewerOriginRect = {
@@ -128,11 +143,22 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     'background',
     'muted',
   ]);
+  const headerTitleVisible = useSharedValue(false);
+  const [showHeaderTitle, setShowHeaderTitle] = useState(false);
   const { pullScrollY, safeAreaTop, scrollInsetTop, updatePullScrollY } =
     usePullScrollY();
+  const updateShowHeaderTitle = (nextVisibility: boolean) => {
+    setShowHeaderTitle(nextVisibility);
+  };
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
       updatePullScrollY(event.contentOffset.y);
+      const shouldShowHeaderTitle =
+        event.contentOffset.y >= scrollShadowSize * 0.25;
+      if (shouldShowHeaderTitle !== headerTitleVisible.value) {
+        headerTitleVisible.value = shouldShowHeaderTitle;
+        scheduleOnRN(updateShowHeaderTitle, shouldShowHeaderTitle);
+      }
     },
   });
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
@@ -690,10 +716,33 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const recentStatusesErrorMessage = recentStatusesError
     ? getErrorMessage(recentStatusesError, t('recentActivityEmpty'))
     : null;
+  const profileThemePalette = resolveProfileThemePalette(user);
+  const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
+  const preferredHeaderTintColor =
+    profileThemePalette.linkColor ?? profileThemePalette.textColor;
+  const headerTintColor = hasBackgroundImage
+    ? preferredHeaderTintColor ?? '#FFFFFF'
+    : preferredHeaderTintColor ??
+      (profileThemePalette.pageBackgroundColor
+        ? resolveReadableTextColor({
+            backgroundColor: profileThemePalette.pageBackgroundColor,
+          })
+        : undefined);
+  const isHeaderTintDark = headerTintColor
+    ? isColorDark(headerTintColor)
+    : undefined;
+  const headerBackgroundColor = hasBackgroundImage
+    ? isHeaderTintDark
+      ? 'rgba(255, 255, 255, 0.58)'
+      : 'rgba(0, 0, 0, 0.44)'
+    : undefined;
   useUserTimelineHeader({
     userId: routeUserId,
     user,
     useParentNavigation: true,
+    headerTintColor,
+    headerBackgroundColor,
+    showHeaderTitle,
   });
   const contentContainerStyle = {
     paddingHorizontal: 16,
@@ -708,7 +757,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
           className="flex-1 bg-background"
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={contentContainerStyle}
-          scrollEnabled={false}
         >
           <DropShadowBox containerClassName="mb-4">
             <ProfileSummaryCard
@@ -777,6 +825,16 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       </Text>
     </View>
   );
+  const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
+  const pageBackgroundColor =
+    profileThemePalette.pageBackgroundColor ?? background;
+  const profilePanelShadowStyle = profileThemePalette.panelBorderColor
+    ? {
+        backgroundColor: profileThemePalette.panelBorderColor,
+      }
+    : undefined;
+  const timelineAccentColor = profileThemePalette.linkColor ?? accent;
+  const timelineMutedColor = profileThemePalette.mutedTextColor ?? muted;
   const statsPrimary: ProfileStatItem[] = [
     {
       label: t('profileStatPosts'),
@@ -784,12 +842,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       onPress: handleOpenTimeline,
     },
     {
-      label: t('profileStatFollowing'),
+      label: t(isSelf ? 'profileStatFollowing' : 'profileStatFollowingOther'),
       value: user.friends_count,
       onPress: handleOpenFollowing,
     },
     {
-      label: t('profileStatFollowers'),
+      label: t(isSelf ? 'profileStatFollowers' : 'profileStatFollowersOther'),
       value: user.followers_count,
       onPress: handleOpenFollowers,
     },
@@ -876,227 +934,260 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   }
   return (
     <>
-      <NativeEdgeScrollShadow
-        className="flex-1 bg-background"
-        color={background}
+      <ProfilePageBackdrop
+        backgroundColor={pageBackgroundColor}
+        backgroundImageUrl={profileThemePalette.backgroundImageUrl}
+        isBackgroundImageTiled={profileThemePalette.isBackgroundImageTiled}
       >
-        <Animated.ScrollView
-          className="flex-1 bg-background"
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={contentContainerStyle}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          refreshControl={
-            <RefreshControl
-              refreshing={isPullRefreshing}
-              onRefresh={handlePullRefresh}
-              tintColor="transparent"
-              colors={['transparent']}
-            />
-          }
-        >
-          <DropShadowBox containerClassName="mb-4">
-            <ProfileSummaryCard
-              avatar={profileAvatar}
-              displayName={displayName}
-              handleName={handleName}
-              location={user.location}
-              joinedAt={joinedAt}
-              profileUrl={profileUrl}
-              description={description}
-            />
-          </DropShadowBox>
-
-          <ProfileStatRow stats={statsPrimary} />
-          <ProfileStatRow stats={statsSecondary} />
-
-          {!isSelf ? (
-            <DropShadowBox containerClassName="pb-2">
-              <Surface className="bg-surface-secondary border-2 border-foreground dark:border-border px-4 py-4">
-                <View className="flex-row gap-3">
-                  <Pressable
-                    onPress={handleFollowToggle}
-                    disabled={isFollowSubmitting || isBlocked}
-                    className={`flex-1 border border-border px-3 py-2 ${
-                      isBlocked ? 'bg-surface' : 'bg-accent'
-                    }`}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      isFollowing
-                        ? t('profileActionUnfollow')
-                        : t('profileActionFollow')
-                    }
-                  >
-                    <Text
-                      className={`text-[13px] text-center ${
-                        isBlocked ? 'text-muted' : 'text-accent-foreground'
-                      }`}
-                    >
-                      {isFollowSubmitting
-                        ? t('profileActionUpdating')
-                        : isBlocked
-                        ? t('profileActionBlock')
-                        : isFollowing
-                        ? t('profileActionUnfollow')
-                        : t('profileActionFollow')}
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleBlockToggle}
-                    disabled={isBlockSubmitting || isBlockChecking}
-                    className="flex-1 border border-border bg-surface px-3 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      isBlocked
-                        ? t('profileActionUnblock')
-                        : t('profileActionBlock')
-                    }
-                  >
-                    <Text className="text-[13px] text-center text-foreground">
-                      {isBlockChecking
-                        ? t('profileActionChecking')
-                        : isBlockSubmitting
-                        ? t('profileActionUpdating')
-                        : isBlocked
-                        ? t('profileActionUnblock')
-                        : t('profileActionBlock')}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <View className="mt-3 flex-row gap-3">
-                  <Pressable
-                    onPress={handleOpenMentionComposer}
-                    className="flex-1 border border-border bg-surface px-3 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('profileActionMention')}
-                  >
-                    <Text className="text-[13px] text-center text-foreground">
-                      {t('profileActionMention')}
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleOpenDmComposer}
-                    className="flex-1 border border-border bg-surface px-3 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('profileActionMessage')}
-                  >
-                    <Text className="text-[13px] text-center text-foreground">
-                      {t('profileActionMessage')}
-                    </Text>
-                  </Pressable>
-                </View>
-              </Surface>
+        <NativeEdgeScrollShadow className="flex-1" color={pageBackgroundColor}>
+          <Animated.ScrollView
+            className="flex-1"
+            contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={contentContainerStyle}
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl
+                refreshing={isPullRefreshing}
+                onRefresh={handlePullRefresh}
+                tintColor="transparent"
+                colors={['transparent']}
+              />
+            }
+          >
+            <DropShadowBox
+              containerClassName="mb-4"
+              shadowStyle={profilePanelShadowStyle}
+            >
+              <ProfileSummaryCard
+                avatar={profileAvatar}
+                displayName={displayName}
+                handleName={handleName}
+                location={user.location}
+                joinedAt={joinedAt}
+                profileUrl={profileUrl}
+                description={description}
+                panelStyle={profileThemeStyles.panelStyle}
+                primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                mutedTextStyle={profileThemeStyles.mutedTextStyle}
+                linkTextStyle={profileThemeStyles.linkTextStyle}
+              />
             </DropShadowBox>
-          ) : null}
 
-          {profileErrorMessage ? (
-            <Surface className="bg-danger-soft px-4 py-3">
-              <Text className="text-[13px] text-danger-foreground">
-                {profileErrorMessage}
-              </Text>
-            </Surface>
-          ) : null}
+            <ProfileStatRow
+              stats={statsPrimary}
+              panelStyle={profileThemeStyles.panelStyle}
+              shadowStyle={profilePanelShadowStyle}
+              valueTextStyle={profileThemeStyles.primaryTextStyle}
+              labelTextStyle={profileThemeStyles.primaryTextStyle}
+            />
+            <ProfileStatRow
+              stats={statsSecondary}
+              panelStyle={profileThemeStyles.panelStyle}
+              shadowStyle={profilePanelShadowStyle}
+              valueTextStyle={profileThemeStyles.primaryTextStyle}
+              labelTextStyle={profileThemeStyles.primaryTextStyle}
+            />
 
-          {isProtectedTimeline ? (
-            <DropShadowBox type="warning" containerClassName="pb-2">
-              <Surface
-                className={`bg-surface border-2 ${getDropShadowBorderClass(
-                  'warning',
-                )} px-4 py-4`}
+            {!isSelf ? (
+              <DropShadowBox
+                containerClassName="pb-2"
+                shadowStyle={profilePanelShadowStyle}
               >
-                <Text className="text-[14px] leading-6 text-warning">
-                  {t('protectedAccountNotice')}
+                <Surface
+                  className="bg-surface-secondary border-2 border-foreground dark:border-border px-4 py-4"
+                  style={profileThemeStyles.panelStyle}
+                >
+                  <View className="flex-row gap-3">
+                    <Pressable
+                      onPress={handleFollowToggle}
+                      disabled={isFollowSubmitting || isBlocked}
+                      className={`flex-1 border border-border px-3 py-2 ${
+                        isBlocked ? 'bg-surface' : 'bg-accent'
+                      }`}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        isFollowing
+                          ? t('profileActionUnfollow')
+                          : t('profileActionFollow')
+                      }
+                    >
+                      <Text
+                        className={`text-[13px] text-center ${
+                          isBlocked ? 'text-muted' : 'text-accent-foreground'
+                        }`}
+                      >
+                        {isFollowSubmitting
+                          ? t('profileActionUpdating')
+                          : isBlocked
+                          ? t('profileActionBlock')
+                          : isFollowing
+                          ? t('profileActionUnfollow')
+                          : t('profileActionFollow')}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={handleBlockToggle}
+                      disabled={isBlockSubmitting || isBlockChecking}
+                      className="flex-1 border border-border bg-surface px-3 py-2"
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        isBlocked
+                          ? t('profileActionUnblock')
+                          : t('profileActionBlock')
+                      }
+                    >
+                      <Text className="text-[13px] text-center text-foreground">
+                        {isBlockChecking
+                          ? t('profileActionChecking')
+                          : isBlockSubmitting
+                          ? t('profileActionUpdating')
+                          : isBlocked
+                          ? t('profileActionUnblock')
+                          : t('profileActionBlock')}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  <View className="mt-3 flex-row gap-3">
+                    <Pressable
+                      onPress={handleOpenMentionComposer}
+                      className="flex-1 border border-border bg-surface px-3 py-2"
+                      accessibilityRole="button"
+                      accessibilityLabel={t('profileActionMention')}
+                    >
+                      <Text className="text-[13px] text-center text-foreground">
+                        {t('profileActionMention')}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={handleOpenDmComposer}
+                      className="flex-1 border border-border bg-surface px-3 py-2"
+                      accessibilityRole="button"
+                      accessibilityLabel={t('profileActionMessage')}
+                    >
+                      <Text className="text-[13px] text-center text-foreground">
+                        {t('profileActionMessage')}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </Surface>
+              </DropShadowBox>
+            ) : null}
+
+            {profileErrorMessage ? (
+              <Surface className="bg-danger-soft px-4 py-3">
+                <Text className="text-[13px] text-danger-foreground">
+                  {profileErrorMessage}
                 </Text>
               </Surface>
-            </DropShadowBox>
-          ) : (
-            <>
-              <Text
-                className="mt-4 text-[24px] font-semibold text-foreground"
-                dynamicTypeRamp="title1"
-              >
-                {t('recentActivity')}
-              </Text>
-              <View
-                style={{
-                  gap: TIMELINE_SPACING,
-                }}
-              >
-                {isRecentStatusesLoading || isHydratingRecentStatuses ? (
-                  <TimelineSkeletonList
-                    keyPrefix="profile-status-skeleton"
-                    count={3}
-                    className=""
-                    style={{
-                      gap: TIMELINE_SPACING,
-                    }}
-                  />
-                ) : null}
+            ) : null}
 
-                {recentStatusesErrorMessage ? (
-                  <Surface className="bg-danger-soft px-4 py-3">
-                    <Text className="text-[13px] text-danger-foreground">
-                      {recentStatusesErrorMessage}
-                    </Text>
-                  </Surface>
-                ) : null}
+            {isProtectedTimeline ? (
+              <DropShadowBox type="warning" containerClassName="pb-2">
+                <Surface
+                  className={`bg-surface border-2 ${getDropShadowBorderClass(
+                    'warning',
+                  )} px-4 py-4`}
+                >
+                  <Text className="text-[14px] leading-6 text-warning">
+                    {t('protectedAccountNotice')}
+                  </Text>
+                </Surface>
+              </DropShadowBox>
+            ) : (
+              <>
+                <Text
+                  className="mt-4 text-[24px] font-semibold text-foreground"
+                  dynamicTypeRamp="title1"
+                  style={
+                    profileThemeStyles.linkTextStyle ??
+                    profileThemeStyles.primaryTextStyle
+                  }
+                >
+                  {t('recentActivity')}
+                </Text>
+                <View style={getTimelineStatusStackStyle()}>
+                  {isRecentStatusesLoading || isHydratingRecentStatuses ? (
+                    <TimelineSkeletonList
+                      keyPrefix="profile-status-skeleton"
+                      count={3}
+                      className=""
+                    />
+                  ) : null}
 
-                {!isRecentStatusesLoading &&
-                !isHydratingRecentStatuses &&
-                recentStatusItems.length === 0 &&
-                !recentStatusesErrorMessage ? (
-                  <TimelineSkeletonCard message={t('recentActivityEmpty')} />
-                ) : null}
+                  {recentStatusesErrorMessage ? (
+                    <Surface className="bg-danger-soft px-4 py-3">
+                      <Text className="text-[13px] text-danger-foreground">
+                        {recentStatusesErrorMessage}
+                      </Text>
+                    </Surface>
+                  ) : null}
 
-                {recentStatusItems.map(status => (
-                  <TimelineStatusCard
-                    key={getStatusId(status)}
-                    status={status}
-                    accent={accent}
-                    muted={muted}
-                    showAvatar={false}
-                    showAuthor={false}
-                    isBookmarkPending={pendingBookmarkIds.has(
-                      getStatusId(status),
-                    )}
-                    photoViewerVisible={photoViewerVisible}
-                    photoViewerPreviewKey={photoViewerPreviewKey}
-                    registerPhotoPreviewRef={registerPhotoPreviewRef}
-                    onOpenPhoto={handlePhotoPress}
-                    onPressStatus={handleStatusPress}
-                    onPressProfile={handleMentionPress}
-                    onPressMention={handleMentionPress}
-                    onPressTag={handleTagPress}
-                    onReply={handleOpenReplyComposer}
-                    onRepost={handleOpenRepostComposer}
-                    onToggleBookmark={handleToggleBookmark}
-                    canDelete={isStatusOwnedByUser(status, authUserId)}
-                    onDelete={handleDeleteStatus}
-                  />
-                ))}
+                  {!isRecentStatusesLoading &&
+                  !isHydratingRecentStatuses &&
+                  recentStatusItems.length === 0 &&
+                  !recentStatusesErrorMessage ? (
+                    <TimelineSkeletonCard message={t('recentActivityEmpty')} />
+                  ) : null}
+
+                  {recentStatusItems.length > 0 ? (
+                    <View>
+                      {recentStatusItems.map((status, index) => (
+                        <React.Fragment key={getStatusId(status)}>
+                          {index > 0 ? (
+                            <View style={getTimelineItemSeparatorStyle()} />
+                          ) : null}
+                          <TimelineStatusCard
+                            status={status}
+                            accent={timelineAccentColor}
+                            muted={timelineMutedColor}
+                            showAvatar={false}
+                            showAuthor={false}
+                            isBookmarkPending={pendingBookmarkIds.has(
+                              getStatusId(status),
+                            )}
+                            photoViewerVisible={photoViewerVisible}
+                            photoViewerPreviewKey={photoViewerPreviewKey}
+                            registerPhotoPreviewRef={registerPhotoPreviewRef}
+                            onOpenPhoto={handlePhotoPress}
+                            onPressStatus={handleStatusPress}
+                            onPressProfile={handleMentionPress}
+                            onPressMention={handleMentionPress}
+                            onPressTag={handleTagPress}
+                            onReply={handleOpenReplyComposer}
+                            onRepost={handleOpenRepostComposer}
+                            onToggleBookmark={handleToggleBookmark}
+                            canDelete={isStatusOwnedByUser(status, authUserId)}
+                            onDelete={handleDeleteStatus}
+                          />
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              </>
+            )}
+
+            {isLoading ? (
+              <View className="items-center py-3">
+                <NeobrutalActivityIndicator size="small" />
               </View>
-            </>
-          )}
-
-          {isLoading ? (
-            <View className="items-center py-3">
-              <NeobrutalActivityIndicator size="small" />
-            </View>
-          ) : null}
-        </Animated.ScrollView>
-        <PhotoViewerModal
-          visible={photoViewerVisible}
-          photoUrl={photoViewerUrl}
-          topInset={insets.top}
-          bottomOccludedHeight={tabBarOccludedHeight}
-          scrollShadowSize={scrollShadowSize}
-          originRect={photoViewerOriginRect}
-          onClose={handleClosePhotoViewer}
-        />
-      </NativeEdgeScrollShadow>
+            ) : null}
+          </Animated.ScrollView>
+          <PhotoViewerModal
+            visible={photoViewerVisible}
+            photoUrl={photoViewerUrl}
+            topInset={insets.top}
+            bottomOccludedHeight={tabBarOccludedHeight}
+            scrollShadowSize={scrollShadowSize}
+            originRect={photoViewerOriginRect}
+            onClose={handleClosePhotoViewer}
+          />
+        </NativeEdgeScrollShadow>
+      </ProfilePageBackdrop>
       <NeobrutalRefreshIndicator
         refreshing={isPullRefreshing}
         scrollY={pullScrollY}
