@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { post, uploadPhoto } from '@/auth/fanfou-client';
+import { invalidateStatusRelatedQueries } from '@/query/status-query-invalidation';
 
 type FanfouPostParams = Record<string, string | number | boolean | undefined>;
 
@@ -33,11 +34,16 @@ const sendStatusUpdate = async ({
   });
 };
 
-export const useStatusUpdateMutation = () =>
-  useMutation({
+export const useStatusUpdateMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationKey: postMutationKeys.statusUpdate,
     mutationFn: sendStatusUpdate,
+    onSuccess: async () => {
+      await invalidateStatusRelatedQueries(queryClient);
+    },
   });
+};
 
 export type DirectMessageMutationVariables = {
   userId: string;

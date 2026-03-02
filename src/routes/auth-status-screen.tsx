@@ -25,7 +25,7 @@ import {
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get, post } from '@/auth/fanfou-client';
@@ -148,6 +148,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 const StatusDetailRoute = () => {
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
+  const queryClient = useQueryClient();
   const auth = useAuthSession();
   const authUserId = auth.accessToken?.userId ?? null;
   const route =
@@ -430,6 +431,7 @@ const StatusDetailRoute = () => {
   const handleDeleteStatus = (statusItem: FanfouStatus) => {
     const statusId = getStatusId(statusItem);
     return deleteStatus({
+      queryClient,
       statusId,
       t,
       onDeleted: async () => {

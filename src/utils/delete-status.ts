@@ -1,10 +1,13 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { post } from '@/auth/fanfou-client';
 import type { FanfouStatus } from '@/types/fanfou';
+import { invalidateStatusRelatedQueries } from '@/query/status-query-invalidation';
 import { showVariantToast } from '@/utils/toast-alert';
 
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
 type DeleteStatusParams = {
+  queryClient: QueryClient;
   statusId: string;
   t: TranslateFn;
   onDeleted: () => void | Promise<void>;
@@ -26,6 +29,7 @@ export const isStatusOwnedByUser = (
 };
 
 export const deleteStatus = async ({
+  queryClient,
   statusId,
   t,
   onDeleted,
@@ -35,6 +39,7 @@ export const deleteStatus = async ({
       id: statusId,
     });
     await onDeleted();
+    await invalidateStatusRelatedQueries(queryClient);
     showVariantToast('success', t('successTitle'), t('statusDeleteSuccess'));
   } catch (deleteError) {
     showVariantToast(

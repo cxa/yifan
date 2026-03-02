@@ -695,6 +695,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     return deleteStatus({
+      queryClient,
       statusId,
       t,
       onDeleted: () => {

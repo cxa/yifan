@@ -23,7 +23,7 @@ import {
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Extrapolation,
   interpolate,
@@ -108,6 +108,7 @@ const MentionsRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
   const authUserId = auth.accessToken?.userId ?? null;
+  const queryClient = useQueryClient();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
   const [accent, background, muted] = useThemeColor([
     'accent',
@@ -507,6 +508,7 @@ const MentionsRoute = () => {
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     return deleteStatus({
+      queryClient,
       statusId,
       t,
       onDeleted: () => {

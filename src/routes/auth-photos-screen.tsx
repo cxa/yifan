@@ -263,6 +263,7 @@ const PhotosRouteContent = ({
   };
   const handleDeleteStatus = (status: FanfouStatus) => {
     return deleteStatus({
+      queryClient,
       statusId: status.id,
       t,
       onDeleted: () => {

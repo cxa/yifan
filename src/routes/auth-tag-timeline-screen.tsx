@@ -26,7 +26,7 @@ import {
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get, post } from '@/auth/fanfou-client';
@@ -117,6 +117,7 @@ const TagTimelineRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
   const authUserId = auth.accessToken?.userId ?? null;
+  const queryClient = useQueryClient();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const route =
     useRoute<
@@ -460,6 +461,7 @@ const TagTimelineRoute = () => {
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     return deleteStatus({
+      queryClient,
       statusId,
       t,
       onDeleted: () => {
