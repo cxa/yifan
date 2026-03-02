@@ -254,7 +254,11 @@ const AuthIndexRoute = () => {
         photoBase64: photo?.base64,
       });
       setComposeVisible(false);
-      showVariantToast('success', t('sentTitle'), t('postSent'));
+      showVariantToast(
+        'success',
+        t('sentTitle'),
+        t('postPendingReviewMessage'),
+      );
     } catch (requestError) {
       showVariantToast(
         'danger',

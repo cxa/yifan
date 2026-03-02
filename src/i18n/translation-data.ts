@@ -41,6 +41,7 @@ type BaseTranslations = {
   replySent: string;
   repostSent: string;
   postSent: string;
+  postPendingReviewMessage: string;
   replyFailedTitle: string;
   repostFailedTitle: string;
   postFailedTitle: string;
@@ -201,6 +202,7 @@ type BaseTranslations = {
   editProfileNameRequired: string;
   editProfileUpdateFailedTitle: string;
   editProfileUpdateFailed: string;
+  editProfilePendingReviewMessage: string;
 
   // Photo viewer
   photoViewerClose: string;
@@ -251,6 +253,8 @@ const enUS: BaseTranslations = {
   replySent: 'Reply posted.',
   repostSent: 'Reposted.',
   postSent: 'Your post has been sent.',
+  postPendingReviewMessage:
+    'Your post has been sent. Due to content review, it may take 10 minutes or longer to appear.',
   replyFailedTitle: 'Reply Failed',
   repostFailedTitle: 'Repost Failed',
   postFailedTitle: 'Post Failed',
@@ -412,6 +416,8 @@ const enUS: BaseTranslations = {
   editProfileNameRequired: 'Name cannot be empty.',
   editProfileUpdateFailedTitle: 'Update Failed',
   editProfileUpdateFailed: 'Failed to update profile.',
+  editProfilePendingReviewMessage:
+    'Profile update submitted. Due to content review, changes may take 10 minutes or longer to appear.',
 
   // Photo viewer
   photoViewerClose: 'Close',
@@ -462,6 +468,8 @@ const zhCN: BaseTranslations = {
   replySent: '回复已发布。',
   repostSent: '已转播。',
   postSent: '你的饭否已发出。',
+  postPendingReviewMessage:
+    '你的饭否已发出。由于内容审查，可能需要 10 分钟或更久才会显示。',
   replyFailedTitle: '回复失败',
   repostFailedTitle: '转播失败',
   postFailedTitle: '发布失败',
@@ -622,6 +630,8 @@ const zhCN: BaseTranslations = {
   editProfileNameRequired: '昵称不能为空。',
   editProfileUpdateFailedTitle: '更新失败',
   editProfileUpdateFailed: '无法更新个人资料。',
+  editProfilePendingReviewMessage:
+    '资料已提交。由于内容审查，修改可能需要 10 分钟或更久才会显示。',
 
   // Photo viewer
   photoViewerClose: '关闭',

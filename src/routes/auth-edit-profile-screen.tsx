@@ -282,6 +282,11 @@ const EditProfileRoute = () => {
       await queryClient.invalidateQueries({
         queryKey: accountUserQueryKey,
       });
+      showVariantToast(
+        'success',
+        t('successTitle'),
+        t('editProfilePendingReviewMessage'),
+      );
       navigation.goBack();
     } catch (updateError) {
       showVariantToast(
