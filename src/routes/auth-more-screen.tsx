@@ -4,13 +4,18 @@ import {
   Image,
   Platform,
   Pressable,
-  ScrollView,
   type StyleProp,
   type TextStyle,
   useColorScheme,
   View,
   type ViewStyle,
 } from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import {
   useIsFocused,
@@ -20,10 +25,9 @@ import {
 } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScrollShadow, Surface, useThemeColor } from 'heroui-native';
+import { Surface, useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
@@ -37,11 +41,15 @@ import {
   AUTH_MESSAGES_ROUTE,
   AUTH_STACK_ROUTE,
 } from '@/navigation/route-names';
+import useUserTimelineHeader from '@/navigation/use-user-timeline-header';
 import {
   getContentBottomPadding,
   getScrollIndicatorBottomInset,
 } from '@/navigation/tab-bar-layout';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
+import NativeEdgeScrollShadow, {
+  resolveNativeEdgeScrollShadowSize,
+} from '@/components/native-edge-scroll-shadow';
 import {
   accountUserQueryOptions,
   userQueryKeys,
@@ -64,6 +72,9 @@ import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
   createProfileThemeStyles,
+  isColorDark,
+  resolveReadableTextColor,
+  resolveProfilePanelShadowStyle,
   resolveProfileThemePalette,
 } from '@/utils/profile-theme';
 const PAGE_HORIZONTAL_PADDING = 20;
@@ -161,8 +172,8 @@ const PostageStampIcon = ({ color, size }: { color: string; size: number }) => {
     </Svg>
   );
 };
-const SCROLL_SHADOW_SIZE = 100;
 const ENTRY_GAP = 12;
+const HEADER_TITLE_REVEAL_RATIO = 0.25;
 const SYSTEM_FONT_FAMILY = Platform.select({
   ios: 'System',
   android: 'sans-serif',
@@ -208,6 +219,7 @@ type MoreEntry = {
 type EntryRowProps = MoreEntry & {
   iconColor: string;
   panelStyle?: StyleProp<ViewStyle>;
+  shadowStyle?: StyleProp<ViewStyle>;
   primaryTextStyle?: StyleProp<TextStyle>;
   mutedTextStyle?: StyleProp<TextStyle>;
 };
@@ -248,12 +260,13 @@ const EntryRow = ({
   onPress,
   iconColor,
   panelStyle,
+  shadowStyle,
   primaryTextStyle,
   mutedTextStyle,
 }: EntryRowProps) => {
   const isDisabled = !onPress;
   return (
-    <DropShadowBox>
+    <DropShadowBox shadowStyle={shadowStyle}>
       <Pressable
         onPress={onPress}
         disabled={isDisabled}
@@ -401,17 +414,24 @@ const MoreRouteContent = ({
 }: MoreRouteContentProps) => {
   const { t } = useTranslation();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
+  const headerHeight = useHeaderHeight();
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const queryClient = useQueryClient();
   const [background, muted] = useThemeColor(['background', 'muted']);
   const appFontPreference = useAppFontPreference();
   const appLanguagePreference = useAppLanguagePreference();
   const isFocused = useIsFocused();
+  const headerTitleVisible = useSharedValue(false);
+  const [showHeaderTitle, setShowHeaderTitle] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [updatingFontOption, setUpdatingFontOption] =
     useState<AppFontOption | null>(null);
   const [updatingLanguageOption, setUpdatingLanguageOption] =
     useState<AppLanguageOption | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef =
+    useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
   const insets = useSafeAreaInsets();
   const contentBottomPadding = getContentBottomPadding(insets.bottom, true);
   const scrollIndicatorBottom = getScrollIndicatorBottomInset(
@@ -419,6 +439,19 @@ const MoreRouteContent = ({
     true,
   );
   useScrollToTop(scrollRef);
+  const updateShowHeaderTitle = (nextVisibility: boolean) => {
+    setShowHeaderTitle(nextVisibility);
+  };
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: event => {
+      const shouldShowHeaderTitle =
+        event.contentOffset.y >= scrollShadowSize * HEADER_TITLE_REVEAL_RATIO;
+      if (shouldShowHeaderTitle !== headerTitleVisible.value) {
+        headerTitleVisible.value = shouldShowHeaderTitle;
+        scheduleOnRN(updateShowHeaderTitle, shouldShowHeaderTitle);
+      }
+    },
+  });
   const {
     data: user,
     isLoading,
@@ -447,7 +480,35 @@ const MoreRouteContent = ({
     ? getErrorMessage(error, t('moreAccountLoadFailed'))
     : null;
   const profileThemePalette = resolveProfileThemePalette(user);
+  const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
+  const preferredHeaderTintColor =
+    profileThemePalette.linkColor ?? profileThemePalette.textColor;
+  const headerTintColor = hasBackgroundImage
+    ? preferredHeaderTintColor ?? '#FFFFFF'
+    : preferredHeaderTintColor ??
+      (profileThemePalette.pageBackgroundColor
+        ? resolveReadableTextColor({
+            backgroundColor: profileThemePalette.pageBackgroundColor,
+          })
+        : undefined);
+  const isHeaderTintDark = headerTintColor
+    ? isColorDark(headerTintColor)
+    : undefined;
+  const headerBackgroundColor = hasBackgroundImage
+    ? isHeaderTintDark
+      ? 'rgba(255, 255, 255, 0.58)'
+      : 'rgba(0, 0, 0, 0.44)'
+    : undefined;
+  useUserTimelineHeader({
+    userId,
+    user,
+    headerTintColor,
+    headerBackgroundColor,
+    showHeaderTitle,
+  });
   const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
+  const profilePanelShadowStyle =
+    resolveProfilePanelShadowStyle(profileThemePalette);
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
   const entryIconColor = profileThemePalette.linkColor ?? muted;
@@ -493,7 +554,7 @@ const MoreRouteContent = ({
   const contentContainerStyle = {
     flexGrow: 1,
     paddingHorizontal: PAGE_HORIZONTAL_PADDING,
-    paddingTop: insets.top,
+    paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: contentBottomPadding + PAGE_BOTTOM_PADDING,
   };
   const handleOpenMyTimeline = () => {
@@ -676,19 +737,21 @@ const MoreRouteContent = ({
       backgroundImageUrl={profileThemePalette.backgroundImageUrl}
       isBackgroundImageTiled={profileThemePalette.isBackgroundImageTiled}
     >
-      <ScrollShadow
+      <NativeEdgeScrollShadow
         className="flex-1"
-        LinearGradientComponent={LinearGradient}
-        size={SCROLL_SHADOW_SIZE}
         color={pageBackgroundColor}
+        size={scrollShadowSize}
       >
-        <ScrollView
+        <Animated.ScrollView
           ref={scrollRef}
           className="flex-1"
+          contentInsetAdjustmentBehavior="automatic"
           scrollIndicatorInsets={{
             bottom: scrollIndicatorBottom,
           }}
           contentContainerStyle={contentContainerStyle}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
         >
           <View
             className="flex-1"
@@ -701,7 +764,7 @@ const MoreRouteContent = ({
                 gap: SECTION_GAP,
               }}
             >
-              <DropShadowBox>
+              <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                 {showLoadingState ? (
                   <Surface
                     className="bg-surface border-2 border-foreground dark:border-border px-5 py-6"
@@ -773,12 +836,14 @@ const MoreRouteContent = ({
                   <ProfileStatRow
                     stats={profileStatsPrimary}
                     panelStyle={profileThemeStyles.panelStyle}
+                    shadowStyle={profilePanelShadowStyle}
                     valueTextStyle={profileThemeStyles.primaryTextStyle}
                     labelTextStyle={profileThemeStyles.primaryTextStyle}
                   />
                   <ProfileStatRow
                     stats={profileStatsSecondary}
                     panelStyle={profileThemeStyles.panelStyle}
+                    shadowStyle={profilePanelShadowStyle}
                     valueTextStyle={profileThemeStyles.primaryTextStyle}
                     labelTextStyle={profileThemeStyles.primaryTextStyle}
                   />
@@ -790,12 +855,14 @@ const MoreRouteContent = ({
                     skeleton
                     itemCount={3}
                     panelStyle={profileThemeStyles.panelStyle}
+                    shadowStyle={profilePanelShadowStyle}
                   />
                   <ProfileStatRow
                     stats={[]}
                     skeleton
                     itemCount={2}
                     panelStyle={profileThemeStyles.panelStyle}
+                    shadowStyle={profilePanelShadowStyle}
                   />
                 </>
               ) : null}
@@ -813,6 +880,7 @@ const MoreRouteContent = ({
                       {...entryProps}
                       iconColor={entryIconColor}
                       panelStyle={profileThemeStyles.panelStyle}
+                      shadowStyle={profilePanelShadowStyle}
                       primaryTextStyle={profileThemeStyles.primaryTextStyle}
                       mutedTextStyle={profileThemeStyles.mutedTextStyle}
                     />
@@ -820,7 +888,7 @@ const MoreRouteContent = ({
                 })}
               </View>
 
-              <DropShadowBox>
+              <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                 <Surface
                   className="bg-surface border-2 border-foreground dark:border-border"
                   style={profileThemeStyles.panelStyle}
@@ -853,7 +921,7 @@ const MoreRouteContent = ({
                 </Surface>
               </DropShadowBox>
 
-              <DropShadowBox>
+              <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                 <Surface
                   className="bg-surface border-2 border-foreground dark:border-border"
                   style={profileThemeStyles.panelStyle}
@@ -899,15 +967,20 @@ const MoreRouteContent = ({
               />
             </View>
           </View>
-        </ScrollView>
-      </ScrollShadow>
+        </Animated.ScrollView>
+      </NativeEdgeScrollShadow>
     </ProfilePageBackdrop>
   );
 };
 const MissingUserIdPlaceholder = () => {
   const { t } = useTranslation();
+  const headerHeight = useHeaderHeight();
+  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
+    headerHeight,
+  });
   const [background] = useThemeColor(['background']);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef =
+    useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
   const insets = useSafeAreaInsets();
   const placeholderContentPadding = getContentBottomPadding(
     insets.bottom,
@@ -921,20 +994,20 @@ const MissingUserIdPlaceholder = () => {
   const contentContainerStyle = {
     flexGrow: 1,
     paddingHorizontal: PAGE_HORIZONTAL_PADDING,
-    paddingTop: insets.top,
+    paddingTop: 0,
     paddingBottom: placeholderContentPadding + PAGE_BOTTOM_PADDING,
     justifyContent: 'center' as const,
   };
   return (
-    <ScrollShadow
+    <NativeEdgeScrollShadow
       className="flex-1"
-      LinearGradientComponent={LinearGradient}
-      size={SCROLL_SHADOW_SIZE}
       color={background}
+      size={scrollShadowSize}
     >
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
         className="flex-1"
+        contentInsetAdjustmentBehavior="automatic"
         scrollIndicatorInsets={{
           bottom: placeholderScrollInset,
         }}
@@ -949,8 +1022,8 @@ const MissingUserIdPlaceholder = () => {
             </View>
           </Surface>
         </DropShadowBox>
-      </ScrollView>
-    </ScrollShadow>
+      </Animated.ScrollView>
+    </NativeEdgeScrollShadow>
   );
 };
 const MoreRoute = () => {

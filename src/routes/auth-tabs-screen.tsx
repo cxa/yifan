@@ -5,6 +5,7 @@ import {
   BottomTabBarProps,
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { Home, AtSign, MoreHorizontal, SquarePen } from 'lucide-react-native';
@@ -19,6 +20,7 @@ import Animated, {
   LinearTransition,
 } from 'react-native-reanimated';
 import { AUTH_TAB_ROUTE } from '@/navigation/route-names';
+import { isNativeScrollEdgeEffectAvailable } from '@/navigation/native-scroll-edge';
 import {
   TAB_BAR_BUTTON_HEIGHT,
   TAB_BAR_MIN_BOTTOM_GAP,
@@ -32,6 +34,11 @@ import MoreRoute from '@/routes/auth-more-screen';
 import { usePhotoViewerLayerMode } from '@/navigation/photo-viewer-layer-state';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 const Tab = createBottomTabNavigator<AuthTabParamList>();
+type MoreTabStackParamList = {
+  MoreRoot: undefined;
+};
+const MoreStack = createNativeStackNavigator<MoreTabStackParamList>();
+const HEADER_TITLE_FONT_SIZE = 17;
 const isTabRouteName = (
   routeName: string,
 ): routeName is keyof AuthTabParamList =>
@@ -225,6 +232,40 @@ const AuthTabBar = ({
     </View>
   );
 };
+const MoreStackRoute = () => {
+  const { t } = useTranslation();
+  const [foreground] = useThemeColor(['foreground']);
+  const headerFontFamily = useAppFontFamily();
+
+  return (
+    <MoreStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerLargeTitle: false,
+        headerTransparent: true,
+        headerTintColor: foreground,
+        headerBackButtonDisplayMode: 'minimal',
+        headerShadowVisible: false,
+        scrollEdgeEffects: isNativeScrollEdgeEffectAvailable
+          ? { top: 'automatic' }
+          : undefined,
+        headerTitleStyle: {
+          fontFamily: headerFontFamily,
+          fontSize: HEADER_TITLE_FONT_SIZE,
+          color: foreground,
+        },
+      }}
+    >
+      <MoreStack.Screen
+        name="MoreRoot"
+        component={MoreRoute}
+        options={{
+          title: t('tabMore'),
+        }}
+      />
+    </MoreStack.Navigator>
+  );
+};
 const AuthIndexRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
@@ -296,7 +337,7 @@ const AuthIndexRoute = () => {
           name={AUTH_TAB_ROUTE.COMPOSE}
           component={ComposeTabPlaceholder}
         />
-        <Tab.Screen name={AUTH_TAB_ROUTE.MORE} component={MoreRoute} />
+        <Tab.Screen name={AUTH_TAB_ROUTE.MORE} component={MoreStackRoute} />
       </Tab.Navigator>
 
       <ComposerModal

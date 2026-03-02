@@ -114,6 +114,17 @@ export const createProfileThemeStyles = (
   };
 };
 
+export const resolveProfilePanelShadowStyle = (
+  palette: ProfileThemePalette,
+): ViewStyle | undefined => {
+  if (!palette.panelBorderColor) {
+    return undefined;
+  }
+  return {
+    backgroundColor: palette.panelBorderColor,
+  };
+};
+
 const toLinearChannel = (value: number) => {
   const normalized = value / 255;
   if (normalized <= 0.03928) {

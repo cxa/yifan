@@ -87,6 +87,7 @@ import {
   createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
+  resolveProfilePanelShadowStyle,
   resolveProfileThemePalette,
 } from '@/utils/profile-theme';
 import { useTranslation } from 'react-i18next';
@@ -828,11 +829,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
-  const profilePanelShadowStyle = profileThemePalette.panelBorderColor
-    ? {
-        backgroundColor: profileThemePalette.panelBorderColor,
-      }
-    : undefined;
+  const profilePanelShadowStyle =
+    resolveProfilePanelShadowStyle(profileThemePalette);
   const timelineAccentColor = profileThemePalette.linkColor ?? accent;
   const timelineMutedColor = profileThemePalette.mutedTextColor ?? muted;
   const statsPrimary: ProfileStatItem[] = [
