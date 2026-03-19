@@ -134,7 +134,7 @@ const ComposerModal = ({
         >
           <Pressable
             onPress={event => event.stopPropagation()}
-            className="relative border-4 border-border bg-surface p-[14px] gap-[10px]"
+            className="relative rounded-[24px] bg-surface p-[14px] gap-[10px]"
             style={containerStyle}
           >
             <Pressable
@@ -162,7 +162,7 @@ const ComposerModal = ({
               multiline
               textAlignVertical="top"
               autoFocus
-              className="min-h-[120px] max-h-[260px] border-2 border-border bg-surface-secondary px-2.5 py-2 text-[15px] text-foreground"
+              className="min-h-[120px] max-h-[260px] rounded-[16px] bg-surface-secondary px-3 py-3 text-[15px] text-foreground"
               style={
                 Platform.OS === 'android' ? styles.textInputAndroid : undefined
               }
@@ -170,7 +170,7 @@ const ComposerModal = ({
             />
 
             {photoUri ? (
-              <View className="overflow-hidden border-2 border-border bg-surface-secondary">
+              <View className="overflow-hidden rounded-[16px] bg-surface-secondary">
                 <Image
                   source={{
                     uri: photoUri,
@@ -190,9 +190,8 @@ const ComposerModal = ({
                         ? handlePickPhoto
                         : undefined
                     }
-                    className={`w-10 items-center justify-center border-2 border-border bg-surface-secondary py-2 ${
-                      isPhotoPicking ? 'opacity-60' : ''
-                    }`}
+                    className={`w-12 items-center justify-center rounded-[16px] bg-surface-secondary py-2 ${isPhotoPicking ? 'opacity-60' : ''
+                      }`}
                     accessibilityRole="button"
                     accessibilityLabel={
                       photoUri
@@ -207,7 +206,7 @@ const ComposerModal = ({
                 {photoUri ? (
                   <Pressable
                     onPress={canDismiss ? handleRemovePhoto : undefined}
-                    className="border-2 border-border bg-surface-secondary px-3 py-2"
+                    className="rounded-[16px] bg-surface-secondary px-4 py-2"
                     accessibilityRole="button"
                     accessibilityLabel={t('composerRemovePhotoA11y')}
                   >
@@ -221,7 +220,7 @@ const ComposerModal = ({
               <View className="flex-row gap-2">
                 <Pressable
                   onPress={!isSubmitting ? handleSubmit : undefined}
-                  className="min-w-[120px] items-center border-2 border-border bg-accent px-5 py-2"
+                  className="min-w-[120px] items-center justify-center rounded-[24px] bg-accent px-5 py-3"
                   accessibilityRole="button"
                   accessibilityLabel={submitLabel}
                 >

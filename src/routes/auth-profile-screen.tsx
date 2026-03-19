@@ -54,6 +54,7 @@ import ProfileSummaryCard from '@/components/profile-summary-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
 import {
   getTimelineItemSeparatorStyle,
@@ -270,9 +271,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     queryClient.setQueryData<FanfouUser | null>(userQueryKey, previous =>
       previous
         ? {
-            ...previous,
-            ...patch,
-          }
+          ...previous,
+          ...patch,
+        }
         : previous,
     );
   };
@@ -386,11 +387,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         photoUrl,
         hasValidRect
           ? {
-              x,
-              y,
-              width,
-              height,
-            }
+            x,
+            y,
+            width,
+            height,
+          }
           : null,
         previewKey,
       );
@@ -429,11 +430,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         t('successTitle'),
         nextFollowing
           ? t('profileFollowSuccess', {
-              name,
-            })
+            name,
+          })
           : t('profileUnfollowSuccess', {
-              name,
-            }),
+            name,
+          }),
       );
     } catch (requestError) {
       showVariantToast(
@@ -467,11 +468,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         t('successTitle'),
         nextBlocked
           ? t('profileBlockSuccess', {
-              name,
-            })
+            name,
+          })
           : t('profileUnblockSuccess', {
-              name,
-            }),
+            name,
+          }),
       );
     } catch (requestError) {
       showVariantToast(
@@ -620,10 +621,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         composeMode === 'mention'
           ? t('profileMentionSent')
           : composeMode === 'dm'
-          ? t('profileMessageSent')
-          : composeMode === 'reply'
-          ? t('replySent')
-          : t('repostSent'),
+            ? t('profileMessageSent')
+            : composeMode === 'reply'
+              ? t('replySent')
+              : t('repostSent'),
       );
     } catch (requestError) {
       showVariantToast(
@@ -631,8 +632,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         composeMode === 'repost'
           ? t('repostFailedTitle')
           : composeMode === 'reply'
-          ? t('replyFailedTitle')
-          : t('profileSendFailed'),
+            ? t('replyFailedTitle')
+            : t('profileSendFailed'),
         getErrorMessage(requestError, t('profileSendFailedMessage')),
       );
     }
@@ -648,9 +649,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       previous.map(item =>
         getStatusId(item) === statusId
           ? {
-              ...item,
-              favorited: nextFavorited,
-            }
+            ...item,
+            favorited: nextFavorited,
+          }
           : item,
       ),
     );
@@ -663,13 +664,13 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         previous =>
           previous
             ? previous.map(item =>
-                getStatusId(item) === statusId
-                  ? {
-                      ...item,
-                      favorited: nextFavorited,
-                    }
-                  : item,
-              )
+              getStatusId(item) === statusId
+                ? {
+                  ...item,
+                  favorited: nextFavorited,
+                }
+                : item,
+            )
             : previous,
       );
     } catch (requestError) {
@@ -677,9 +678,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         previous.map(item =>
           getStatusId(item) === statusId
             ? {
-                ...item,
-                favorited: !nextFavorited,
-              }
+              ...item,
+              favorited: !nextFavorited,
+            }
             : item,
         ),
       );
@@ -725,11 +726,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const headerTintColor = hasBackgroundImage
     ? preferredHeaderTintColor ?? '#FFFFFF'
     : preferredHeaderTintColor ??
-      (profileThemePalette.pageBackgroundColor
-        ? resolveReadableTextColor({
-            backgroundColor: profileThemePalette.pageBackgroundColor,
-          })
-        : undefined);
+    (profileThemePalette.pageBackgroundColor
+      ? resolveReadableTextColor({
+        backgroundColor: profileThemePalette.pageBackgroundColor,
+      })
+      : undefined);
   const isHeaderTintDark = headerTintColor
     ? isColorDark(headerTintColor)
     : undefined;
@@ -778,7 +779,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   if (!user) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {profileErrorMessage ?? t('profileLoadFailed')}
           </Text>
@@ -866,55 +867,55 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const composerTitle =
     composeMode === 'dm'
       ? t('profileMessageComposerTitle', {
-          handle: handleName,
-        })
+        handle: handleName,
+      })
       : composeMode === 'reply'
-      ? composeReplyTarget
-        ? t('composerReplyTo', {
+        ? composeReplyTarget
+          ? t('composerReplyTo', {
             name: composeReplyTarget.screenName,
           })
-        : t('composerReply')
-      : composeMode === 'repost'
-      ? composeRepostTarget?.screenName
-        ? t('composerRepostTo', {
-            name: composeRepostTarget.screenName,
-          })
-        : t('composerRepost')
-      : t('profileMentionComposerTitle', {
-          handle: handleName,
-        });
+          : t('composerReply')
+        : composeMode === 'repost'
+          ? composeRepostTarget?.screenName
+            ? t('composerRepostTo', {
+              name: composeRepostTarget.screenName,
+            })
+            : t('composerRepost')
+          : t('profileMentionComposerTitle', {
+            handle: handleName,
+          });
   const composerPlaceholder =
     composeMode === 'dm'
       ? t('profileMessagePlaceholder')
       : composeMode === 'reply'
-      ? t('composerReplyPlaceholder')
-      : composeMode === 'repost'
-      ? t('composerCommentPlaceholder')
-      : t('composerReplyPlaceholder');
+        ? t('composerReplyPlaceholder')
+        : composeMode === 'repost'
+          ? t('composerCommentPlaceholder')
+          : t('composerReplyPlaceholder');
   const composerSubmitLabel =
     composeMode === 'dm'
       ? t('messageSend')
       : composeMode === 'reply'
-      ? t('composerSubmitReply')
-      : composeMode === 'repost'
-      ? t('composerSubmitRepost')
-      : t('composerSubmitPost');
+        ? t('composerSubmitReply')
+        : composeMode === 'repost'
+          ? t('composerSubmitRepost')
+          : t('composerSubmitPost');
   const composerInitialText =
     composeMode === 'mention'
       ? `@${user.screen_name} `
       : composeMode === 'reply' && composeReplyTarget
-      ? `@${composeReplyTarget.screenName} `
-      : '';
+        ? `@${composeReplyTarget.screenName} `
+        : '';
   const composerResetKey =
     composeMode === 'mention'
       ? `mention:${user.id}`
       : composeMode === 'dm'
-      ? `dm:${user.id}`
-      : composeMode === 'reply'
-      ? `reply:${composeReplyTarget?.statusId ?? ''}`
-      : composeMode === 'repost'
-      ? `repost:${composeRepostTarget?.statusId ?? ''}`
-      : 'closed';
+        ? `dm:${user.id}`
+        : composeMode === 'reply'
+          ? `reply:${composeReplyTarget?.statusId ?? ''}`
+          : composeMode === 'repost'
+            ? `repost:${composeRepostTarget?.statusId ?? ''}`
+            : 'closed';
   const isHydratingRecentStatuses = isHydratingTimeline({
     isLoading: isRecentStatusesLoading,
     renderedItems: recentStatusItems,
@@ -923,7 +924,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   if (!accessToken) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('notLoggedIn')}
           </Text>
@@ -994,16 +995,15 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 shadowStyle={profilePanelShadowStyle}
               >
                 <Surface
-                  className="bg-surface-secondary border-2 border-foreground dark:border-border px-4 py-4"
+                  className="rounded-[24px] bg-surface-secondary dark: px-4 py-4"
                   style={profileThemeStyles.panelStyle}
                 >
                   <View className="flex-row gap-3">
                     <Pressable
                       onPress={handleFollowToggle}
                       disabled={isFollowSubmitting || isBlocked}
-                      className={`flex-1 border border-border px-3 py-2 ${
-                        isBlocked ? 'bg-surface' : 'bg-accent'
-                      }`}
+                      className={`flex-1 rounded-[16px] border  px-3 py-2 ${isBlocked ? 'bg-surface' : 'bg-accent'
+                        }`}
                       accessibilityRole="button"
                       accessibilityLabel={
                         isFollowing
@@ -1012,24 +1012,23 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                       }
                     >
                       <Text
-                        className={`text-[13px] text-center ${
-                          isBlocked ? 'text-muted' : 'text-accent-foreground'
-                        }`}
+                        className={`text-[13px] text-center ${isBlocked ? 'text-muted' : 'text-accent-foreground'
+                          }`}
                       >
                         {isFollowSubmitting
                           ? t('profileActionUpdating')
                           : isBlocked
-                          ? t('profileActionBlock')
-                          : isFollowing
-                          ? t('profileActionUnfollow')
-                          : t('profileActionFollow')}
+                            ? t('profileActionBlock')
+                            : isFollowing
+                              ? t('profileActionUnfollow')
+                              : t('profileActionFollow')}
                       </Text>
                     </Pressable>
 
                     <Pressable
                       onPress={handleBlockToggle}
                       disabled={isBlockSubmitting || isBlockChecking}
-                      className="flex-1 border border-border bg-surface px-3 py-2"
+                      className="flex-1 rounded-[16px] border bg-surface px-3 py-2"
                       accessibilityRole="button"
                       accessibilityLabel={
                         isBlocked
@@ -1041,10 +1040,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                         {isBlockChecking
                           ? t('profileActionChecking')
                           : isBlockSubmitting
-                          ? t('profileActionUpdating')
-                          : isBlocked
-                          ? t('profileActionUnblock')
-                          : t('profileActionBlock')}
+                            ? t('profileActionUpdating')
+                            : isBlocked
+                              ? t('profileActionUnblock')
+                              : t('profileActionBlock')}
                       </Text>
                     </Pressable>
                   </View>
@@ -1052,7 +1051,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   <View className="mt-3 flex-row gap-3">
                     <Pressable
                       onPress={handleOpenMentionComposer}
-                      className="flex-1 border border-border bg-surface px-3 py-2"
+                      className="flex-1 rounded-[16px] border bg-surface px-3 py-2"
                       accessibilityRole="button"
                       accessibilityLabel={t('profileActionMention')}
                     >
@@ -1063,7 +1062,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
 
                     <Pressable
                       onPress={handleOpenDmComposer}
-                      className="flex-1 border border-border bg-surface px-3 py-2"
+                      className="flex-1 rounded-[16px] border bg-surface px-3 py-2"
                       accessibilityRole="button"
                       accessibilityLabel={t('profileActionMessage')}
                     >
@@ -1077,7 +1076,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             ) : null}
 
             {profileErrorMessage ? (
-              <Surface className="bg-danger-soft px-4 py-3">
+              <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                 <Text className="text-[13px] text-danger-foreground">
                   {profileErrorMessage}
                 </Text>
@@ -1087,7 +1086,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             {isProtectedTimeline ? (
               <DropShadowBox type="warning" containerClassName="pb-2">
                 <Surface
-                  className={`bg-surface border-2 ${getDropShadowBorderClass(
+                  className={`rounded-[24px] bg-surface  ${getDropShadowBorderClass(
                     'warning',
                   )} px-4 py-4`}
                 >
@@ -1118,7 +1117,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   ) : null}
 
                   {recentStatusesErrorMessage ? (
-                    <Surface className="bg-danger-soft px-4 py-3">
+                    <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                       <Text className="text-[13px] text-danger-foreground">
                         {recentStatusesErrorMessage}
                       </Text>
@@ -1126,9 +1125,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   ) : null}
 
                   {!isRecentStatusesLoading &&
-                  !isHydratingRecentStatuses &&
-                  recentStatusItems.length === 0 &&
-                  !recentStatusesErrorMessage ? (
+                    !isHydratingRecentStatuses &&
+                    recentStatusItems.length === 0 &&
+                    !recentStatusesErrorMessage ? (
                     <TimelineSkeletonCard message={t('recentActivityEmpty')} />
                   ) : null}
 
@@ -1143,6 +1142,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                             status={status}
                             accent={timelineAccentColor}
                             muted={timelineMutedColor}
+                            shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                             showAvatar={false}
                             showAuthor={false}
                             isBookmarkPending={pendingBookmarkIds.has(
@@ -1222,7 +1222,7 @@ const ProfileRoute = () => {
   if (!routeUserId) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             Missing profile user id.
           </Text>

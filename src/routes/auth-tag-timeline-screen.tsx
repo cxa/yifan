@@ -42,6 +42,7 @@ import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineStatusCard from '@/components/timeline-status-card';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
@@ -257,11 +258,11 @@ const TagTimelineRoute = () => {
         photoUrl,
         hasValidRect
           ? {
-              x,
-              y,
-              width,
-              height,
-            }
+            x,
+            y,
+            width,
+            height,
+          }
           : null,
         previewKey,
       );
@@ -426,9 +427,9 @@ const TagTimelineRoute = () => {
       previous.map(item =>
         getStatusId(item) === statusId
           ? {
-              ...item,
-              favorited: nextFavorited,
-            }
+            ...item,
+            favorited: nextFavorited,
+          }
           : item,
       ),
     );
@@ -441,9 +442,9 @@ const TagTimelineRoute = () => {
         previous.map(item =>
           getStatusId(item) === statusId
             ? {
-                ...item,
-                favorited: !nextFavorited,
-              }
+              ...item,
+              favorited: !nextFavorited,
+            }
             : item,
         ),
       );
@@ -532,16 +533,16 @@ const TagTimelineRoute = () => {
     composeMode === 'reply'
       ? composeReplyTarget
         ? t('composerReplyTo', {
-            name: composeReplyTarget.screenName,
-          })
+          name: composeReplyTarget.screenName,
+        })
         : t('composerReply')
       : composeMode === 'repost'
-      ? composeRepostTarget?.screenName
-        ? t('composerRepostTo', {
+        ? composeRepostTarget?.screenName
+          ? t('composerRepostTo', {
             name: composeRepostTarget.screenName,
           })
-        : t('composerRepost')
-      : t('composerWritePost');
+          : t('composerRepost')
+        : t('composerWritePost');
   const composerPlaceholder =
     composeMode === 'reply'
       ? t('composerReplyPlaceholder')
@@ -558,8 +559,8 @@ const TagTimelineRoute = () => {
     composeMode === 'reply'
       ? `reply:${composeReplyTarget?.statusId ?? ''}`
       : composeMode === 'repost'
-      ? `repost:${composeRepostTarget?.statusId ?? ''}`
-      : 'closed';
+        ? `repost:${composeRepostTarget?.statusId ?? ''}`
+        : 'closed';
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
     renderedItems: timelineItems,
@@ -569,7 +570,7 @@ const TagTimelineRoute = () => {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
         <View>
-          <Surface className="bg-danger-soft px-4 py-3">
+          <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
             <Text className="text-[13px] text-danger-foreground">
               {t('tagMissing')}
             </Text>
@@ -607,7 +608,7 @@ const TagTimelineRoute = () => {
           }
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="bg-danger-soft px-4 py-3">
+              <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                 <Text className="text-[13px] text-danger-foreground">
                   {errorMessage}
                 </Text>
@@ -626,11 +627,12 @@ const TagTimelineRoute = () => {
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TimelineStatusCard
               status={item}
               accent={accent}
               muted={muted}
+              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
               isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
               photoViewerVisible={photoViewerVisible}
               photoViewerPreviewKey={photoViewerPreviewKey}

@@ -35,6 +35,7 @@ import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import {
@@ -114,14 +115,14 @@ const PhotosRouteContent = ({
       previous =>
         previous
           ? {
-              ...previous,
-              pages: previous.pages.map(pageItems => ({
-                ...pageItems,
-                items: pageItems.items.map(item =>
-                  item.id === statusId ? updater(item) : item,
-                ),
-              })),
-            }
+            ...previous,
+            pages: previous.pages.map(pageItems => ({
+              ...pageItems,
+              items: pageItems.items.map(item =>
+                item.id === statusId ? updater(item) : item,
+              ),
+            })),
+          }
           : previous,
     );
   };
@@ -252,12 +253,12 @@ const PhotosRouteContent = ({
       previous =>
         previous
           ? {
-              ...previous,
-              pages: previous.pages.map(pageItems => ({
-                ...pageItems,
-                items: pageItems.items.filter(item => item.id !== statusId),
-              })),
-            }
+            ...previous,
+            pages: previous.pages.map(pageItems => ({
+              ...pageItems,
+              items: pageItems.items.filter(item => item.id !== statusId),
+            })),
+          }
           : previous,
     );
   };
@@ -293,7 +294,7 @@ const PhotosRouteContent = ({
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="bg-danger-soft px-4 py-3">
+              <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                 <Text className="text-[13px] text-danger-foreground">
                   {errorMessage}
                 </Text>
@@ -307,11 +308,12 @@ const PhotosRouteContent = ({
               <TimelineSkeletonCard message={t('photosEmpty')} />
             )
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TimelineStatusCard
               status={item}
               accent={accent}
               muted={muted}
+              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
               showAvatar={false}
               showAuthor={false}
               isBookmarkPending={pendingBookmarkIds.has(item.id)}
@@ -383,7 +385,7 @@ const PhotosRoute = () => {
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('notLoggedIn')}
           </Text>

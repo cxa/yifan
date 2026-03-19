@@ -19,7 +19,8 @@ export const getTabBarBottomOffset = (bottomInset: number): number =>
  * Visual height of the tab bar (button + shadow).
  * Used for scroll indicator insets relative to the tab bar itself.
  */
-export const TAB_BAR_VISUAL_HEIGHT = TAB_BAR_BUTTON_HEIGHT + TAB_BAR_SHADOW_OFFSET;
+export const TAB_BAR_VISUAL_HEIGHT =
+  TAB_BAR_BUTTON_HEIGHT + TAB_BAR_SHADOW_OFFSET;
 
 /**
  * Total height obscured by the floating tab bar, measured from
@@ -38,9 +39,7 @@ export const getContentBottomPadding = (
   bottomInset: number,
   hasTabBar: boolean,
 ): number =>
-  hasTabBar
-    ? getTabBarOccludedHeight(bottomInset)
-    : Math.max(bottomInset, 0);
+  hasTabBar ? getTabBarOccludedHeight(bottomInset) : Math.max(bottomInset, 0);
 
 /**
  * Scroll indicator bottom inset.
@@ -50,5 +49,4 @@ export const getContentBottomPadding = (
 export const getScrollIndicatorBottomInset = (
   bottomInset: number,
   hasTabBar: boolean,
-): number =>
-  hasTabBar ? TAB_BAR_VISUAL_HEIGHT : Math.max(bottomInset, 0);
+): number => (hasTabBar ? TAB_BAR_VISUAL_HEIGHT : Math.max(bottomInset, 0));

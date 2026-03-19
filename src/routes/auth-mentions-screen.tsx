@@ -39,6 +39,7 @@ import ComposerModal, {
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import TimelineStatusCard from '@/components/timeline-status-card';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineTitleHeader from '@/components/timeline-title-header';
@@ -651,11 +652,12 @@ const MentionsRoute = () => {
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TimelineStatusCard
               status={item}
               accent={accent}
               muted={muted}
+              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
               isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
               photoViewerVisible={photoViewerVisible}
               photoViewerPreviewKey={photoViewerPreviewKey}

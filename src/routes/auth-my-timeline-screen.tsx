@@ -56,6 +56,7 @@ import {
 } from '@/components/timeline-list-settings';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 const TIMELINE_PAGE_SIZE = 60;
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
@@ -119,13 +120,13 @@ const MyTimelineRouteContent = ({
     queryClient.setQueryData<InfiniteData<FanfouStatus[]>>(queryKey, previous =>
       previous
         ? {
-            ...previous,
-            pages: previous.pages.map(pageItems =>
-              pageItems.map(item =>
-                item.id === statusId ? updater(item) : item,
-              ),
+          ...previous,
+          pages: previous.pages.map(pageItems =>
+            pageItems.map(item =>
+              item.id === statusId ? updater(item) : item,
             ),
-          }
+          ),
+        }
         : previous,
     );
   };
@@ -232,11 +233,11 @@ const MyTimelineRouteContent = ({
     queryClient.setQueryData<InfiniteData<FanfouStatus[]>>(queryKey, previous =>
       previous
         ? {
-            ...previous,
-            pages: previous.pages.map(pageItems =>
-              pageItems.filter(item => item.id !== statusId),
-            ),
-          }
+          ...previous,
+          pages: previous.pages.map(pageItems =>
+            pageItems.filter(item => item.id !== statusId),
+          ),
+        }
         : previous,
     );
   };
@@ -272,7 +273,7 @@ const MyTimelineRouteContent = ({
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="bg-danger-soft px-4 py-3">
+              <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                 <Text className="text-[13px] text-danger-foreground">
                   {errorMessage}
                 </Text>
@@ -289,11 +290,12 @@ const MyTimelineRouteContent = ({
               <TimelineSkeletonCard message={t('myTimelineEmpty')} />
             )
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TimelineStatusCard
               status={item}
               accent={accent}
               muted={muted}
+              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
               showAvatar={false}
               showAuthor={false}
               isBookmarkPending={pendingBookmarkIds.has(item.id)}
@@ -368,7 +370,7 @@ const MyTimelineRoute = () => {
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('notLoggedIn')}
           </Text>

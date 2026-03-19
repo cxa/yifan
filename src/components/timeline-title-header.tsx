@@ -33,7 +33,7 @@ const TimelineTitleHeader = ({
       </AnimatedText>
     </Animated.View>
     {errorMessage ? (
-      <Surface className="mt-4 bg-danger-soft px-4 py-3">
+      <Surface className="rounded-[16px] mt-4 bg-danger-soft px-4 py-3">
         <Text className="text-[13px] text-danger-foreground">
           {errorMessage}
         </Text>

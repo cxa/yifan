@@ -61,6 +61,7 @@ import {
 } from '@/navigation/route-names';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 import type { FanfouStatus } from '@/types/fanfou';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import { Text } from '@/components/app-text';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
@@ -730,11 +731,12 @@ const AuthHomeRoute = () => {
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TimelineStatusCard
               status={item}
               accent={accent}
               muted={muted}
+              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
               isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
               photoViewerVisible={photoViewerVisible}
               photoViewerPreviewKey={photoViewerPreviewKey}

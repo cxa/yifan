@@ -95,11 +95,11 @@ const getStatusBarHeight = (): number | undefined => {
   if (Platform.OS === 'ios') {
     const statusBarManager = NativeModules.StatusBarManager as
       | {
-          statusBarFrame?: {
-            height?: number;
-          };
-          HEIGHT?: number;
-        }
+        statusBarFrame?: {
+          height?: number;
+        };
+        HEIGHT?: number;
+      }
       | undefined;
     const frameHeight = statusBarManager?.statusBarFrame?.height;
     if (typeof frameHeight === 'number' && frameHeight > 0) {
@@ -135,19 +135,19 @@ const STAMP_WAVE_LINES: {
   d: string;
   opacity: number;
 }[] = [
-  {
-    d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',
-    opacity: 0.25,
-  },
-  {
-    d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9',
-    opacity: 0.5,
-  },
-  {
-    d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',
-    opacity: 0.3,
-  },
-];
+    {
+      d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',
+      opacity: 0.25,
+    },
+    {
+      d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9',
+      opacity: 0.5,
+    },
+    {
+      d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',
+      opacity: 0.3,
+    },
+  ];
 
 // Sun mode: left hill taller (peak y=6.5), right hill shorter (peak y=9.5)
 const STAMP_HILL_SUN_PATH = 'M3 12.5 Q6 6.5 9.5 12.5';
@@ -314,22 +314,15 @@ const EntryRow = ({
         onPress={onPress}
         disabled={isDisabled}
         accessibilityRole={isDisabled ? undefined : 'button'}
-        className={
-          isDisabled
-            ? 'opacity-70'
-            : 'active:translate-x-[-4px] active:translate-y-[4px]'
-        }
+        className={isDisabled ? 'opacity-70' : 'active:opacity-75'}
       >
-        <Surface
-          className="bg-surface border-2 border-foreground dark:border-border px-4 py-4"
-          style={panelStyle}
-        >
+        <Surface className="rounded-[24px] bg-surface-secondary px-4 py-4" style={panelStyle}>
           <View className="flex-row items-center gap-4">
             {noIconBox ? (
               <Icon color={iconColor} size={ENTRY_ICON_WRAPPER} />
             ) : (
               <View
-                className="items-center justify-center border-2 border-foreground dark:border-border bg-surface-secondary"
+                className="items-center justify-center bg-surface-tertiary"
                 style={{
                   width: ENTRY_ICON_WRAPPER,
                   height: ENTRY_ICON_WRAPPER,
@@ -385,16 +378,14 @@ const FontSettingRow = ({
       disabled={isDisabled}
       accessibilityRole="button"
       onPress={() => onPress(option.value)}
-      className={`flex-row items-center gap-3 px-4 py-4 ${
-        isLast ? '' : 'border-b-2 border-foreground dark:border-border'
-      } ${isDisabled ? 'opacity-80' : 'active:bg-surface-secondary'}`}
+      className={`flex-row items-center gap-3 px-4 py-4 ${isLast ? 'rounded-b-[24px]' : 'border-b'
+        } ${isDisabled ? 'opacity-80' : 'active:bg-surface-tertiary'}`}
     >
       <View
-        className={`h-5 w-5 items-center justify-center border-2 border-foreground dark:border-border ${
-          isSelected ? 'bg-accent' : 'bg-surface-secondary'
-        }`}
+        className={`h-5 w-5 rounded-full items-center justify-center ${isSelected ? 'bg-accent' : 'bg-surface-tertiary'
+          }`}
       >
-        {isSelected ? <View className="h-2 w-2 bg-accent-foreground" /> : null}
+        {isSelected ? <View className="h-2 w-2 rounded-full bg-accent-foreground" /> : null}
       </View>
       <Text
         className="flex-1 text-[15px] text-foreground"
@@ -402,8 +393,8 @@ const FontSettingRow = ({
           primaryTextStyle,
           previewFamily
             ? {
-                fontFamily: previewFamily,
-              }
+              fontFamily: previewFamily,
+            }
             : undefined,
         ]}
       >
@@ -431,16 +422,14 @@ const LanguageSettingRow = ({
       disabled={isDisabled}
       accessibilityRole="button"
       onPress={() => onPress(option.value)}
-      className={`flex-row items-center gap-3 px-4 py-4 ${
-        isLast ? '' : 'border-b-2 border-foreground dark:border-border'
-      } ${isDisabled ? 'opacity-80' : 'active:bg-surface-secondary'}`}
+      className={`flex-row items-center gap-3 px-4 py-4 ${isLast ? 'rounded-b-[24px]' : 'border-b'
+        } ${isDisabled ? 'opacity-80' : 'active:bg-surface-tertiary'}`}
     >
       <View
-        className={`h-5 w-5 items-center justify-center border-2 border-foreground dark:border-border ${
-          isSelected ? 'bg-accent' : 'bg-surface-secondary'
-        }`}
+        className={`h-5 w-5 rounded-full items-center justify-center ${isSelected ? 'bg-accent' : 'bg-surface-tertiary'
+          }`}
       >
-        {isSelected ? <View className="h-2 w-2 bg-accent-foreground" /> : null}
+        {isSelected ? <View className="h-2 w-2 rounded-full bg-accent-foreground" /> : null}
       </View>
       <Text
         className="flex-1 text-[15px] text-foreground"
@@ -530,11 +519,11 @@ const MoreRouteContent = ({
   const headerTintColor = hasBackgroundImage
     ? preferredHeaderTintColor ?? '#FFFFFF'
     : preferredHeaderTintColor ??
-      (profileThemePalette.pageBackgroundColor
-        ? resolveReadableTextColor({
-            backgroundColor: profileThemePalette.pageBackgroundColor,
-          })
-        : undefined);
+    (profileThemePalette.pageBackgroundColor
+      ? resolveReadableTextColor({
+        backgroundColor: profileThemePalette.pageBackgroundColor,
+      })
+      : undefined);
   const isHeaderTintDark = headerTintColor
     ? isColorDark(headerTintColor)
     : undefined;
@@ -811,12 +800,12 @@ const MoreRouteContent = ({
               <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                 {showLoadingState ? (
                   <Surface
-                    className="bg-surface border-2 border-foreground dark:border-border px-5 py-6"
+                    className="rounded-[24px] bg-surface-secondary px-5 py-6"
                     style={profileThemeStyles.panelStyle}
                   >
                     <View className="flex-row items-center gap-4">
                       <View
-                        className="items-center justify-center rounded-full border-2 border-foreground dark:border-border bg-surface-secondary"
+                        className="items-center justify-center rounded-full bg-surface-tertiary"
                         style={{
                           width: AVATAR_SIZE,
                           height: AVATAR_SIZE,
@@ -842,7 +831,7 @@ const MoreRouteContent = ({
                       </View>
                     </View>
                     {errorMessage ? (
-                      <View className="mt-4 rounded-sm border border-danger bg-danger-soft px-3 py-2">
+                      <View className="mt-4 rounded-sm border bg-danger-soft px-3 py-2">
                         <Text className="text-[12px] text-danger">
                           {errorMessage}
                         </Text>
@@ -864,7 +853,7 @@ const MoreRouteContent = ({
                     linkTextStyle={profileThemeStyles.linkTextStyle}
                     footer={
                       errorMessage ? (
-                        <View className="mt-4 rounded-sm border border-danger bg-danger-soft px-3 py-2">
+                        <View className="mt-4 rounded-sm border bg-danger-soft px-3 py-2">
                           <Text className="text-[12px] text-danger">
                             {errorMessage}
                           </Text>
@@ -934,10 +923,10 @@ const MoreRouteContent = ({
 
               <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                 <Surface
-                  className="bg-surface border-2 border-foreground dark:border-border"
+                  className="rounded-[24px] bg-surface-secondary"
                   style={profileThemeStyles.panelStyle}
                 >
-                  <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
+                  <View className="border-b px-4 py-4">
                     <Text
                       className="text-[15px] font-semibold text-foreground"
                       style={profileThemeStyles.primaryTextStyle}
@@ -967,10 +956,10 @@ const MoreRouteContent = ({
 
               <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                 <Surface
-                  className="bg-surface border-2 border-foreground dark:border-border"
+                  className="rounded-[24px] bg-surface-secondary"
                   style={profileThemeStyles.panelStyle}
                 >
-                  <View className="border-b-2 border-foreground dark:border-border px-4 py-4">
+                  <View className="border-b px-4 py-4">
                     <Text
                       className="text-[15px] font-semibold text-foreground"
                       style={profileThemeStyles.primaryTextStyle}
@@ -1064,8 +1053,8 @@ const MissingUserIdPlaceholder = () => {
         contentContainerStyle={contentContainerStyle}
       >
         <DropShadowBox>
-          <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
-            <View className="rounded-sm border border-danger bg-danger-soft px-3 py-2">
+          <Surface className="rounded-[24px] bg-surface-secondary px-5 py-6">
+            <View className="rounded-sm border bg-danger-soft px-3 py-2">
               <Text className="text-[12px] text-danger">
                 {t('moreAccountLoadFailedNoId')}
               </Text>

@@ -117,13 +117,27 @@ const AuthTabBar = ({
     const isFocused = isComposeRoute
       ? isComposerVisible
       : state.index === state.routes.indexOf(route);
+    // Warm pastel tab colors matching design system
+    const getActiveColors = (routeName: keyof AuthTabParamList) => {
+      switch (routeName) {
+        case AUTH_TAB_ROUTE.HOME:
+          return { bg: '#D0E8F5', fg: '#1A1208' }; // Sky blue, dark brown text
+        case AUTH_TAB_ROUTE.MENTIONS:
+          return { bg: '#FDF3C8', fg: '#1A1208' }; // Warm yellow, dark brown text
+        case AUTH_TAB_ROUTE.MORE:
+          return { bg: '#C8EDE8', fg: '#1A1208' }; // Mint, dark brown text
+        case AUTH_TAB_ROUTE.COMPOSE:
+          return { bg: '#F47060', fg: '#FFFFFF' }; // Coral CTA, white text
+        default:
+          return { bg: accent, fg: accentForeground };
+      }
+    };
+    const { bg: activeColor, fg: activeFg } = getActiveColors(route.name);
+    const textColor = isFocused ? activeFg : muted;
+    const bgColor = isFocused ? activeColor : background;
+    const iconColor = isFocused ? activeFg : muted;
     const shouldShowLabel = isFocused && !isComposeRoute;
 
-    // Neobrutalism colors
-    const activeColor = isComposeRoute ? '#FF4F00' : accent;
-    const bgColor = isFocused ? activeColor : background;
-    const iconColor = isFocused ? accentForeground : muted;
-    const textColor = accentForeground;
     const buttonStyle = StyleSheet.flatten([
       styles.tabButton,
       {
@@ -155,26 +169,22 @@ const AuthTabBar = ({
     };
     return (
       <View key={route.key} className="relative mx-[4px]">
-        {/* Neobrutalist solid shadow */}
-        <Animated.View
-          layout={springTransition}
-          className="absolute left-0 top-0 h-full w-full bg-foreground dark:bg-border rounded-full -translate-x-1 translate-y-1"
-        />
-        {/* Front floating button */}
+        {/* Front floating pill */}
         <AnimatedPressable
           accessibilityRole="button"
           accessibilityState={
             isFocused
               ? {
-                  selected: true,
-                }
+                selected: true,
+              }
               : {}
           }
           accessibilityLabel={options.tabBarAccessibilityLabel}
           onPress={onPress}
           onLongPress={onLongPress}
           layout={springTransition}
-          className="flex-row items-center justify-center border-2 border-foreground dark:border-border rounded-full overflow-hidden"
+          className={`flex-row items-center justify-center shadow-sm rounded-full ${isFocused ? 'shadow-foreground/20' : ''
+            }`}
           style={buttonStyle}
         >
           <Animated.View
@@ -209,8 +219,8 @@ const AuthTabBar = ({
         photoViewerLayerMode === 'viewer-open'
           ? styles.tabBarViewerOpen
           : photoViewerLayerMode === 'viewer-closing'
-          ? styles.tabBarViewerClosing
-          : styles.tabBarFront,
+            ? styles.tabBarViewerClosing
+            : styles.tabBarFront,
         {
           bottom: Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_GAP),
         },

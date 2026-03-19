@@ -1,239 +1,174 @@
 import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
-import { useThemeColor } from 'heroui-native';
-import Animated, { useSharedValue, useAnimatedStyle, withDelay, withRepeat, withTiming, interpolate, Extrapolation, Easing, interpolateColor, type SharedValue } from 'react-native-reanimated';
+import { StyleSheet, useColorScheme } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+  interpolate,
+  Extrapolation,
+  Easing,
+  type SharedValue,
+} from 'react-native-reanimated';
 type NeobrutalActivityIndicatorProps = {
   color?: string;
   size?: 'small' | 'default';
   animate?: boolean;
 };
-const BLOCK_SIZES = {
-  small: 0.7,
-  default: 1
-} as const;
-
-// Colors
-const C_TEAL = '#00A29A';
-const C_BLUE = '#0077A3';
-const C_RED = '#E63946';
-const C_STARBURST = ['#E63946',
-// Red
-'#F4A261',
-// Orange
-'#E9C46A',
-// Yellow
-'#2A9D8F',
-// Green
-'#00A29A',
-// Teal
-'#0077A3',
-// Blue
-'#7209B7',
-// Purple
-'#D90429' // Pink
-];
-const generatePillStates = (_foreground: string) => {
-  const getDiamondRays = (cx: number, cy: number, side: number, t: number, color: string) => {
-    const d = side / 2;
-    const sin = 0.707106,
-      cos = 0.707106;
-    const m = (lx: number, ly: number, lr: number) => {
-      const X = cx + lx * cos - ly * sin;
-      const Y = cy + lx * sin + ly * cos;
-      return {
-        w: side + t,
-        h: t,
-        x: X,
-        y: Y,
-        r: 45 + lr,
-        s: 1,
-        c: color
-      };
-    };
-    return [m(0, -d, 0),
-    // top
-    m(d, 0, 90),
-    // right
-    m(0, d, 0),
-    // bot
-    m(-d, 0, 90) // left
-    ];
-  };
-  const states = [];
-
-  // 0: Teal Layers
-  states.push([...getDiamondRays(0, -7, 16, 4, C_TEAL), ...getDiamondRays(0, 7, 16, 4, C_TEAL)]);
-
-  // 2: Blue Diamond
-  states.push([...getDiamondRays(0, 0, 24, 6, C_BLUE), ...Array.from({
-    length: 4
-  }).map(() => ({
-    w: 6,
-    h: 6,
-    x: 0,
-    y: 0,
-    r: 0,
-    s: 0,
-    c: C_BLUE
-  }))]);
-
-  // 3: Red Hamburger
-  states.push([{
-    w: 24,
-    h: 6,
-    x: 0,
-    y: -10,
-    r: 0,
-    s: 1,
-    c: C_RED
-  }, {
-    w: 24,
-    h: 6,
-    x: 0,
-    y: 0,
-    r: 0,
-    s: 1,
-    c: C_RED
-  }, {
-    w: 24,
-    h: 6,
-    x: 0,
-    y: 10,
-    r: 0,
-    s: 1,
-    c: C_RED
-  }, ...Array.from({
-    length: 5
-  }).map(() => ({
-    w: 6,
-    h: 6,
-    x: 0,
-    y: 0,
-    r: 0,
-    s: 0,
-    c: C_RED
-  }))]);
-
-  // 4: Starburst
-  // The rays must be longer so they burst out clearly
-  states.push(Array.from({
-    length: 8
-  }).map((_, i) => {
-    const angleDeg = i * 45;
-    const angleRad = angleDeg * Math.PI / 180;
-    const R = 16;
-    return {
-      w: 14,
-      h: 6,
-      x: R * Math.cos(angleRad),
-      y: R * Math.sin(angleRad),
-      r: angleDeg,
-      s: 1,
-      c: C_STARBURST[i]
-    };
-  }));
-
-  // Normalize rotations strictly for smooth transitions
-  for (let p = 0; p < 8; p++) {
-    for (let s = 1; s < states.length; s++) {
-      let prev = states[s - 1][p].r;
-      let curr = states[s][p].r;
-      while (curr - prev > 180) curr -= 360;
-      while (curr - prev < -180) curr += 360;
-      states[s][p].r = curr;
-    }
-  }
-  return states;
-};
-const PILL_INDICES = [0, 1, 2, 3, 4, 5, 6, 7];
-const FRAME_INPUTS = [0, 1, 2, 3];
-const AnimatedPill = ({
-  index,
-  progress,
-  states,
-  pullProgress = {
-    value: 1
-  } as SharedValue<number>,
-  globalScale
+const PETAL_COLORS_LIGHT = [
+  '#E06858', // deep coral
+  '#C89020', // amber
+  '#28A090', // deep teal
+  '#3890C8', // deep sky blue
+  '#9060C0', // deep lavender
+  '#D07030', // warm orange
+] as const;
+const PETAL_COLORS_DARK = [
+  '#C04838',
+  '#A07018',
+  '#1E8070',
+  '#2870A8',
+  '#6840A0',
+  '#A05020',
+] as const;
+const CENTER_COLOR_LIGHT = '#F0C030';
+const CENTER_COLOR_DARK = '#8A6808';
+const PETAL_COUNT = 6;
+const PETAL_WIDTH = 7;
+const PETAL_HEIGHT = 16;
+const PETAL_CENTER_OFFSET = 22; // center-to-petal-center; leaves gap between center dot and petals
+const CENTER_DOT_SIZE = 16;
+const FLOWER_SIZE = 60;
+// Bloom cycle timing
+const BLOOM_OUT_MS = 450;
+const HOLD_OPEN_MS = 500;
+const BLOOM_IN_MS = 350;
+const HOLD_CLOSED_MS = 200;
+const PETAL_STAGGER = 60;
+const Petal = ({
+  color,
+  angle,
+  delay,
+  animate,
 }: {
-  index: number;
-  progress: SharedValue<number>;
-  states: any[];
-  pullProgress?: SharedValue<number>;
-  globalScale: number;
+  color: string;
+  angle: number;
+  delay: number;
+  animate: boolean;
 }) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const p = progress.value;
-    const pp = pullProgress.value;
-    const w = interpolate(p, FRAME_INPUTS, states.map(s => s[index].w), Extrapolation.CLAMP);
-    const h = interpolate(p, FRAME_INPUTS, states.map(s => s[index].h), Extrapolation.CLAMP);
-    const x = interpolate(p, FRAME_INPUTS, states.map(s => s[index].x), Extrapolation.CLAMP);
-    const y = interpolate(p, FRAME_INPUTS, states.map(s => s[index].y), Extrapolation.CLAMP);
-    const r = interpolate(p, FRAME_INPUTS, states.map(s => s[index].r), Extrapolation.CLAMP);
-    const s = interpolate(p, FRAME_INPUTS, states.map(st => st[index].s), Extrapolation.CLAMP);
-    const c = interpolateColor(p, FRAME_INPUTS, states.map(st => st[index].c));
-
-    // Pull to refresh scales the whole thing based on scroll
-    const finalScale = s * pp * globalScale;
-    return {
-      position: 'absolute',
-      width: w,
-      height: h,
-      backgroundColor: c,
-      opacity: finalScale > 0 ? 1 : 0,
-      // avoid painting 0-scale invisible blocks
-      transform: [{
-        translateX: x * pp * globalScale
-      }, {
-        translateY: y * pp * globalScale
-      }, {
-        rotate: `${r}deg`
-      }, {
-        scale: finalScale
-      }],
-      borderRadius: 9999 // pure pill wrapper
-    };
-  });
-  return <Animated.View style={animatedStyle} />;
-};
-const NeobrutalActivityIndicator = ({
-  size = 'default',
-  animate = true
-}: NeobrutalActivityIndicatorProps) => {
-  const [foreground] = useThemeColor(['foreground']);
-  const states = generatePillStates(foreground as string);
-  const globalScale = BLOCK_SIZES[size];
-  const containerSize = 48 * globalScale;
-  const progress = useSharedValue(3);
-  const rotation = useSharedValue(0);
+  const progress = useSharedValue(0);
   useEffect(() => {
     if (animate) {
-      rotation.value = withRepeat(withTiming(rotation.value + 360, {
-        duration: 6000,
-        easing: Easing.linear
-      }), -1, false);
-
-      // Just spin the Starburst shape directly, no morphing needed for the default indicator
-      progress.value = withTiming(3, {
-        duration: 0
-      });
+      progress.value = withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(1, {
+              duration: BLOOM_OUT_MS,
+              easing: Easing.out(Easing.ease),
+            }),
+            withTiming(1, { duration: HOLD_OPEN_MS }),
+            withTiming(0, {
+              duration: BLOOM_IN_MS,
+              easing: Easing.in(Easing.ease),
+            }),
+            withTiming(0, { duration: HOLD_CLOSED_MS }),
+          ),
+          -1,
+          false,
+        ),
+      );
     } else {
-      progress.value = withTiming(3, {
-        duration: 200
-      });
+      progress.value = withTiming(0, { duration: 400 });
     }
-  }, [animate, rotation, progress]);
-  const containerStyle = useAnimatedStyle(() => ({
-    transform: [{
-      rotate: `${rotation.value}deg`
-    }]
+  }, [animate, delay, progress]);
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    return {
+      opacity: p,
+      transform: [
+        { rotate: `${angle}deg` },
+        { translateY: interpolate(p, [0, 1], [-10, -PETAL_CENTER_OFFSET]) },
+        { scale: p },
+      ],
+    };
+  });
+  return (
+    <Animated.View style={[styles.petal, { backgroundColor: color }, animatedStyle]} />
+  );
+};
+const CenterDot = ({
+  color,
+  animate,
+}: {
+  color: string;
+  animate: boolean;
+}) => {
+  const scale = useSharedValue(0.7);
+  useEffect(() => {
+    if (animate) {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.3, {
+            duration: BLOOM_OUT_MS + HOLD_OPEN_MS / 2,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(0.7, {
+            duration: BLOOM_IN_MS + HOLD_CLOSED_MS + HOLD_OPEN_MS / 2,
+            easing: Easing.inOut(Easing.ease),
+          }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      scale.value = withTiming(0.7, { duration: 300 });
+    }
+  }, [animate, scale]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
   }));
-  return <Animated.View style={[styles.container, {
-    width: containerSize,
-    height: containerSize
-  }, containerStyle]}>
-      {PILL_INDICES.map(i => <AnimatedPill key={i} index={i} progress={progress} states={states} globalScale={globalScale} />)}
-    </Animated.View>;
+  return (
+    <Animated.View style={[styles.centerDot, { backgroundColor: color }, style]} />
+  );
+};
+const FlowerPetals = ({
+  animate,
+  petalColors,
+  centerColor,
+}: {
+  animate: boolean;
+  petalColors: readonly string[];
+  centerColor: string;
+}) => (
+  <>
+    {Array.from({ length: PETAL_COUNT }).map((_, i) => (
+      <Petal
+        key={i}
+        color={petalColors[i % petalColors.length]}
+        angle={(360 / PETAL_COUNT) * i}
+        delay={i * PETAL_STAGGER}
+        animate={animate}
+      />
+    ))}
+    <CenterDot color={centerColor} animate={animate} />
+  </>
+);
+const NeobrutalActivityIndicator = ({
+  size = 'default',
+  animate = true,
+}: NeobrutalActivityIndicatorProps) => {
+  const isDark = useColorScheme() === 'dark';
+  const petalColors = isDark ? PETAL_COLORS_DARK : PETAL_COLORS_LIGHT;
+  const centerColor = isDark ? CENTER_COLOR_DARK : CENTER_COLOR_LIGHT;
+  const scale = size === 'small' ? 0.7 : 1;
+  return (
+    <Animated.View style={[styles.flower, { transform: [{ scale }] }]}>
+      <FlowerPetals animate={animate} petalColors={petalColors} centerColor={centerColor} />
+    </Animated.View>
+  );
 };
 export const REFRESH_TOP_MARGIN = 16;
 export const REFRESH_TOP_MARGIN_BELOW_NAV = 8;
@@ -244,7 +179,7 @@ export const NeobrutalRefreshIndicator = ({
   scrollY,
   safeAreaTop,
   scrollInsetTop,
-  pullThreshold = COMPACT_PULL_THRESHOLD
+  pullThreshold = COMPACT_PULL_THRESHOLD,
 }: {
   refreshing: boolean;
   scrollY: SharedValue<number>;
@@ -252,95 +187,86 @@ export const NeobrutalRefreshIndicator = ({
   scrollInsetTop: SharedValue<number>;
   pullThreshold?: number;
 }) => {
-  const [foreground] = useThemeColor(['foreground']);
-  const states = generatePillStates(foreground as string);
-  const globalScale = BLOCK_SIZES.small;
-  const containerSize = 48 * globalScale;
+  const isDark = useColorScheme() === 'dark';
+  const petalColors = isDark ? PETAL_COLORS_DARK : PETAL_COLORS_LIGHT;
+  const centerColor = isDark ? CENTER_COLOR_DARK : CENTER_COLOR_LIGHT;
   const refreshLock = useSharedValue(0);
-  const progress = useSharedValue(3);
-  const pullProgress = useSharedValue(0);
-  const rotation = useSharedValue(0);
   useEffect(() => {
     if (refreshing) {
       refreshLock.value = 1;
-      rotation.value = withRepeat(withTiming(rotation.value + 360, {
-        duration: 4000,
-        easing: Easing.linear
-      }), -1, false);
-      progress.value = withTiming(3, {
-        duration: 300,
-        easing: Easing.inOut(Easing.ease)
-      });
     } else {
-      refreshLock.value = withDelay(200, withTiming(0, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic)
-      }));
-      rotation.value = withTiming(0, {
-        duration: 300
-      });
-      progress.value = withTiming(3, {
-        duration: 250
-      });
+      refreshLock.value = withDelay(
+        200,
+        withTiming(0, {
+          duration: 250,
+          easing: Easing.in(Easing.cubic),
+        }),
+      );
     }
-  }, [refreshing, refreshLock, rotation, progress]);
-
-  // Drive pull-driven scale and morph; clamp to refreshLock when refreshing so it stays fully visible
-  useAnimatedStyle(() => {
-    const sizeP = interpolate(-scrollY.value, [0, pullThreshold], [0, 1], Extrapolation.CLAMP);
-    pullProgress.value = refreshing || refreshLock.value > 0 ? Math.max(sizeP, refreshLock.value) : sizeP;
-    if (!refreshing && refreshLock.value === 0) {
-      // Map pull distance through morph states 3→0 (Starburst at rest → Teal Layers fully pulled)
-      progress.value = interpolate(-scrollY.value, [0, pullThreshold], [3, 0], Extrapolation.CLAMP);
-    }
-    return {};
-  });
+  }, [refreshing, refreshLock]);
   const animatedStyle = useAnimatedStyle(() => {
     const sat = safeAreaTop.value;
     const sit = scrollInsetTop.value;
     const navBarHeight = sit - sat;
-    const top = navBarHeight > 10 ? sit + REFRESH_TOP_MARGIN_BELOW_NAV : sat + REFRESH_TOP_MARGIN;
-    const pullAmt = interpolate(-scrollY.value, [0, pullThreshold], [0, 1], Extrapolation.CLAMP);
+    const top =
+      navBarHeight > 10
+        ? sit + REFRESH_TOP_MARGIN_BELOW_NAV
+        : sat + REFRESH_TOP_MARGIN;
+    const pullAmt = interpolate(
+      -scrollY.value,
+      [0, pullThreshold],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    const pullScale = interpolate(
+      -scrollY.value,
+      [0, pullThreshold],
+      [0.4, 1],
+      Extrapolation.CLAMP,
+    );
     const visible = Math.max(pullAmt, refreshLock.value);
     return {
       opacity: visible,
-      top
+      top,
+      transform: [{ scale: refreshing ? 1 : pullScale }],
     };
   });
-  const indicatorStyle = useAnimatedStyle(() => {
-    const pullOffset = interpolate(scrollY.value, [-pullThreshold, 0], [0, -containerSize / 2], Extrapolation.CLAMP);
-    return {
-      transform: [{
-        translateY: refreshing ? 0 : pullOffset
-      }, {
-        rotate: `${rotation.value}deg`
-      }]
-    };
-  });
-  return <Animated.View style={[styles.refreshContainer, animatedStyle]}>
-      <Animated.View style={[styles.container, {
-      width: containerSize,
-      height: containerSize
-    }, indicatorStyle]}>
-        {PILL_INDICES.map(i => <AnimatedPill key={i} index={i} progress={progress} states={states} pullProgress={pullProgress} globalScale={globalScale} />)}
+  return (
+    <Animated.View style={[styles.refreshContainer, animatedStyle]}>
+      <Animated.View style={styles.flower}>
+        <FlowerPetals
+          animate={refreshing}
+          petalColors={petalColors}
+          centerColor={centerColor}
+        />
       </Animated.View>
-    </Animated.View>;
+    </Animated.View>
+  );
 };
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
+  flower: {
+    width: FLOWER_SIZE,
+    height: FLOWER_SIZE,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
-  block: {
-    position: 'absolute'
+  petal: {
+    position: 'absolute',
+    width: PETAL_WIDTH,
+    height: PETAL_HEIGHT,
+    borderRadius: 999,
+  },
+  centerDot: {
+    width: CENTER_DOT_SIZE,
+    height: CENTER_DOT_SIZE,
+    borderRadius: CENTER_DOT_SIZE / 2,
   },
   refreshContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
     zIndex: 10,
-    alignItems: 'center'
-  }
+    alignItems: 'center',
+  },
 });
 export default NeobrutalActivityIndicator;

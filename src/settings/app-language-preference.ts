@@ -16,9 +16,21 @@ export const APP_LANGUAGE_OPTIONS: ReadonlyArray<{
   label: string;
   nativeLabel: string;
 }> = [
-  { value: APP_LANGUAGE_OPTION.SYSTEM, label: 'System Default', nativeLabel: '跟随系统' },
-  { value: APP_LANGUAGE_OPTION.EN_US, label: 'English', nativeLabel: 'English' },
-  { value: APP_LANGUAGE_OPTION.ZH_CN, label: 'Simplified Chinese', nativeLabel: '简体中文' },
+  {
+    value: APP_LANGUAGE_OPTION.SYSTEM,
+    label: 'System Default',
+    nativeLabel: '跟随系统',
+  },
+  {
+    value: APP_LANGUAGE_OPTION.EN_US,
+    label: 'English',
+    nativeLabel: 'English',
+  },
+  {
+    value: APP_LANGUAGE_OPTION.ZH_CN,
+    label: 'Simplified Chinese',
+    nativeLabel: '简体中文',
+  },
 ];
 
 const SERVICE = 'app.language-preference';

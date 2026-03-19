@@ -31,10 +31,12 @@ export const usePullScrollY = () => {
     pullScrollY,
     safeAreaTop,
     scrollInsetTop,
-    updatePullScrollY
+    updatePullScrollY,
   };
 };
-export const usePullRefreshState = (onRefresh: () => Promise<unknown> | void) => {
+export const usePullRefreshState = (
+  onRefresh: () => Promise<unknown> | void,
+) => {
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const handlePullRefresh = async () => {
     if (isPullRefreshing) {
@@ -49,28 +51,38 @@ export const usePullRefreshState = (onRefresh: () => Promise<unknown> | void) =>
   };
   return {
     isPullRefreshing,
-    handlePullRefresh
+    handlePullRefresh,
   };
 };
 export const usePullToRefresh = ({
   refreshing,
-  onRefresh
+  onRefresh,
 }: {
   refreshing: boolean;
   onRefresh: () => void;
 }) => {
-  const {
-    pullScrollY,
-    safeAreaTop,
-    scrollInsetTop,
-    updatePullScrollY
-  } = usePullScrollY();
-  const refreshControl: React.ReactElement<RefreshControlProps> = <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="transparent" colors={['transparent']} />;
-  const refreshIndicator = <NeobrutalRefreshIndicator refreshing={refreshing} scrollY={pullScrollY} safeAreaTop={safeAreaTop} scrollInsetTop={scrollInsetTop} />;
+  const { pullScrollY, safeAreaTop, scrollInsetTop, updatePullScrollY } =
+    usePullScrollY();
+  const refreshControl: React.ReactElement<RefreshControlProps> = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor="transparent"
+      colors={['transparent']}
+    />
+  );
+  const refreshIndicator = (
+    <NeobrutalRefreshIndicator
+      refreshing={refreshing}
+      scrollY={pullScrollY}
+      safeAreaTop={safeAreaTop}
+      scrollInsetTop={scrollInsetTop}
+    />
+  );
   return {
     pullScrollY,
     updatePullScrollY,
     refreshControl,
-    refreshIndicator
+    refreshIndicator,
   };
 };

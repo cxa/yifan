@@ -41,6 +41,7 @@ import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
+import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import {
@@ -116,13 +117,13 @@ const FavoritesRoute = () => {
     queryClient.setQueryData<InfiniteData<FanfouStatus[]>>(queryKey, previous =>
       previous
         ? {
-            ...previous,
-            pages: previous.pages.map(pageItems =>
-              pageItems.map(item =>
-                item.id === statusId ? updater(item) : item,
-              ),
+          ...previous,
+          pages: previous.pages.map(pageItems =>
+            pageItems.map(item =>
+              item.id === statusId ? updater(item) : item,
             ),
-          }
+          ),
+        }
         : previous,
     );
   };
@@ -232,11 +233,11 @@ const FavoritesRoute = () => {
     queryClient.setQueryData<InfiniteData<FanfouStatus[]>>(queryKey, previous =>
       previous
         ? {
-            ...previous,
-            pages: previous.pages.map(pageItems =>
-              pageItems.filter(item => item.id !== statusId),
-            ),
-          }
+          ...previous,
+          pages: previous.pages.map(pageItems =>
+            pageItems.filter(item => item.id !== statusId),
+          ),
+        }
         : previous,
     );
   };
@@ -253,7 +254,7 @@ const FavoritesRoute = () => {
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('notLoggedIn')}
           </Text>
@@ -283,7 +284,7 @@ const FavoritesRoute = () => {
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="bg-danger-soft px-4 py-3">
+              <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                 <Text className="text-[13px] text-danger-foreground">
                   {errorMessage}
                 </Text>
@@ -300,11 +301,12 @@ const FavoritesRoute = () => {
               <TimelineSkeletonCard message={t('favoritesEmpty')} />
             )
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TimelineStatusCard
               status={item}
               accent={accent}
               muted={muted}
+              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
               isBookmarkPending={pendingBookmarkIds.has(item.id)}
               photoViewerVisible={photoViewerVisible}
               photoViewerPreviewKey={photoViewerPreviewKey}

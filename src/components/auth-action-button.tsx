@@ -1,8 +1,7 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/app-text';
-import DropShadowBox from '@/components/drop-shadow-box';
 import { $ } from '@cxa/twx';
 
 type AuthActionVariant = 'primary' | 'danger';
@@ -35,24 +34,19 @@ const AuthActionButton = ({
   const text = isLoading ? loadingLabel ?? label : label;
 
   return (
-    <DropShadowBox
-      containerClassName="w-full"
-      shadowOffsetClassName="-translate-x-1.5 translate-y-1.5"
-    >
+    <View className="w-full">
       <Pressable
         onPress={onPress}
         disabled={isLoading}
-        className={`w-full ${
-          backgroundClassMap[variant]
-        } border-2 border-foreground dark:border-border h-14 items-center justify-center active:translate-x-[-3px] active:translate-y-[3px] ${
-          isLoading ? 'opacity-70' : ''
-        }`}
+        className={`w-full ${backgroundClassMap[variant]
+          } h-14 items-center justify-center rounded-[24px] active:opacity-75 ${isLoading ? 'opacity-70' : ''
+          }`}
       >
         <Text className={$('text-[16px] font-bold', labelClassMap[variant])}>
           {text}
         </Text>
       </Pressable>
-    </DropShadowBox>
+    </View>
   );
 };
 

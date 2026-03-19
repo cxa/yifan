@@ -1,14 +1,23 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
-import { $ } from '@cxa/twx';
 
 export type DropShadowBoxType =
   | 'default'
   | 'danger'
   | 'warning'
   | 'success'
-  | 'accent';
+  | 'accent'
+  | 'sky';
+
+/** Rotate through warm pastel card backgrounds for visual variety in lists */
+export const CARD_PASTEL_CYCLE: DropShadowBoxType[] = [
+  'accent',   // #FDDBD5 soft pink
+  'warning',  // #FDF3C8 warm yellow
+  'danger',   // #E8D5F5 lavender
+  'sky',      // #D0E8F5 sky blue
+  'success',  // #C8EDE8 mint
+];
 
 type DropShadowBoxProps = {
   children: React.ReactNode;
@@ -19,20 +28,13 @@ type DropShadowBoxProps = {
   shadowStyle?: StyleProp<ViewStyle>;
 };
 
-const SHADOW_CLASS_BY_TYPE: Record<DropShadowBoxType, string> = {
-  default: 'bg-foreground dark:bg-border',
-  danger: 'bg-danger',
-  warning: 'bg-warning',
-  success: 'bg-success',
-  accent: 'bg-accent',
-};
-
 const BORDER_CLASS_BY_TYPE: Record<DropShadowBoxType, string> = {
-  default: 'border-foreground dark:border-border',
-  danger: 'border-danger',
-  warning: 'border-warning',
-  success: 'border-success',
-  accent: 'border-accent',
+  default: '',
+  danger: '',
+  warning: '',
+  success: '',
+  accent: '',
+  sky: '',
 };
 
 export const getDropShadowBorderClass = (type: DropShadowBoxType) =>
@@ -40,24 +42,9 @@ export const getDropShadowBorderClass = (type: DropShadowBoxType) =>
 
 const DropShadowBox = ({
   children,
-  type = 'default',
   containerClassName,
-  shadowClassName,
-  shadowOffsetClassName = '-translate-x-2 translate-y-2',
-  shadowStyle,
 }: DropShadowBoxProps) => (
-  <View className={$('relative', containerClassName)}>
-    <View
-      className={$(
-        'absolute left-0 top-0 h-full w-full',
-        shadowOffsetClassName,
-        SHADOW_CLASS_BY_TYPE[type],
-        shadowClassName,
-      )}
-      style={shadowStyle}
-    />
-    {children}
-  </View>
+  <View className={containerClassName}>{children}</View>
 );
 
 export default DropShadowBox;

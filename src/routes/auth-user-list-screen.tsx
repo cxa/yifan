@@ -167,7 +167,7 @@ const UserListRoute = () => {
           ListHeaderComponent={
             errorMessage ? (
               <View className="mb-4">
-                <Surface className="bg-danger-soft px-4 py-3">
+                <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                   <Text className="text-[13px] text-danger-foreground">
                     {errorMessage}
                   </Text>
@@ -187,7 +187,7 @@ const UserListRoute = () => {
                 <Pressable
                   onPress={() => handleOpenProfile(item.id)}
                   accessibilityRole="button"
-                  className="flex-row gap-3 border-2 border-foreground bg-surface px-4 py-4 dark:border-border active:translate-x-[-4px] active:translate-y-[4px]"
+                  className="flex-row gap-3 bg-surface px-4 py-4 dark: active:translate-x-[-4px] active:translate-y-[4px]"
                 >
                   {avatarUrl ? (
                     <Image
@@ -250,7 +250,7 @@ const UserListRoute = () => {
               </View>
             ) : (
               <DropShadowBox>
-                <Surface className="bg-surface border-2 border-foreground px-4 py-4 dark:border-border">
+                <Surface className="rounded-[24px] bg-surface px-4 py-4 dark:">
                   <Text className="text-[13px] text-muted">
                     {mode === 'following'
                       ? t(isSelf ? 'followingEmpty' : 'followingEmptyOther')

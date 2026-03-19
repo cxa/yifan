@@ -35,7 +35,7 @@ const PAGE_SECTION_GAP = 20;
 const FORM_FIELD_GAP = 12;
 const FORM_LABEL_CLASS = 'text-[12px] uppercase tracking-[1px] text-muted';
 const INPUT_CLASS =
-  'border border-border bg-surface-secondary px-2.5 py-2 text-[15px] text-foreground';
+  'border  bg-surface-secondary px-2.5 py-2 text-[15px] text-foreground';
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const EditProfileRoute = () => {
@@ -99,7 +99,7 @@ const EditProfileRoute = () => {
     >
       {!isInitialized && isLoading ? (
         <DropShadowBox>
-          <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
+          <Surface className="rounded-[24px] bg-surface dark: px-5 py-6">
             <View className="flex-row items-center gap-3">
               <NeobrutalActivityIndicator size="small" />
               <Text className="text-[14px] text-foreground">
@@ -113,7 +113,7 @@ const EditProfileRoute = () => {
       {!user && !isLoading ? (
         <DropShadowBox type="danger" containerClassName="pb-2">
           <Surface
-            className={`bg-surface border-2 ${getDropShadowBorderClass(
+            className={`bg-surface  ${getDropShadowBorderClass(
               'danger',
             )} px-4 py-3`}
           >
@@ -125,7 +125,7 @@ const EditProfileRoute = () => {
                 onPress={() => {
                   refetch().catch(() => undefined);
                 }}
-                className="self-start border border-danger bg-danger-soft px-3 py-2"
+                className="self-start border bg-danger-soft px-3 py-2"
                 accessibilityRole="button"
                 accessibilityLabel={t('editProfileRetry')}
               >
@@ -141,7 +141,7 @@ const EditProfileRoute = () => {
       {user ? (
         <>
           <DropShadowBox>
-            <Surface className="bg-surface border-2 border-foreground dark:border-border px-5 py-6">
+            <Surface className="rounded-[24px] bg-surface dark: px-5 py-6">
               <View
                 style={{
                   gap: FORM_FIELD_GAP,
@@ -217,11 +217,10 @@ const EditProfileRoute = () => {
             <Pressable
               onPress={handleSave}
               disabled={isSaving}
-              className={`w-full h-14 items-center justify-center border-2 border-foreground dark:border-border bg-accent ${
-                isSaving
+              className={`w-full h-14 items-center justify-center   dark: bg-accent ${isSaving
                   ? 'opacity-70'
                   : 'active:translate-x-[-3px] active:translate-y-[3px]'
-              }`}
+                }`}
               accessibilityRole="button"
               accessibilityLabel={t('editProfileSave')}
               accessibilityState={{
@@ -271,12 +270,12 @@ const EditProfileRoute = () => {
         previous =>
           previous
             ? {
-                ...previous,
-                name: nextName,
-                location: nextLocation,
-                url: nextUrl,
-                description: nextDescription,
-              }
+              ...previous,
+              name: nextName,
+              location: nextLocation,
+              url: nextUrl,
+              description: nextDescription,
+            }
             : previous,
       );
       await queryClient.invalidateQueries({
@@ -301,7 +300,7 @@ const EditProfileRoute = () => {
   if (!userId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('notLoggedIn')}
           </Text>

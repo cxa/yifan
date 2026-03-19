@@ -47,22 +47,19 @@ const ProfileSummaryCard = ({
   const normalizedDescription = normalizeText(description);
 
   return (
-    <Surface
-      className="bg-surface border-2 border-foreground dark:border-border px-5 py-6"
-      style={panelStyle}
-    >
+    <Surface className="rounded-[24px] bg-accent/10 px-5 py-6" style={panelStyle}>
       <View className="flex-row items-start gap-5">
         {avatar}
         <View className="flex-1 gap-2">
           {skeleton ? (
             <>
-              <ShimmerBar className="h-6 w-32 bg-surface-secondary" isActive />
+              <ShimmerBar className="h-6 w-32 bg-surface-tertiary" isActive />
               <ShimmerBar
-                className="h-3.5 w-24 bg-surface-secondary"
+                className="h-3.5 w-24 bg-surface-tertiary"
                 isActive={false}
               />
               <ShimmerBar
-                className="h-3 w-16 bg-surface-secondary"
+                className="h-3 w-16 bg-surface-tertiary"
                 isActive={false}
               />
             </>

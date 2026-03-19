@@ -72,19 +72,19 @@ const STAMP_WAVE_LINES: {
   d: string;
   opacity: number;
 }[] = [
-  {
-    d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',
-    opacity: 0.25,
-  },
-  {
-    d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9',
-    opacity: 0.5,
-  },
-  {
-    d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',
-    opacity: 0.3,
-  },
-];
+    {
+      d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',
+      opacity: 0.25,
+    },
+    {
+      d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9',
+      opacity: 0.5,
+    },
+    {
+      d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',
+      opacity: 0.3,
+    },
+  ];
 type MailboxKind = 'inbox' | 'outbox';
 type FanfouDirectMessage = {
   id: string;
@@ -153,7 +153,7 @@ const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const TimelineEmptyMessage = ({ message }: { message: string }) => (
   <DropShadowBox>
-    <Surface className="bg-surface border-2 border-foreground dark:border-border px-4 py-4">
+    <Surface className="rounded-[24px] bg-surface dark: px-4 py-4">
       <Text className="text-[13px] text-muted">{message}</Text>
     </Surface>
   </DropShadowBox>
@@ -241,7 +241,7 @@ const MessageSkeletonCard = ({ shimmerIndex }: { shimmerIndex: number }) => {
   const [border] = useThemeColor(['border']);
   return (
     <DropShadowBox containerClassName="w-full">
-      <View className="w-full overflow-hidden bg-white dark:bg-surface border-2 border-foreground dark:border-border px-4 pb-4 pt-5">
+      <View className="w-full overflow-hidden bg-white dark:bg-surface dark: px-4 pb-4 pt-5">
         <View className="flex-row gap-3">
           <PostageStamp initial="" borderColor={border} />
           <View className="flex-1">
@@ -266,7 +266,7 @@ const MessageSkeletonCard = ({ shimmerIndex }: { shimmerIndex: number }) => {
                 style={SKELETON_TEXT_LINE_2_STYLE}
                 isActive={shimmerIndex === 2}
               />
-              <View className="mt-1 border-t border-dashed border-border" />
+              <View className="mt-1 border-t border-dashed" />
               <ShimmerBar
                 className="h-2.5 w-16 bg-surface-secondary"
                 isActive={false}
@@ -297,17 +297,16 @@ const MailboxHeaderTabs = ({
             <DropShadowBox shadowOffsetClassName="-translate-x-0.5 translate-y-0.5">
               <Pressable
                 onPress={() => onPressTab(key)}
-                className={`w-full border border-foreground dark:border-border px-2 py-1 ${
-                  isActive
+                className={`w-full border  dark: px-2 py-1 ${isActive
                     ? 'bg-accent'
                     : 'bg-surface active:translate-x-[-3px] active:translate-y-[3px]'
-                }`}
+                  }`}
                 accessibilityRole="button"
                 accessibilityState={
                   isActive
                     ? {
-                        selected: true,
-                      }
+                      selected: true,
+                    }
                     : undefined
                 }
                 accessibilityLabel={
@@ -317,9 +316,8 @@ const MailboxHeaderTabs = ({
                 <View className="flex-row items-center justify-center gap-1.5">
                   <Icon color={isActive ? activeIconColor : muted} size={12} />
                   <Text
-                    className={`text-[11px] ${
-                      isActive ? 'text-accent-foreground' : 'text-foreground'
-                    }`}
+                    className={`text-[11px] ${isActive ? 'text-accent-foreground' : 'text-foreground'
+                      }`}
                   >
                     {key === 'inbox' ? t('messagesInbox') : t('messagesOutbox')}
                   </Text>
@@ -390,11 +388,10 @@ const MessageCard = ({
         }}
         disabled={!isPressable}
         accessibilityRole={isPressable ? 'button' : undefined}
-        className={`relative w-full overflow-hidden bg-white dark:bg-surface border-2 border-foreground dark:border-border px-4 pb-4 pt-5 ${
-          isPressable
+        className={`relative w-full overflow-hidden bg-white dark:bg-surface   dark: px-4 pb-4 pt-5 ${isPressable
             ? 'active:translate-x-[-4px] active:translate-y-[4px]'
             : ''
-        }`}
+          }`}
       >
         {onReply ? (
           <Pressable
@@ -438,8 +435,8 @@ const MessageCard = ({
                 </Text>
               ) : null}
 
-              <View className="relative mt-3 border-t border-dashed border-border">
-                <View className="absolute left-[-15px] top-[-4px] h-2 w-2 rounded-full border border-border bg-surface-secondary" />
+              <View className="relative mt-3 border-t border-dashed">
+                <View className="absolute left-[-15px] top-[-4px] h-2 w-2 rounded-full border bg-surface-secondary" />
               </View>
 
               <View className="mt-2 flex-row items-center justify-between">
@@ -654,11 +651,11 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
                 onReply={
                   mailbox === 'inbox' && senderId
                     ? () =>
-                        setReplyTarget({
-                          userId: senderId,
-                          displayName:
-                            sender?.screen_name || sender?.name || senderId,
-                        })
+                      setReplyTarget({
+                        userId: senderId,
+                        displayName:
+                          sender?.screen_name || sender?.name || senderId,
+                      })
                     : undefined
                 }
                 stampBorderColor={border}
@@ -674,7 +671,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           refreshControl={createRefreshControl()}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="bg-danger-soft px-4 py-3">
+              <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
                 <Text className="text-[13px] text-danger-foreground">
                   {errorMessage}
                 </Text>
@@ -684,8 +681,8 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           ListHeaderComponentStyle={
             errorMessage
               ? {
-                  marginBottom: CARD_GAP,
-                }
+                marginBottom: CARD_GAP,
+              }
               : undefined
           }
           ItemSeparatorComponent={MessageItemSeparator}
@@ -738,8 +735,8 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         title={
           replyTarget
             ? t('messageReplyComposerTitle', {
-                name: replyTarget.displayName,
-              })
+              name: replyTarget.displayName,
+            })
             : ''
         }
         placeholder={t('messageReplyPlaceholder')}
@@ -760,7 +757,7 @@ const PrivateMessagesRoute = () => {
   if (!accessToken) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('notLoggedIn')}
           </Text>

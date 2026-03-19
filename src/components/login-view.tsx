@@ -4,22 +4,33 @@ import Svg, { Path } from 'react-native-svg';
 import { useThemeColor } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { requestFanfouAccessToken, resolveAuthAccessTokenIdentity } from '@/auth/fanfou-client';
+import {
+  requestFanfouAccessToken,
+  resolveAuthAccessTokenIdentity,
+} from '@/auth/fanfou-client';
 import { setAuthAccessToken } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
 import AuthActionButton from '@/components/auth-action-button';
 import { AUTH_STACK_ROUTE, ROOT_STACK_ROUTE } from '@/navigation/route-names';
-import type { LoginStackParamList, RootStackParamList } from '@/navigation/types';
+import type {
+  LoginStackParamList,
+  RootStackParamList,
+} from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/app-text';
-import { LAUNCH_CONTENT_VIEWPORT, LAUNCH_FAN_PATH, LAUNCH_POEM_PATH } from '@/components/launch-content-paths';
+import {
+  LAUNCH_CONTENT_VIEWPORT,
+  LAUNCH_FAN_PATH,
+  LAUNCH_POEM_PATH,
+} from '@/components/launch-content-paths';
 
 const CALLBACK_URL = 'gohan://authorize_callback';
 
 const LoginView = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<LoginStackParamList>>();
-  const rootNavigation = navigation.getParent<NavigationProp<RootStackParamList>>();
+  const rootNavigation =
+    navigation.getParent<NavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -56,12 +67,14 @@ const LoginView = () => {
       if (rootNavigation) {
         rootNavigation.reset({
           index: 0,
-          routes: [{
-            name: ROOT_STACK_ROUTE.AUTH,
-            params: {
-              screen: AUTH_STACK_ROUTE.TABS
-            }
-          }]
+          routes: [
+            {
+              name: ROOT_STACK_ROUTE.AUTH,
+              params: {
+                screen: AUTH_STACK_ROUTE.TABS,
+              },
+            },
+          ],
         });
       }
     } catch (error) {
@@ -79,18 +92,20 @@ const LoginView = () => {
 
   const containerStyle = {
     paddingTop: insets.top,
-    paddingBottom: insets.bottom
+    paddingBottom: insets.bottom,
   };
   const bottomButtonStyle = {
-    bottom: insets.bottom + 40
+    bottom: insets.bottom + 40,
   };
 
   const [background, foreground] = useThemeColor(['background', 'foreground']);
 
   return (
-    <View className="flex-1" style={[containerStyle, { backgroundColor: background }]}>
+    <View
+      className="flex-1"
+      style={[containerStyle, { backgroundColor: background }]}
+    >
       <View className="flex-1 items-center justify-center px-6 -mt-20 z-10 w-full pointer-events-none">
-
         {/* Main Title — font glyphs as SVG paths */}
         <View className="w-full max-w-[320px] pointer-events-auto items-center">
           <Svg
@@ -106,8 +121,8 @@ const LoginView = () => {
         {/* Error Message */}
         {errorMessage ? (
           <View className="w-full max-w-[320px] pointer-events-auto mt-8">
-            <View className="bg-danger px-4 py-3 border-[3px] border-foreground dark:border-border rounded-none">
-              <Text className="text-sm text-danger-foreground font-bold text-center tracking-wide">
+            <View className="rounded-[16px] bg-danger-soft px-4 py-3">
+              <Text className="text-sm text-danger font-bold text-center tracking-wide">
                 ERROR: {errorMessage}
               </Text>
             </View>
@@ -116,13 +131,20 @@ const LoginView = () => {
       </View>
 
       {/* Bottom Actions */}
-      <View className="absolute left-0 right-0 w-full px-8 items-center z-20" style={bottomButtonStyle}>
+      <View
+        className="absolute left-0 right-0 w-full px-8 items-center z-20"
+        style={bottomButtonStyle}
+      >
         <View className="w-full max-w-[320px] pointer-events-auto">
           {isSigningIn && (
             <View className="mb-6 items-center">
-              <Pressable onPress={handleCancelSignIn} hitSlop={10} className="active:opacity-70">
-                <View className="border-b-[3px] border-foreground dark:border-border">
-                  <Text className="text-foreground dark:text-foreground text-sm font-black tracking-widest uppercase pb-1">
+              <Pressable
+                onPress={handleCancelSignIn}
+                hitSlop={10}
+                className="active:opacity-70"
+              >
+                <View className="pb-1">
+                  <Text className="text-foreground text-sm font-black tracking-widest uppercase underline">
                     {t('loginCancel')}
                   </Text>
                 </View>

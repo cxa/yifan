@@ -61,14 +61,24 @@
 - Follow DRY principle: when behavior/UI/logic repeats, extract and reuse shared components/hooks/utils instead of copy-pasting implementations.
 - Use kebab-case for filenames.
 
-## Design System (Neobrutalism)
-- The app visual language is neobrutalism; do not soften it into generic modern UI.
-- Use strong contrast blocks with visible borders (typically `border-2` + `border-foreground` or `dark:border-border`).
-- Prefer hard, offset depth over blur shadows (for example the existing offset background block pattern).
-- Keep corners mostly sharp; only use rounded shapes where semantically expected (avatars, pills, media masks).
-- Keep spacing bold and consistent: outer page padding 16-20, card padding 16-20, vertical gaps usually 12-16.
-- Keep typography direct and high-contrast; use muted text only for secondary metadata.
-- For new screens/components, match existing neobrutalist primitives before introducing new visual patterns.
+## Design System (Warm Pastel Playful UI)
+
+The visual language is warm, playful, and handcrafted — pastel card colors with a cream base, bold display typography, and illustrated icons.
+
+- **Background**: Warm cream `#F5EDD8` (not cool gray). All screens use this as the page background.
+- **Surfaces**: Cards and sheets use distinct per-category pastel fills — never uniform white. Palette:
+  - Pink `#FDDBD5` — personal / social content
+  - Yellow `#FDF3C8` — thoughts, reminders, drafts
+  - Lavender `#E8D5F5` — recipes, lists, creative
+  - Mint `#C8EDE8` — travel, outdoors, goals
+  - Sky `#D0E8F5` — work, productivity
+  - White `#FFFFFF` — search bars, overlays, modals only
+- **Primary / CTA**: Coral `#F47060`. Used for FAB, primary buttons (SAVE, confirm), and active tab icon tint. Avoid using it for decorative elements.
+- **Shapes & Corners**: Very rounded — cards use `1.5rem` (24px), FAB and pill badges use `9999px`. Never sharp corners.
+- **Shadows**: Flat. Separation comes from the warm cream background vs. colored card fills. No drop shadows on cards.
+- **Typography**: Bold, heavy display font for screen titles and card headings (e.g., `font-weight: 800` or a rounded bold typeface). Body copy is regular weight. Dark brown-black `#1A1208` for text to feel warm rather than stark.
+- **Icons**: Illustrated / kawaii-style emoji icons for categories and folders. Line icons for navigation tabs (minimal, 2px stroke). Avoid generic Material/SF symbol style.
+- **Spacing**: Page padding 16–20, card padding 16, vertical gaps 12–16. Generous whitespace inside cards.
 
 ## Testing Guidelines
 - Jest with the React Native preset.

@@ -367,11 +367,11 @@ const StatusDetailRoute = () => {
         photoUrl,
         hasValidRect
           ? {
-              x,
-              y,
-              width,
-              height,
-            }
+            x,
+            y,
+            width,
+            height,
+          }
           : null,
         previewKey,
       );
@@ -560,9 +560,9 @@ const StatusDetailRoute = () => {
       statusItem.favorited === isFavorited
         ? statusItem
         : {
-            ...statusItem,
-            favorited: isFavorited,
-          };
+          ...statusItem,
+          favorited: isFavorited,
+        };
     return (
       <TimelineStatusCard
         key={`${statusId}-${isMainStatus ? 'main' : 'context'}`}
@@ -591,14 +591,14 @@ const StatusDetailRoute = () => {
     composeMode === 'reply'
       ? composeReplyTarget
         ? t('composerReplyTo', {
-            name: composeReplyTarget.screenName,
-          })
+          name: composeReplyTarget.screenName,
+        })
         : t('composerReply')
       : composeRepostTarget?.screenName
-      ? t('composerRepostTo', {
+        ? t('composerRepostTo', {
           name: composeRepostTarget.screenName,
         })
-      : t('composerRepost');
+        : t('composerRepost');
   const composerPlaceholder =
     composeMode === 'reply'
       ? t('composerReplyPlaceholder')
@@ -615,12 +615,12 @@ const StatusDetailRoute = () => {
     composeMode === 'reply'
       ? `reply:${composeReplyTarget?.statusId ?? ''}`
       : composeMode === 'repost'
-      ? `repost:${composeRepostTarget?.statusId ?? ''}`
-      : 'closed';
+        ? `repost:${composeRepostTarget?.statusId ?? ''}`
+        : 'closed';
   if (!routeStatusId) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
-        <Surface className="bg-danger-soft px-4 py-3">
+        <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
           <Text className="text-[13px] text-danger-foreground">
             {t('statusMissingId')}
           </Text>
@@ -659,7 +659,7 @@ const StatusDetailRoute = () => {
           {!mainStatus && !isStatusLoading && !isContextLoading ? (
             <DropShadowBox type="danger" containerClassName="pb-2">
               <Surface
-                className={`bg-surface border-2 ${getDropShadowBorderClass(
+                className={`bg-surface  ${getDropShadowBorderClass(
                   'danger',
                 )} px-4 py-3`}
               >
@@ -679,7 +679,7 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {contextErrorMessage && mainStatus ? (
-            <Surface className="bg-danger-soft px-4 py-3">
+            <Surface className="rounded-[16px] bg-danger-soft px-4 py-3">
               <Text className="text-[13px] text-danger-foreground">
                 {contextErrorMessage}
               </Text>

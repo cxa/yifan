@@ -792,7 +792,7 @@ const PhotoViewerModal = ({
         >
           <Pressable
             onPress={closeWithSharedTransition}
-            className="border border-border/70 bg-background/70 px-3 py-2"
+            className="border /70 bg-background/70 px-3 py-2"
             accessibilityRole="button"
             accessibilityLabel={t('photoViewerCloseA11y')}
           >
