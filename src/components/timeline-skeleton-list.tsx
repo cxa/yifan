@@ -61,6 +61,7 @@ const TimelineSkeletonList = ({
       {Array.from({ length: resolvedCount }).map((_, index) => (
         <TimelineSkeletonCard
           key={`${keyPrefix}-${index}`}
+          index={index}
           lineCount={index % 2 === 0 ? 2 : 3}
         />
       ))}
