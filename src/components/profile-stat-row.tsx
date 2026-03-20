@@ -36,7 +36,7 @@ const ProfileStatSkeletonCell = ({
     <Surface className="bg-surface-secondary px-4 py-4" style={panelStyle}>
       <ShimmerBar className="h-8 w-12 bg-surface-tertiary" isActive />
       <ShimmerBar
-        className="h-5 w-16 bg-surface-tertiary"
+        className="mt-1 h-5 w-16 bg-surface-tertiary"
         isActive={false}
       />
     </Surface>

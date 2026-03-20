@@ -232,6 +232,9 @@ export const adaptProfilePaletteForDarkMode = (
     textColor: darkText,
     mutedTextColor: darkText ? withAlpha(darkText, 0.74) : palette.mutedTextColor,
     linkColor: adapt(palette.linkColor, 'link'),
+    // Background images are designed for light mode — suppress them in dark mode
+    // so the adapted background colour shows instead.
+    backgroundImageUrl: undefined,
   };
 };
 
