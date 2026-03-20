@@ -61,7 +61,7 @@ import {
 } from '@/navigation/route-names';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 import type { FanfouStatus } from '@/types/fanfou';
-import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
+import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import { Text } from '@/components/app-text';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
@@ -244,7 +244,7 @@ const AuthHomeRoute = () => {
       },
     });
   };
-  const handleStatusPress = (statusId: string) => {
+  const handleStatusPress = (statusId: string, shadowType: DropShadowBoxType) => {
     const parentNavigation =
       navigation.getParent<NavigationProp<AuthStackParamList>>();
     if (!parentNavigation) {
@@ -254,6 +254,7 @@ const AuthHomeRoute = () => {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };

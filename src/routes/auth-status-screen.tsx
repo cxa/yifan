@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
 import {
   Image,
@@ -35,7 +35,9 @@ import ComposerModal, {
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import DropShadowBox, {
+  CARD_PASTEL_CYCLE,
   getDropShadowBorderClass,
+  type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
 import NativeEdgeScrollShadow, {
   resolveNativeEdgeScrollShadowSize,
@@ -52,7 +54,7 @@ import {
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import {
-  getTimelineStatusStackStyle,
+  TIMELINE_HORIZONTAL_PADDING,
   TIMELINE_SPACING,
 } from '@/components/timeline-list-settings';
 import type {
@@ -61,7 +63,8 @@ import type {
 } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 import { parseFanfouDate } from '@/utils/fanfou-date';
-const STATUS_DETAIL_SECTION_GAP = 16;
+const STATUS_THREAD_CARD_GAP = 8;
+const STATUS_THREAD_STACK_STYLE = { gap: STATUS_THREAD_CARD_GAP } as const;
 type PhotoViewerOriginRect = {
   x: number;
   y: number;
@@ -167,6 +170,7 @@ const StatusDetailRoute = () => {
     'muted',
   ]);
   const routeStatusId = route.params.statusId.trim();
+  const routeShadowType: DropShadowBoxType = route.params.shadowType ?? 'accent';
   const { t } = useTranslation();
   const { pullScrollY, safeAreaTop, scrollInsetTop, updatePullScrollY } =
     usePullScrollY();
@@ -272,11 +276,36 @@ const StatusDetailRoute = () => {
     : null;
   const isHydratingStatus =
     !mainStatus && (isStatusLoading || isContextLoading);
+
+  // Scroll main status into view when context loads and pushes it down.
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  const [cardSectionTop, setCardSectionTop] = useState(0);
+  const [mainCardTop, setMainCardTop] = useState<number | null>(null);
+  const hasScrolledToMainRef = useRef(false);
+  useEffect(() => {
+    if (
+      hasScrolledToMainRef.current ||
+      mainCardTop === null ||
+      beforeStatuses.length === 0 ||
+      !scrollViewRef.current
+    ) {
+      return;
+    }
+    hasScrolledToMainRef.current = true;
+    const scrollTarget = cardSectionTop + mainCardTop;
+    const visibleHeight = viewportHeight - headerHeight - insets.bottom;
+    if (scrollTarget < visibleHeight) {
+      return;
+    }
+    (scrollViewRef.current as unknown as { scrollTo(o: { y: number; animated: boolean }): void })
+      .scrollTo({ y: scrollTarget, animated: false });
+  }, [cardSectionTop, mainCardTop, beforeStatuses.length, viewportHeight, headerHeight, insets.bottom]);
+
   const contentContainerStyle = {
-    paddingHorizontal: 16,
+    paddingHorizontal: TIMELINE_HORIZONTAL_PADDING,
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + TIMELINE_SPACING,
-    gap: STATUS_DETAIL_SECTION_GAP,
+    gap: 16,
   };
   const handleRefresh = async () => {
     await Promise.all([refetchStatus(), refetchContext()]);
@@ -299,7 +328,7 @@ const StatusDetailRoute = () => {
       },
     });
   };
-  const handleOpenStatusDetail = (statusId: string) => {
+  const handleOpenStatusDetail = (statusId: string, shadowType: DropShadowBoxType) => {
     if (statusId === routeStatusId) {
       return;
     }
@@ -307,6 +336,7 @@ const StatusDetailRoute = () => {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };
@@ -553,6 +583,7 @@ const StatusDetailRoute = () => {
   const renderStatusCard = (
     statusItem: FanfouStatus,
     isMainStatus: boolean,
+    index: number,
   ) => {
     const statusId = getStatusId(statusItem);
     const isFavorited = getIsFavorited(statusItem);
@@ -563,13 +594,17 @@ const StatusDetailRoute = () => {
           ...statusItem,
           favorited: isFavorited,
         };
+    const cardShadowType = isMainStatus
+      ? routeShadowType
+      : CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length];
     return (
       <TimelineStatusCard
         key={`${statusId}-${isMainStatus ? 'main' : 'context'}`}
         status={cardStatus}
         accent={accent}
         muted={muted}
-        shadowType={isMainStatus ? 'accent' : 'default'}
+        shadowType={cardShadowType}
+        invertColorScheme={isMainStatus}
         isBookmarkPending={pendingBookmarkIds.has(statusId)}
         photoViewerVisible={photoViewerVisible}
         photoViewerPreviewKey={photoViewerPreviewKey}
@@ -635,6 +670,7 @@ const StatusDetailRoute = () => {
         color={background}
       >
         <Animated.ScrollView
+          ref={scrollViewRef}
           className="flex-1 bg-background"
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={contentContainerStyle}
@@ -671,10 +707,18 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {mainStatus ? (
-            <View style={getTimelineStatusStackStyle()}>
-              {beforeStatuses.map(item => renderStatusCard(item, false))}
-              {renderStatusCard(mainStatus, true)}
-              {afterStatuses.map(item => renderStatusCard(item, false))}
+            <View
+              style={STATUS_THREAD_STACK_STYLE}
+              onLayout={(e) => setCardSectionTop(e.nativeEvent.layout.y)}
+            >
+              {beforeStatuses.map((item, i) => renderStatusCard(item, false, i))}
+              <View
+                collapsable={false}
+                onLayout={(e) => setMainCardTop(e.nativeEvent.layout.y)}
+              >
+                {renderStatusCard(mainStatus, true, beforeStatuses.length)}
+              </View>
+              {afterStatuses.map((item, i) => renderStatusCard(item, false, beforeStatuses.length + 1 + i))}
             </View>
           ) : null}
 

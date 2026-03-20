@@ -1,4 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { DropShadowBoxType } from '@/components/drop-shadow-box';
 import {
   AUTH_MESSAGES_ROUTE,
   AUTH_PROFILE_ROUTE,
@@ -19,7 +20,7 @@ export type AuthProfileStackParamList = {
 };
 
 export type AuthStatusStackParamList = {
-  [AUTH_STATUS_ROUTE.DETAIL]: { statusId: string };
+  [AUTH_STATUS_ROUTE.DETAIL]: { statusId: string; shadowType?: DropShadowBoxType };
 };
 
 export type AuthTagStackParamList = {

@@ -56,7 +56,7 @@ import {
 } from '@/components/timeline-list-settings';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
-import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
+import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 const TIMELINE_PAGE_SIZE = 60;
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
@@ -201,11 +201,12 @@ const MyTimelineRouteContent = ({
       colors={['transparent']}
     />
   );
-  const handleOpenStatus = (statusId: string) => {
+  const handleOpenStatus = (statusId: string, shadowType: DropShadowBoxType) => {
     navigation.navigate(AUTH_STACK_ROUTE.STATUS, {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };

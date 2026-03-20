@@ -39,7 +39,7 @@ import ComposerModal, {
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import TimelineStatusCard from '@/components/timeline-status-card';
-import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
+import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineTitleHeader from '@/components/timeline-title-header';
@@ -227,7 +227,7 @@ const MentionsRoute = () => {
       },
     });
   };
-  const handleStatusPress = (statusId: string) => {
+  const handleStatusPress = (statusId: string, shadowType: DropShadowBoxType) => {
     const parentNavigation =
       navigation.getParent<NavigationProp<AuthStackParamList>>();
     if (!parentNavigation) {
@@ -237,6 +237,7 @@ const MentionsRoute = () => {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };

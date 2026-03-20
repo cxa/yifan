@@ -42,7 +42,7 @@ import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { shouldUsePhotoSharedTransition } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineStatusCard from '@/components/timeline-status-card';
-import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
+import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
@@ -189,11 +189,12 @@ const TagTimelineRoute = () => {
       },
     });
   };
-  const handleStatusPress = (statusId: string) => {
+  const handleStatusPress = (statusId: string, shadowType: DropShadowBoxType) => {
     navigation.navigate(AUTH_STACK_ROUTE.STATUS, {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };

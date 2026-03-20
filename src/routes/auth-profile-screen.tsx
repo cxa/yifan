@@ -39,6 +39,7 @@ import ComposerModal, {
 } from '@/components/composer-modal';
 import DropShadowBox, {
   getDropShadowBorderClass,
+  type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
 import NativeEdgeScrollShadow, {
   resolveNativeEdgeScrollShadowSize,
@@ -288,11 +289,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       },
     });
   };
-  const handleStatusPress = (statusId: string) => {
+  const handleStatusPress = (statusId: string, shadowType: DropShadowBoxType) => {
     navigation.navigate(AUTH_STACK_ROUTE.STATUS, {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };

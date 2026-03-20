@@ -41,7 +41,7 @@ import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
-import { CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
+import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import {
@@ -201,11 +201,12 @@ const FavoritesRoute = () => {
       colors={['transparent']}
     />
   );
-  const handleOpenStatus = (statusId: string) => {
+  const handleOpenStatus = (statusId: string, shadowType: DropShadowBoxType) => {
     navigation.navigate(AUTH_STACK_ROUTE.STATUS, {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: {
         statusId,
+        shadowType,
       },
     });
   };

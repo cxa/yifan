@@ -58,16 +58,24 @@ type TimelineStatusCardProps = {
     node: React.ComponentRef<typeof View> | null,
   ) => void;
   onOpenPhoto: (photoUrl: string, previewKey: string) => void;
-  onPressStatus: (statusId: string) => void;
+  onPressStatus: (statusId: string, shadowType: DropShadowBoxType) => void;
   onPressProfile: (userId: string) => void;
   onPressMention: (userId: string) => void;
   onPressTag: (tag: string) => void;
   onReply: (status: FanfouStatus) => void;
   onRepost: (status: FanfouStatus) => void;
   onToggleBookmark: (status: FanfouStatus) => void;
+  invertColorScheme?: boolean;
   canDelete?: boolean;
   onDelete?: (status: FanfouStatus) => Promise<void> | void;
 };
+// Text colors for explicit overrides when invertColorScheme is used.
+// Derived from the OKLCH values in global.css.
+const FOREGROUND_LIGHT = '#1A1208';
+const FOREGROUND_DARK  = '#F2EDE8';
+const MUTED_LIGHT      = '#7C7268';
+const MUTED_DARK       = '#9C9288';
+
 // Pastel card background colors — directly matching the reference design system
 const CARD_BG_LIGHT: Record<DropShadowBoxType, string> = {
   default: '#F7EFE0', // warm cream fallback
@@ -127,12 +135,21 @@ const TimelineStatusCard = ({
   onReply,
   onRepost,
   onToggleBookmark,
+  invertColorScheme = false,
   canDelete = false,
   onDelete,
 }: TimelineStatusCardProps) => {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
-  const cardBgColor = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
+  const effectiveIsDark = invertColorScheme ? !isDark : isDark;
+  const textColor = invertColorScheme
+    ? isDark ? FOREGROUND_LIGHT : FOREGROUND_DARK
+    : undefined;
+  const mutedColor = invertColorScheme
+    ? isDark ? MUTED_LIGHT : MUTED_DARK
+    : undefined;
+  const effectiveMuted = mutedColor ?? muted;
+  const cardBgColor = (effectiveIsDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
   const [danger] = useThemeColor(['danger']);
   const fontFamily = useAppFontFamily();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
@@ -203,7 +220,7 @@ const TimelineStatusCard = ({
   return (
     <>
       <Pressable
-        onPress={() => onPressStatus(statusId)}
+        onPress={() => onPressStatus(statusId, shadowType)}
         unstable_pressDelay={100}
         className="rounded-[24px] px-5 py-4 active:opacity-75"
         style={{ backgroundColor: cardBgColor }}
@@ -255,6 +272,7 @@ const TimelineStatusCard = ({
                 >
                   <Text
                     className="text-[17px] font-bold text-foreground"
+                    style={textColor ? { color: textColor } : undefined}
                     numberOfLines={1}
                   >
                     {displayName}
@@ -262,13 +280,14 @@ const TimelineStatusCard = ({
                 </Pressable>
                 <Text
                   className="min-w-0 shrink text-[14px] text-muted"
+                  style={mutedColor ? { color: mutedColor } : undefined}
                   numberOfLines={1}
                 >
                   {handle}
                 </Text>
               </View>
             ) : null}
-            <Text skipFont className="mt-1 text-[15px] leading-6 text-foreground">
+            <Text skipFont className="mt-1 text-[15px] leading-6 text-foreground" style={textColor ? { color: textColor } : undefined}>
               {segments.length > 0
                 ? segments.map((segment, segmentIndex) => {
                   if (segment.type === 'mention') {
@@ -367,7 +386,7 @@ const TimelineStatusCard = ({
                   );
                 }}
               >
-                <Text className="text-[12px] text-muted">{timestamp}</Text>
+                <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
               </View>
               {viaLabel ? (
                 <View
@@ -379,7 +398,7 @@ const TimelineStatusCard = ({
                     );
                   }}
                 >
-                  <Text className="text-[12px] text-muted">{viaLabel}</Text>
+                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
                 </View>
               ) : null}
             </View>
@@ -407,7 +426,7 @@ const TimelineStatusCard = ({
                   accessibilityRole="button"
                   accessibilityLabel="Reply"
                 >
-                  <MessageCircle size={16} color={muted} />
+                  <MessageCircle size={16} color={effectiveMuted} />
                 </Pressable>
                 <Pressable
                   onPress={() => onRepost(status)}
@@ -415,7 +434,7 @@ const TimelineStatusCard = ({
                   accessibilityRole="button"
                   accessibilityLabel="Repost"
                 >
-                  <Repeat2 size={16} color={muted} />
+                  <Repeat2 size={16} color={effectiveMuted} />
                 </Pressable>
                 <Pressable
                   onPress={() => onToggleBookmark(status)}
@@ -430,15 +449,15 @@ const TimelineStatusCard = ({
                     size={16}
                     isFavorited={status.favorited}
                     activeColor={accent}
-                    inactiveColor={muted}
+                    inactiveColor={effectiveMuted}
                   />
                 </Pressable>
               </View>
               <View className="ml-3 flex-1 min-w-0 items-end">
                 <View className="flex-row items-center gap-1">
-                  <Text className="text-[12px] text-muted">{timestamp}</Text>
+                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
                   {canShowVia ? (
-                    <Text className="text-[12px] text-muted">{viaLabel}</Text>
+                    <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
                   ) : null}
                 </View>
               </View>
