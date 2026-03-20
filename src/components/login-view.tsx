@@ -113,8 +113,8 @@ const LoginView = () => {
             height={LAUNCH_CONTENT_VIEWPORT.height}
             viewBox={`0 0 ${LAUNCH_CONTENT_VIEWPORT.width} ${LAUNCH_CONTENT_VIEWPORT.height}`}
           >
-            <Path d={LAUNCH_FAN_PATH} fill={foreground} />
-            <Path d={LAUNCH_POEM_PATH} fill={foreground} fillOpacity={0.8} />
+            <Path d={LAUNCH_FAN_PATH} fill="#F47060" />
+            <Path d={LAUNCH_POEM_PATH} fill={foreground} fillOpacity={0.65} />
           </Svg>
         </View>
 
