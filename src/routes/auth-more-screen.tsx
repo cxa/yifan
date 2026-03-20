@@ -61,6 +61,7 @@ import {
   useAppFontPreference,
 } from '@/settings/app-font-preference';
 import {
+  APP_FONT_SIZE_OPTION,
   APP_FONT_SIZE_OPTIONS,
   setAppFontSizePreference,
   type AppFontSizeOption,
@@ -270,6 +271,19 @@ const MoreRouteContent = ({
   displayNameFallback,
 }: MoreRouteContentProps) => {
   const { t } = useTranslation();
+  const fontOptionLabels: Record<AppFontOption, string> = {
+    [APP_FONT_OPTION.SYSTEM]: t('moreFontOptionSystem'),
+    [APP_FONT_OPTION.XIAOLAI]: '小赖字体',
+    [APP_FONT_OPTION.HUIWEN_HKHEI]: '匯文港黑',
+    [APP_FONT_OPTION.HUIWEN_MINCHO_GBK]: '匯文明朝體',
+  };
+  const fontSizeLabels: Record<AppFontSizeOption, string> = {
+    [APP_FONT_SIZE_OPTION.XS]: t('moreFontSizeXS'),
+    [APP_FONT_SIZE_OPTION.SM]: t('moreFontSizeSM'),
+    [APP_FONT_SIZE_OPTION.MD]: t('moreFontSizeMD'),
+    [APP_FONT_SIZE_OPTION.LG]: t('moreFontSizeLG'),
+    [APP_FONT_SIZE_OPTION.XL]: t('moreFontSizeXL'),
+  };
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
   const headerHeight = useHeaderHeight();
   const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
@@ -617,11 +631,11 @@ const MoreRouteContent = ({
   };
   const fontSelectValue = (() => {
     const opt = APP_FONT_OPTIONS.find(o => o.value === appFontPreference);
-    return opt ? { value: opt.value, label: opt.label } : undefined;
+    return opt ? { value: opt.value, label: fontOptionLabels[opt.value] } : undefined;
   })();
   const fontSizeSelectValue = (() => {
     const opt = APP_FONT_SIZE_OPTIONS.find(o => o.value === appFontSizePreference);
-    return opt ? { value: opt.value, label: opt.label } : undefined;
+    return opt ? { value: opt.value, label: fontSizeLabels[opt.value] } : undefined;
   })();
   const languageSelectValue = {
     value: appLanguagePreference,
@@ -825,7 +839,7 @@ const MoreRouteContent = ({
                           {APP_FONT_OPTIONS.map(option => {
                             const fontFamily = getFontPreviewFamily(option.value);
                             return (
-                              <Select.Item key={option.value} value={option.value} label={option.label}>
+                              <Select.Item key={option.value} value={option.value} label={fontOptionLabels[option.value]}>
                                 <Select.ItemLabel style={fontFamily ? { fontFamily } : undefined} />
                                 <Select.ItemIndicator />
                               </Select.Item>
@@ -856,7 +870,7 @@ const MoreRouteContent = ({
                         <Select.Overlay />
                         <Select.Content presentation="popover" placement="top" width="trigger" className="rounded-3xl">
                           {APP_FONT_SIZE_OPTIONS.map(option => (
-                            <Select.Item key={option.value} value={option.value} label={option.label} />
+                            <Select.Item key={option.value} value={option.value} label={fontSizeLabels[option.value]} />
                           ))}
                         </Select.Content>
                       </Select.Portal>

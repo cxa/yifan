@@ -178,6 +178,12 @@ type BaseTranslations = {
   moreSignOutConfirmMessage: string;
   moreFontStyle: string;
   moreFontSize: string;
+  moreFontOptionSystem: string;
+  moreFontSizeXS: string;
+  moreFontSizeSM: string;
+  moreFontSizeMD: string;
+  moreFontSizeLG: string;
+  moreFontSizeXL: string;
   moreLanguage: string;
   moreLanguageSystemDefault: string;
   moreTheme: string;
@@ -398,6 +404,12 @@ const enUS: BaseTranslations = {
   moreSignOutConfirmMessage: 'Are you sure you want to sign out?',
   moreFontStyle: 'Font Style',
   moreFontSize: 'Font Size',
+  moreFontOptionSystem: 'System Font',
+  moreFontSizeXS: 'Tiny',
+  moreFontSizeSM: 'Small',
+  moreFontSizeMD: 'Medium',
+  moreFontSizeLG: 'Large',
+  moreFontSizeXL: 'Huge',
   moreLanguage: 'Language',
   moreLanguageSystemDefault: 'System Default',
   moreTheme: 'Theme',
@@ -618,6 +630,12 @@ const zhCN: BaseTranslations = {
   moreSignOutConfirmMessage: '确认退出登录？',
   moreFontStyle: '字体风格',
   moreFontSize: '字体大小',
+  moreFontOptionSystem: '系统字体',
+  moreFontSizeXS: '极小',
+  moreFontSizeSM: '偏小',
+  moreFontSizeMD: '标准',
+  moreFontSizeLG: '偏大',
+  moreFontSizeXL: '特大',
   moreLanguage: '语言',
   moreLanguageSystemDefault: '跟随系统',
   moreTheme: '主题',
