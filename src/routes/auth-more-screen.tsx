@@ -958,7 +958,7 @@ const MoreRouteContent = ({
       </NativeEdgeScrollShadow>
       <Dialog isOpen={isSignOutDialogOpen} onOpenChange={setIsSignOutDialogOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay />
+          <Dialog.Overlay className="bg-black/80" />
           <Dialog.Content>
             <View className="mb-5 gap-1.5">
               <Dialog.Title>{t('moreSignOutConfirmTitle')}</Dialog.Title>
