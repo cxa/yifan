@@ -70,6 +70,12 @@ import {
   type AppLanguageOption,
   useAppLanguagePreference,
 } from '@/settings/app-language-preference';
+import {
+  APP_THEME_OPTIONS,
+  setAppThemePreference,
+  type AppThemeOption,
+  useAppThemePreference,
+} from '@/settings/app-theme-preference';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
@@ -290,6 +296,18 @@ type LanguageSettingRowProps = {
   onPress: (next: AppLanguageOption) => void;
   primaryTextStyle?: StyleProp<TextStyle>;
 };
+type ThemeSettingRowProps = {
+  option: {
+    value: AppThemeOption;
+    label: string;
+    nativeLabel: string;
+  };
+  isLast: boolean;
+  isSelected: boolean;
+  isBusy: boolean;
+  onPress: (next: AppThemeOption) => void;
+  primaryTextStyle?: StyleProp<TextStyle>;
+};
 type MoreRouteContentProps = {
   userId: string;
   displayNameFallback: string;
@@ -441,6 +459,41 @@ const LanguageSettingRow = ({
     </Pressable>
   );
 };
+const ThemeSettingRow = ({
+  option,
+  isLast,
+  isSelected,
+  isBusy,
+  onPress,
+  primaryTextStyle,
+}: ThemeSettingRowProps) => {
+  const { t } = useTranslation();
+  const isDisabled = isSelected || isBusy;
+  const label =
+    option.value === 'colorful' ? t('moreThemeColorful') : t('moreThemePlain');
+  return (
+    <Pressable
+      disabled={isDisabled}
+      accessibilityRole="button"
+      onPress={() => onPress(option.value)}
+      className={`flex-row items-center gap-3 px-4 py-4 ${isLast ? 'rounded-b-[24px]' : 'border-b'
+        } ${isDisabled ? 'opacity-80' : 'active:bg-surface-tertiary'}`}
+    >
+      <View
+        className={`h-5 w-5 rounded-full items-center justify-center ${isSelected ? 'bg-accent' : 'bg-surface-tertiary'
+          }`}
+      >
+        {isSelected ? <View className="h-2 w-2 rounded-full bg-accent-foreground" /> : null}
+      </View>
+      <Text
+        className="flex-1 text-[15px] text-foreground"
+        style={primaryTextStyle}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+};
 const MoreRouteContent = ({
   userId,
   displayNameFallback,
@@ -455,6 +508,7 @@ const MoreRouteContent = ({
   const [background, muted] = useThemeColor(['background', 'muted']);
   const appFontPreference = useAppFontPreference();
   const appLanguagePreference = useAppLanguagePreference();
+  const appThemePreference = useAppThemePreference();
   const isFocused = useIsFocused();
   const headerTitleVisible = useSharedValue(false);
   const [showHeaderTitle, setShowHeaderTitle] = useState(false);
@@ -463,6 +517,8 @@ const MoreRouteContent = ({
     useState<AppFontOption | null>(null);
   const [updatingLanguageOption, setUpdatingLanguageOption] =
     useState<AppLanguageOption | null>(null);
+  const [updatingThemeOption, setUpdatingThemeOption] =
+    useState<AppThemeOption | null>(null);
   const scrollRef =
     useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
   const insets = useSafeAreaInsets();
@@ -768,6 +824,23 @@ const MoreRouteContent = ({
       setUpdatingLanguageOption(null);
     }
   };
+  const handleSelectThemePreference = async (next: AppThemeOption) => {
+    if (updatingThemeOption || appThemePreference === next) {
+      return;
+    }
+    setUpdatingThemeOption(next);
+    try {
+      await setAppThemePreference(next);
+    } catch (updateError) {
+      showVariantToast(
+        'danger',
+        t('moreFontUpdateFailed'),
+        getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
+      );
+    } finally {
+      setUpdatingThemeOption(null);
+    }
+  };
   return (
     <ProfilePageBackdrop
       backgroundColor={pageBackgroundColor}
@@ -977,6 +1050,39 @@ const MoreRouteContent = ({
                         isSelected={appLanguagePreference === option.value}
                         isBusy={Boolean(updatingLanguageOption)}
                         onPress={handleSelectLanguagePreference}
+                        primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                      />
+                    ))}
+                  </Surface>
+                </DropShadowBox>
+
+                <DropShadowBox shadowStyle={profilePanelShadowStyle}>
+                  <Surface
+                    className="rounded-[24px] bg-surface-secondary"
+                    style={profileThemeStyles.panelStyle}
+                  >
+                    <View className="border-b px-4 py-4">
+                      <Text
+                        className="text-[15px] font-semibold text-foreground"
+                        style={profileThemeStyles.primaryTextStyle}
+                      >
+                        {t('moreTheme')}
+                      </Text>
+                      <Text
+                        className="mt-0.5 text-[12px] text-muted"
+                        style={profileThemeStyles.mutedTextStyle}
+                      >
+                        {t('moreThemeHelper')}
+                      </Text>
+                    </View>
+                    {APP_THEME_OPTIONS.map((option, index) => (
+                      <ThemeSettingRow
+                        key={option.value}
+                        option={option}
+                        isLast={index === APP_THEME_OPTIONS.length - 1}
+                        isSelected={appThemePreference === option.value}
+                        isBusy={Boolean(updatingThemeOption)}
+                        onPress={handleSelectThemePreference}
                         primaryTextStyle={profileThemeStyles.primaryTextStyle}
                       />
                     ))}

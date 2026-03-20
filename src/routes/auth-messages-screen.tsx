@@ -44,6 +44,7 @@ import DropShadowBox, {
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
+import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import { countSkeletonItemsForHeight } from '@/components/timeline-skeleton-list';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import { AUTH_PROFILE_ROUTE, AUTH_STACK_ROUTE } from '@/navigation/route-names';
@@ -220,16 +221,20 @@ const MessageSkeletonCard = ({
   colorIndex: number;
 }) => {
   const isDark = useColorScheme() === 'dark';
+  const themePreference = useAppThemePreference();
+  const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const shadowType = CARD_PASTEL_CYCLE[colorIndex % CARD_PASTEL_CYCLE.length];
   const skeletonBgStyle = {
-    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
+    backgroundColor: isPlain
+      ? (isDark ? '#1E1E1E' : '#FFFFFF')
+      : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
   };
-  const [border] = useThemeColor(['border']);
+  const [border, muted] = useThemeColor(['border', 'muted']);
   return (
     <DropShadowBox containerClassName="w-full">
       <View style={skeletonBgStyle} className="w-full overflow-hidden rounded-[16px] border border-border/40 px-4 pb-4 pt-5">
         <View className="flex-row gap-3">
-          <PostageStamp initial="" borderColor={border} />
+          <PostageStamp initial="" borderColor={isDark ? muted : border} />
           <View className="flex-1">
             <View className="absolute bottom-0 left-0 top-0 w-0.5 bg-danger/50" />
             <View className="pl-3 gap-2">
@@ -274,6 +279,7 @@ const MessageCard = ({
 }: MessageCardProps) => {
   const { t } = useTranslation();
   const isDark = useColorScheme() === 'dark';
+  const themePreference = useAppThemePreference();
   const counterpart = mailbox === 'inbox' ? message.sender : message.recipient;
   const counterpartId =
     counterpart?.id ||
@@ -287,7 +293,9 @@ const MessageCard = ({
   const initial = displayName.slice(0, 1).toUpperCase();
   const isPressable = Boolean(counterpartId);
   const cardBgStyle = {
-    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
+    backgroundColor: themePreference === APP_THEME_OPTION.PLAIN
+      ? (isDark ? '#1E1E1E' : '#FFFFFF')
+      : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
   };
   const [danger, muted, border] = useThemeColor(['danger', 'muted', 'border']);
   const handleDelete = () => {
@@ -347,7 +355,7 @@ const MessageCard = ({
           <PostageStamp
             avatarUrl={avatarUrl}
             initial={initial}
-            borderColor={border}
+            borderColor={isDark ? muted : border}
           />
 
           <View className="relative flex-1">
@@ -374,7 +382,7 @@ const MessageCard = ({
                 </Text>
               ) : null}
 
-              <View className="relative mt-3 border-t border-dashed">
+              <View className="relative mt-3 border-t border-dashed" style={{ borderColor: isDark ? muted : border }}>
                 <View className="absolute left-[-15px] top-[-4px] h-2 w-2 rounded-full border bg-surface-secondary" />
               </View>
 
@@ -413,9 +421,10 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
     NAV_HEADER_HEIGHT -
     insets.bottom -
     PAGE_BOTTOM_PADDING;
-  const [background, muted] = useThemeColor([
+  const [background, muted, accent] = useThemeColor([
     'background',
     'muted',
+    'accent',
   ]);
   const queryClient = useQueryClient();
   const [activeMailbox, setActiveMailbox] = useState<MailboxKind>('inbox');
@@ -467,7 +476,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         <Tabs.Trigger value="inbox">
           {({ isSelected }) => (
             <>
-              <Inbox size={12} color={isSelected ? undefined : muted} />
+              <Inbox size={12} color={isSelected ? accent : muted} />
               <Tabs.Label>{t('messagesInbox')}</Tabs.Label>
             </>
           )}
@@ -475,7 +484,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         <Tabs.Trigger value="outbox">
           {({ isSelected }) => (
             <>
-              <Send size={12} color={isSelected ? undefined : muted} />
+              <Send size={12} color={isSelected ? accent : muted} />
               <Tabs.Label>{t('messagesOutbox')}</Tabs.Label>
             </>
           )}

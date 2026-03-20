@@ -284,7 +284,7 @@ const StatusDetailRoute = () => {
     paddingHorizontal: TIMELINE_HORIZONTAL_PADDING,
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + TIMELINE_SPACING,
-    gap: 16,
+    gap: STATUS_THREAD_CARD_GAP,
   };
   const handleRefresh = async () => {
     await Promise.all([refetchStatus(), refetchContext()]);
@@ -637,6 +637,7 @@ const StatusDetailRoute = () => {
               <View
                 collapsable={false}
                 onLayout={(e) => setMainCardTop(e.nativeEvent.layout.y)}
+                style={{ marginBottom: STATUS_THREAD_CARD_GAP }}
               >
                 {renderStatusCard(mainStatus, true, beforeStatuses.length)}
               </View>

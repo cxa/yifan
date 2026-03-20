@@ -8,6 +8,7 @@ import { Text } from '@/components/app-text';
 import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
 import { useAppFontFamily } from '@/settings/app-font-preference';
+import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 import { openLink } from '@/utils/open-link';
@@ -123,7 +124,10 @@ const TimelineStatusCard = ({
     ? isDark ? MUTED_LIGHT : MUTED_DARK
     : undefined;
   const effectiveMuted = mutedColor ?? muted;
-  const cardBgColor = (effectiveIsDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
+  const themePreference = useAppThemePreference();
+  const cardBgColor = themePreference === APP_THEME_OPTION.PLAIN
+    ? (effectiveIsDark ? '#1E1E1E' : '#FFFFFF')
+    : (effectiveIsDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
   const [danger] = useThemeColor(['danger']);
   const fontFamily = useAppFontFamily();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);

@@ -183,6 +183,10 @@ type BaseTranslations = {
   moreLanguage: string;
   moreLanguageHelper: string;
   moreLanguageSystemDefault: string;
+  moreTheme: string;
+  moreThemeHelper: string;
+  moreThemeColorful: string;
+  moreThemePlain: string;
   moreFontUpdateFailed: string;
   moreFontUpdateFailedMessage: string;
   moreAccountLoading: string;
@@ -403,6 +407,10 @@ const enUS: BaseTranslations = {
   moreLanguage: 'Language',
   moreLanguageHelper: 'Choose your preferred language.',
   moreLanguageSystemDefault: 'System Default',
+  moreTheme: 'Theme',
+  moreThemeHelper: 'Choose the card background style.',
+  moreThemeColorful: 'Colorful',
+  moreThemePlain: 'Plain',
   moreFontUpdateFailed: 'Update Failed',
   moreFontUpdateFailedMessage: 'Cannot update font setting.',
   moreAccountLoading: 'Loading account…',
@@ -623,6 +631,10 @@ const zhCN: BaseTranslations = {
   moreLanguage: '语言',
   moreLanguageHelper: '选择你偏好的应用语言。',
   moreLanguageSystemDefault: '跟随系统',
+  moreTheme: '主题',
+  moreThemeHelper: '选择卡片背景风格。',
+  moreThemeColorful: '多彩',
+  moreThemePlain: '纯色',
   moreFontUpdateFailed: '更新失败',
   moreFontUpdateFailedMessage: '无法更新字体设置。',
   moreAccountLoading: '正在加载账号…',

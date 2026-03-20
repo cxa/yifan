@@ -4,6 +4,7 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { useColorScheme } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Text } from '@/components/app-text';
+import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 
 type TimelineSkeletonCardProps = {
   index?: number;
@@ -96,9 +97,15 @@ const TimelineSkeletonCard = ({
   message,
 }: TimelineSkeletonCardProps) => {
   const isDark = useColorScheme() === 'dark';
+  const themePreference = useAppThemePreference();
+  const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const paletteIndex = index % CARD_BG_LIGHT.length;
-  const cardBg  = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[paletteIndex];
-  const barColor = (isDark ? BAR_BG_DARK  : BAR_BG_LIGHT)[paletteIndex];
+  const cardBg = isPlain
+    ? (isDark ? '#1E1E1E' : '#FFFFFF')
+    : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[paletteIndex];
+  const barColor = isPlain
+    ? undefined
+    : (isDark ? BAR_BG_DARK : BAR_BG_LIGHT)[paletteIndex];
   const shimmerIndex = Math.floor(Math.random() * (lineCount + 1));
 
   return (
