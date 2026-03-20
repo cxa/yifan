@@ -9,7 +9,10 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  Extrapolation,
+  interpolate,
   useAnimatedScrollHandler,
+  useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -35,6 +38,7 @@ import { CARD_BG_DARK, CARD_BG_LIGHT, CARD_PASTEL_CYCLE } from '@/components/dro
 import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import ProfileStatRow from '@/components/profile-stat-row';
 import ProfileSummaryCard from '@/components/profile-summary-card';
+import TimelineTitleHeader from '@/components/timeline-title-header';
 import {
   AUTH_MESSAGES_ROUTE,
   AUTH_STACK_ROUTE,
@@ -306,6 +310,7 @@ const MoreRouteContent = ({
   const appThemePreference = useAppThemePreference();
   const appUiStylePreference = useAppUiStylePreference();
   const isFocused = useIsFocused();
+  const scrollY = useSharedValue(0);
   const headerTitleVisible = useSharedValue(false);
   const [showHeaderTitle, setShowHeaderTitle] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -325,6 +330,7 @@ const MoreRouteContent = ({
   };
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
+      scrollY.value = event.contentOffset.y;
       const shouldShowHeaderTitle =
         event.contentOffset.y >= scrollShadowSize * HEADER_TITLE_REVEAL_RATIO;
       if (shouldShowHeaderTitle !== headerTitleVisible.value) {
@@ -333,6 +339,18 @@ const MoreRouteContent = ({
       }
     },
   });
+  const titleContainerStyle = useAnimatedStyle(() => ({
+    height: interpolate(scrollY.value, [0, 88], [44, 0], Extrapolation.CLAMP),
+    opacity: interpolate(scrollY.value, [0, 70], [1, 0], Extrapolation.CLAMP),
+  }));
+  const titleTextStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(scrollY.value, [0, 88], [1, 0.6], Extrapolation.CLAMP),
+      },
+    ],
+    transformOrigin: 'top left',
+  }));
   const {
     data: user,
     isLoading,
@@ -713,6 +731,11 @@ const MoreRouteContent = ({
         >
           <View className="flex-1">
             <View style={{ gap: SECTION_GAP }}>
+              <TimelineTitleHeader
+                title={user?.screen_name || displayNameFallback}
+                titleContainerStyle={titleContainerStyle}
+                titleTextStyle={titleTextStyle}
+              />
               {/* Profile block: summary card + stat rows */}
               <View style={{ gap: PROFILE_GROUP_GAP }}>
                 {showLoadingState ? (

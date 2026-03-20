@@ -246,11 +246,12 @@ const AuthTabBar = ({
   );
 };
 const MoreStackRoute = () => {
-  const { t } = useTranslation();
   const [foreground] = useThemeColor(['foreground']);
   const headerFontFamily = useAppFontFamily();
   const headerSystemFontOverride = useSystemFontFamilyOverride();
   const resolvedHeaderFontFamily = headerFontFamily ?? headerSystemFontOverride;
+  const auth = useAuthSession();
+  const screenName = auth.accessToken?.screenName ?? '';
 
   return (
     <MoreStack.Navigator
@@ -275,7 +276,7 @@ const MoreStackRoute = () => {
         name="MoreRoot"
         component={MoreRoute}
         options={{
-          title: t('tabMore'),
+          title: screenName,
         }}
       />
     </MoreStack.Navigator>
