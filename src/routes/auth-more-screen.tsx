@@ -23,7 +23,7 @@ import {
 } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PressableFeedback, Select, Separator, Surface, useThemeColor } from 'heroui-native';
+import { PressableFeedback, Select, Separator, Surface, Switch, useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -31,7 +31,7 @@ import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
 import AuthActionButton from '@/components/auth-action-button';
 import { Text } from '@/components/app-text';
-import DropShadowBox from '@/components/drop-shadow-box';
+import DropShadowBox, { CARD_BG_DARK, CARD_BG_LIGHT, CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import ProfileStatRow from '@/components/profile-stat-row';
 import ProfileSummaryCard from '@/components/profile-summary-card';
@@ -73,11 +73,16 @@ import {
   useAppLanguagePreference,
 } from '@/settings/app-language-preference';
 import {
+  APP_THEME_OPTION,
   APP_THEME_OPTIONS,
   setAppThemePreference,
   type AppThemeOption,
   useAppThemePreference,
 } from '@/settings/app-theme-preference';
+import {
+  setAppProfileThemePreference,
+  useAppProfileThemePreference,
+} from '@/settings/app-profile-theme-preference';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
@@ -269,6 +274,8 @@ const MoreRouteContent = ({
   });
   const queryClient = useQueryClient();
   const [background, muted] = useThemeColor(['background', 'muted']);
+  const isDark = useColorScheme() === 'dark';
+  const followProfileTheme = useAppProfileThemePreference();
   const appFontPreference = useAppFontPreference();
   const appFontSizePreference = useAppFontSizePreference();
   const appLanguagePreference = useAppLanguagePreference();
@@ -327,7 +334,23 @@ const MoreRouteContent = ({
   const errorMessage = error
     ? getErrorMessage(error, t('moreAccountLoadFailed'))
     : null;
-  const profileThemePalette = resolveProfileThemePalette(user);
+  const profileThemePalette = followProfileTheme
+    ? resolveProfileThemePalette(user)
+    : resolveProfileThemePalette(undefined);
+  // Shuffle pastels once on mount so sections get a fresh random combo each visit.
+  const colorfulPaletteRef = useRef<typeof CARD_PASTEL_CYCLE | null>(null);
+  if (colorfulPaletteRef.current === null) {
+    colorfulPaletteRef.current = [...CARD_PASTEL_CYCLE].sort(() => Math.random() - 0.5);
+  }
+  const shuffledPalette = colorfulPaletteRef.current;
+  const colorfulSectionStyles = !followProfileTheme && appThemePreference === APP_THEME_OPTION.COLORFUL
+    ? {
+        profile:  { backgroundColor: isDark ? CARD_BG_DARK[shuffledPalette[0]] : CARD_BG_LIGHT[shuffledPalette[0]] },
+        stats:    { backgroundColor: isDark ? CARD_BG_DARK[shuffledPalette[1]] : CARD_BG_LIGHT[shuffledPalette[1]] },
+        messages: { backgroundColor: isDark ? CARD_BG_DARK[shuffledPalette[2]] : CARD_BG_LIGHT[shuffledPalette[2]] },
+        settings: { backgroundColor: isDark ? CARD_BG_DARK[shuffledPalette[3]] : CARD_BG_LIGHT[shuffledPalette[3]] },
+      }
+    : null;
   const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
   const preferredHeaderTintColor =
     profileThemePalette.linkColor ?? profileThemePalette.textColor;
@@ -357,6 +380,12 @@ const MoreRouteContent = ({
   const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
   const profilePanelShadowStyle =
     resolveProfilePanelShadowStyle(profileThemePalette);
+  const panelStyle = {
+    profile:  colorfulSectionStyles?.profile  ?? profileThemeStyles.panelStyle,
+    stats:    colorfulSectionStyles?.stats    ?? profileThemeStyles.panelStyle,
+    messages: colorfulSectionStyles?.messages ?? profileThemeStyles.panelStyle,
+    settings: colorfulSectionStyles?.settings ?? profileThemeStyles.panelStyle,
+  };
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
   const entryIconColor = profileThemePalette.linkColor ?? muted;
@@ -536,6 +565,13 @@ const MoreRouteContent = ({
       },
     );
   };
+  const handleToggleFollowProfile = async (next: boolean) => {
+    try {
+      await setAppProfileThemePreference(next);
+    } catch {
+      // ignore — UI already reverted optimistically inside the store
+    }
+  };
   const handleSelectFontSizePreference = async (next: AppFontSizeOption) => {
     if (appFontSizePreference === next) {
       return;
@@ -647,7 +683,7 @@ const MoreRouteContent = ({
                   {showLoadingState ? (
                     <Surface
                       className="rounded-[24px] bg-surface-secondary px-5 py-6"
-                      style={profileThemeStyles.panelStyle}
+                      style={panelStyle.profile}
                     >
                       <View className="flex-row items-center gap-4">
                         <View
@@ -693,7 +729,7 @@ const MoreRouteContent = ({
                       joinedAt={joinedAt}
                       profileUrl={profileUrl}
                       description={description}
-                      panelStyle={profileThemeStyles.panelStyle}
+                      panelStyle={panelStyle.profile}
                       primaryTextStyle={profileThemeStyles.primaryTextStyle}
                       mutedTextStyle={profileThemeStyles.mutedTextStyle}
                       linkTextStyle={profileThemeStyles.linkTextStyle}
@@ -714,14 +750,14 @@ const MoreRouteContent = ({
                   <>
                     <ProfileStatRow
                       stats={profileStatsPrimary}
-                      panelStyle={profileThemeStyles.panelStyle}
+                      panelStyle={panelStyle.stats}
                       shadowStyle={profilePanelShadowStyle}
                       valueTextStyle={profileThemeStyles.primaryTextStyle}
                       labelTextStyle={profileThemeStyles.primaryTextStyle}
                     />
                     <ProfileStatRow
                       stats={profileStatsSecondary}
-                      panelStyle={profileThemeStyles.panelStyle}
+                      panelStyle={panelStyle.stats}
                       shadowStyle={profilePanelShadowStyle}
                       valueTextStyle={profileThemeStyles.primaryTextStyle}
                       labelTextStyle={profileThemeStyles.primaryTextStyle}
@@ -733,14 +769,14 @@ const MoreRouteContent = ({
                       stats={[]}
                       skeleton
                       itemCount={3}
-                      panelStyle={profileThemeStyles.panelStyle}
+                      panelStyle={panelStyle.stats}
                       shadowStyle={profilePanelShadowStyle}
                     />
                     <ProfileStatRow
                       stats={[]}
                       skeleton
                       itemCount={2}
-                      panelStyle={profileThemeStyles.panelStyle}
+                      panelStyle={panelStyle.stats}
                       shadowStyle={profilePanelShadowStyle}
                     />
                   </>
@@ -756,7 +792,7 @@ const MoreRouteContent = ({
                 >
                   <Surface
                     className="rounded-[24px] bg-surface-secondary px-4 py-3.5"
-                    style={profileThemeStyles.panelStyle}
+                    style={panelStyle.messages}
                   >
                     <PressableFeedback.Highlight />
                     <View className="flex-row items-center gap-3">
@@ -785,7 +821,7 @@ const MoreRouteContent = ({
               <DropShadowBox shadowStyle={profilePanelShadowStyle}>
                   <Surface
                     className="rounded-[24px] bg-surface-secondary overflow-hidden"
-                    style={profileThemeStyles.panelStyle}
+                    style={panelStyle.settings}
                   >
                     <Select
                       value={fontSelectValue}
@@ -915,13 +951,31 @@ const MoreRouteContent = ({
             <View className="flex-1" />
 
             <View className="mt-6">
-              <AuthActionButton
-                label={t('moreSignOut')}
-                loadingLabel={t('moreSigningOut')}
-                variant="danger"
-                onPress={handleSignOut}
-                isLoading={isSigningOut}
-              />
+              <DropShadowBox>
+                <Surface className="rounded-[24px] bg-surface-secondary px-4 py-3.5">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-[15px] font-semibold text-foreground">
+                      {t('moreFollowProfile')}
+                    </Text>
+                    <Switch
+                      isSelected={followProfileTheme}
+                      onSelectedChange={handleToggleFollowProfile}
+                    />
+                  </View>
+                  <Text className="mt-3 text-[12px] text-muted">
+                    {t('moreFollowProfileHint')}
+                  </Text>
+                </Surface>
+              </DropShadowBox>
+              <View className="mt-12">
+                <AuthActionButton
+                  label={t('moreSignOut')}
+                  loadingLabel={t('moreSigningOut')}
+                  variant="danger"
+                  onPress={handleSignOut}
+                  isLoading={isSigningOut}
+                />
+              </View>
             </View>
           </View>
         </Animated.ScrollView>
