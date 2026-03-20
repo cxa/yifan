@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -26,7 +27,7 @@ import {
   type NavigationProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { Surface, Tabs, useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, Reply, Send, Trash2 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -36,7 +37,12 @@ import ComposerModal, {
 } from '@/components/composer-modal';
 import { get, post } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
-import DropShadowBox from '@/components/drop-shadow-box';
+import DropShadowBox, {
+  CARD_BG_DARK,
+  CARD_BG_LIGHT,
+  CARD_PASTEL_CYCLE,
+  type DropShadowBoxType,
+} from '@/components/drop-shadow-box';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import { countSkeletonItemsForHeight } from '@/components/timeline-skeleton-list';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
@@ -105,41 +111,10 @@ type PrivateMessagesContentProps = {
 type MessageCardProps = {
   message: FanfouDirectMessage;
   mailbox: MailboxKind;
+  shadowType: DropShadowBoxType;
   onPressProfile: (userId: string) => void;
   onDelete?: () => void;
   onReply?: () => void;
-  stampBorderColor: string;
-};
-type MailboxHeaderTabsProps = {
-  activeMailbox: MailboxKind;
-  muted: string;
-  activeIconColor: string;
-  onPressTab: (next: MailboxKind) => void;
-};
-const MAILBOX_META: Record<
-  MailboxKind,
-  {
-    label: string;
-    emptyMessage: string;
-    addressLabel: string;
-    icon: React.ComponentType<{
-      color: string;
-      size: number;
-    }>;
-  }
-> = {
-  inbox: {
-    label: '收件箱',
-    emptyMessage: '收件箱没有消息。',
-    addressLabel: '发件人',
-    icon: Inbox,
-  },
-  outbox: {
-    label: '发件箱',
-    emptyMessage: '发件箱没有消息。',
-    addressLabel: '收件人',
-    icon: Send,
-  },
 };
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -153,7 +128,7 @@ const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const TimelineEmptyMessage = ({ message }: { message: string }) => (
   <DropShadowBox>
-    <Surface className="rounded-[24px] bg-surface dark: px-4 py-4">
+    <Surface className="rounded-[24px] bg-surface px-4 py-4">
       <Text className="text-[13px] text-muted">{message}</Text>
     </Surface>
   </DropShadowBox>
@@ -238,10 +213,14 @@ const SKELETON_TEXT_LINE_2_STYLE = {
   opacity: 0.7,
 };
 const MessageSkeletonCard = ({ shimmerIndex }: { shimmerIndex: number }) => {
+  const isDark = useColorScheme() === 'dark';
+  const skeletonBgStyle = {
+    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT).sky,
+  };
   const [border] = useThemeColor(['border']);
   return (
     <DropShadowBox containerClassName="w-full">
-      <View className="w-full overflow-hidden bg-white dark:bg-surface dark: px-4 pb-4 pt-5">
+      <View style={skeletonBgStyle} className="w-full overflow-hidden rounded-[24px] px-4 pb-4 pt-5">
         <View className="flex-row gap-3">
           <PostageStamp initial="" borderColor={border} />
           <View className="flex-1">
@@ -278,67 +257,16 @@ const MessageSkeletonCard = ({ shimmerIndex }: { shimmerIndex: number }) => {
     </DropShadowBox>
   );
 };
-const MailboxHeaderTabs = ({
-  activeMailbox,
-  muted,
-  activeIconColor,
-  onPressTab,
-}: MailboxHeaderTabsProps) => {
-  const { t } = useTranslation();
-  const tabItems: MailboxKind[] = ['inbox', 'outbox'];
-  return (
-    <View className="flex-row gap-4">
-      {tabItems.map(key => {
-        const meta = MAILBOX_META[key];
-        const Icon = meta.icon;
-        const isActive = activeMailbox === key;
-        return (
-          <View key={key} className="min-w-[96px]">
-            <DropShadowBox shadowOffsetClassName="-translate-x-0.5 translate-y-0.5">
-              <Pressable
-                onPress={() => onPressTab(key)}
-                className={`w-full border  dark: px-2 py-1 ${isActive
-                    ? 'bg-accent'
-                    : 'bg-surface active:translate-x-[-3px] active:translate-y-[3px]'
-                  }`}
-                accessibilityRole="button"
-                accessibilityState={
-                  isActive
-                    ? {
-                      selected: true,
-                    }
-                    : undefined
-                }
-                accessibilityLabel={
-                  key === 'inbox' ? t('messagesInbox') : t('messagesOutbox')
-                }
-              >
-                <View className="flex-row items-center justify-center gap-1.5">
-                  <Icon color={isActive ? activeIconColor : muted} size={12} />
-                  <Text
-                    className={`text-[11px] ${isActive ? 'text-accent-foreground' : 'text-foreground'
-                      }`}
-                  >
-                    {key === 'inbox' ? t('messagesInbox') : t('messagesOutbox')}
-                  </Text>
-                </View>
-              </Pressable>
-            </DropShadowBox>
-          </View>
-        );
-      })}
-    </View>
-  );
-};
 const MessageCard = ({
   message,
   mailbox,
+  shadowType,
   onPressProfile,
   onDelete,
   onReply,
-  stampBorderColor,
 }: MessageCardProps) => {
   const { t } = useTranslation();
+  const isDark = useColorScheme() === 'dark';
   const counterpart = mailbox === 'inbox' ? message.sender : message.recipient;
   const counterpartId =
     counterpart?.id ||
@@ -351,7 +279,10 @@ const MessageCard = ({
   const messageText = parseHtmlToText(message.text).trim();
   const initial = displayName.slice(0, 1).toUpperCase();
   const isPressable = Boolean(counterpartId);
-  const [danger, muted] = useThemeColor(['danger', 'muted']);
+  const cardBgStyle = {
+    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
+  };
+  const [danger, muted, border] = useThemeColor(['danger', 'muted', 'border']);
   const handleDelete = () => {
     if (!onDelete) {
       return;
@@ -387,8 +318,9 @@ const MessageCard = ({
           onPressProfile(counterpartId);
         }}
         disabled={!isPressable}
+        style={cardBgStyle}
         accessibilityRole={isPressable ? 'button' : undefined}
-        className={`relative w-full overflow-hidden bg-white dark:bg-surface   dark: px-4 pb-4 pt-5 ${isPressable
+        className={`relative w-full overflow-hidden rounded-[24px] px-4 pb-4 pt-5 ${isPressable
             ? 'active:translate-x-[-4px] active:translate-y-[4px]'
             : ''
           }`}
@@ -408,7 +340,7 @@ const MessageCard = ({
           <PostageStamp
             avatarUrl={avatarUrl}
             initial={initial}
-            borderColor={stampBorderColor}
+            borderColor={border}
           />
 
           <View className="relative flex-1">
@@ -474,11 +406,9 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
     NAV_HEADER_HEIGHT -
     insets.bottom -
     PAGE_BOTTOM_PADDING;
-  const [background, muted, accentForeground, border] = useThemeColor([
+  const [background, muted] = useThemeColor([
     'background',
     'muted',
-    'accent-foreground',
-    'border',
   ]);
   const queryClient = useQueryClient();
   const [activeMailbox, setActiveMailbox] = useState<MailboxKind>('inbox');
@@ -520,12 +450,31 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
   const outboxItems = data?.outbox ?? [];
   const totalMailboxCount = inboxItems.length + outboxItems.length;
   const renderHeaderTabs = () => (
-    <MailboxHeaderTabs
-      activeMailbox={activeMailbox}
-      muted={muted}
-      activeIconColor={accentForeground}
-      onPressTab={setActiveMailbox}
-    />
+    <Tabs
+      value={activeMailbox}
+      onValueChange={v => setActiveMailbox(v as MailboxKind)}
+      variant="primary"
+    >
+      <Tabs.List>
+        <Tabs.Indicator />
+        <Tabs.Trigger value="inbox">
+          {({ isSelected }) => (
+            <>
+              <Inbox size={12} color={isSelected ? undefined : muted} />
+              <Tabs.Label>{t('messagesInbox')}</Tabs.Label>
+            </>
+          )}
+        </Tabs.Trigger>
+        <Tabs.Trigger value="outbox">
+          {({ isSelected }) => (
+            <>
+              <Send size={12} color={isSelected ? undefined : muted} />
+              <Tabs.Label>{t('messagesOutbox')}</Tabs.Label>
+            </>
+          )}
+        </Tabs.Trigger>
+      </Tabs.List>
+    </Tabs>
   );
   useLayoutEffect(() => {
     if (!parentNavigation) {
@@ -639,13 +588,14 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           className="flex-1 bg-background"
           data={mailboxItems}
           keyExtractor={item => `${mailbox}-${item.id}`}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const sender = item.sender;
             const senderId = sender?.id || item.sender_id;
             return (
               <MessageCard
                 message={item}
                 mailbox={mailbox}
+                shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 onPressProfile={handleOpenProfile}
                 onDelete={() => handleDeleteMessage(item.id)}
                 onReply={
@@ -658,7 +608,6 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
                       })
                     : undefined
                 }
-                stampBorderColor={border}
               />
             );
           }}

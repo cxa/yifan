@@ -5,7 +5,7 @@ import { Dialog, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import type { FanfouStatus } from '@/types/fanfou';
 import { Text } from '@/components/app-text';
-import type { DropShadowBoxType } from '@/components/drop-shadow-box';
+import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
 import { useAppFontFamily } from '@/settings/app-font-preference';
 import { formatTimestamp } from '@/utils/format-timestamp';
@@ -76,23 +76,6 @@ const FOREGROUND_DARK  = '#F2EDE8';
 const MUTED_LIGHT      = '#7C7268';
 const MUTED_DARK       = '#9C9288';
 
-// Pastel card background colors — directly matching the reference design system
-const CARD_BG_LIGHT: Record<DropShadowBoxType, string> = {
-  default: '#F7EFE0', // warm cream fallback
-  accent:  '#FDDBD5', // soft pink/peach
-  warning: '#FDF3C8', // warm yellow
-  danger:  '#E8D5F5', // soft lavender
-  sky:     '#D0E8F5', // sky blue
-  success: '#C8EDE8', // mint
-};
-const CARD_BG_DARK: Record<DropShadowBoxType, string> = {
-  default: '#2A2520',
-  accent:  '#3D2820',
-  warning: '#352E18',
-  danger:  '#2D1E38',
-  sky:     '#1A2E3D',
-  success: '#1A3530',
-};
 const TAG_PILL_CLASS = 'bg-accent/15 text-accent px-2 py-0.5 rounded-full';
 const ACTIVE_TAG_PILL_CLASS =
   'bg-accent text-accent-foreground px-2 py-0.5 rounded-full';

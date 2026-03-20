@@ -19,6 +19,26 @@ export const CARD_PASTEL_CYCLE: DropShadowBoxType[] = [
   'success',  // #C8EDE8 mint
 ];
 
+/** Light-mode pastel card background colors indexed by shadow type */
+export const CARD_BG_LIGHT: Record<DropShadowBoxType, string> = {
+  default: '#F7EFE0',
+  accent:  '#FDDBD5',
+  warning: '#FDF3C8',
+  danger:  '#E8D5F5',
+  sky:     '#D0E8F5',
+  success: '#C8EDE8',
+};
+
+/** Dark-mode card background colors indexed by shadow type */
+export const CARD_BG_DARK: Record<DropShadowBoxType, string> = {
+  default: '#2A2520',
+  accent:  '#3D2820',
+  warning: '#352E18',
+  danger:  '#2D1E38',
+  sky:     '#1A2E3D',
+  success: '#1A3530',
+};
+
 type DropShadowBoxProps = {
   children: React.ReactNode;
   type?: DropShadowBoxType;
