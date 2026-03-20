@@ -31,7 +31,7 @@ import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
 import AuthActionButton from '@/components/auth-action-button';
 import { Text } from '@/components/app-text';
-import DropShadowBox, { CARD_BG_DARK, CARD_BG_LIGHT, CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
+import { CARD_BG_DARK, CARD_BG_LIGHT, CARD_PASTEL_CYCLE } from '@/components/drop-shadow-box';
 import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import ProfileStatRow from '@/components/profile-stat-row';
 import ProfileSummaryCard from '@/components/profile-summary-card';
@@ -89,12 +89,11 @@ import {
   createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
-  resolveProfilePanelShadowStyle,
   resolveProfileThemePalette,
 } from '@/utils/profile-theme';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
-const SECTION_GAP = 24;
+const SECTION_GAP = 20;
 const AVATAR_SIZE = 80;
 const IOS_TOP_CONTENT_OFFSET = 0.1;
 const IOS_TOP_CONTENT_EQUAL_STATUS_BAR_PADDING = 4;
@@ -226,7 +225,7 @@ const PostageStampIcon = ({ color, size }: { color: string; size: number }) => {
     </Svg>
   );
 };
-const PROFILE_GROUP_GAP = 12;
+const PROFILE_GROUP_GAP = SECTION_GAP;
 const HEADER_TITLE_REVEAL_RATIO = 0.25;
 const SYSTEM_FONT_FAMILY = Platform.select({
   ios: 'ui-rounded',
@@ -378,8 +377,6 @@ const MoreRouteContent = ({
     showHeaderTitle,
   });
   const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
-  const profilePanelShadowStyle =
-    resolveProfilePanelShadowStyle(profileThemePalette);
   const panelStyle = {
     profile:  colorfulSectionStyles?.profile  ?? profileThemeStyles.panelStyle,
     stats:    colorfulSectionStyles?.stats    ?? profileThemeStyles.panelStyle,
@@ -679,8 +676,7 @@ const MoreRouteContent = ({
             <View style={{ gap: SECTION_GAP }}>
               {/* Profile block: summary card + stat rows */}
               <View style={{ gap: PROFILE_GROUP_GAP }}>
-                <DropShadowBox shadowStyle={profilePanelShadowStyle}>
-                  {showLoadingState ? (
+                {showLoadingState ? (
                     <Surface
                       className="rounded-[24px] bg-surface-secondary px-5 py-6"
                       style={panelStyle.profile}
@@ -744,21 +740,18 @@ const MoreRouteContent = ({
                       }
                     />
                   )}
-                </DropShadowBox>
 
                 {user ? (
                   <>
                     <ProfileStatRow
                       stats={profileStatsPrimary}
                       panelStyle={panelStyle.stats}
-                      shadowStyle={profilePanelShadowStyle}
                       valueTextStyle={profileThemeStyles.primaryTextStyle}
                       labelTextStyle={profileThemeStyles.primaryTextStyle}
                     />
                     <ProfileStatRow
                       stats={profileStatsSecondary}
                       panelStyle={panelStyle.stats}
-                      shadowStyle={profilePanelShadowStyle}
                       valueTextStyle={profileThemeStyles.primaryTextStyle}
                       labelTextStyle={profileThemeStyles.primaryTextStyle}
                     />
@@ -770,59 +763,54 @@ const MoreRouteContent = ({
                       skeleton
                       itemCount={3}
                       panelStyle={panelStyle.stats}
-                      shadowStyle={profilePanelShadowStyle}
                     />
                     <ProfileStatRow
                       stats={[]}
                       skeleton
                       itemCount={2}
                       panelStyle={panelStyle.stats}
-                      shadowStyle={profilePanelShadowStyle}
                     />
                   </>
                 ) : null}
               </View>
 
               {/* Messages */}
-              <DropShadowBox shadowStyle={profilePanelShadowStyle}>
-                <PressableFeedback
-                  onPress={handleOpenPrivateMessages}
-                  accessibilityRole="button"
-                  className="rounded-[24px] overflow-hidden"
+              <PressableFeedback
+                onPress={handleOpenPrivateMessages}
+                accessibilityRole="button"
+                className="rounded-[24px] overflow-hidden"
+              >
+                <Surface
+                  className="rounded-[24px] bg-surface-secondary px-4 py-3.5"
+                  style={panelStyle.messages}
                 >
-                  <Surface
-                    className="rounded-[24px] bg-surface-secondary px-4 py-3.5"
-                    style={panelStyle.messages}
-                  >
-                    <PressableFeedback.Highlight />
-                    <View className="flex-row items-center gap-3">
-                      <PostageStampIcon color={entryIconColor} size={28} />
-                      <View className="flex-1">
-                        <Text
-                          className="text-[15px] font-semibold text-foreground"
-                          style={profileThemeStyles.primaryTextStyle}
-                        >
-                          {t('morePrivateMessages')}
-                        </Text>
-                        <Text
-                          className="mt-0.5 text-[12px] text-muted"
-                          style={profileThemeStyles.mutedTextStyle}
-                        >
-                          {t('morePrivateMessagesHelper')}
-                        </Text>
-                      </View>
-                      <ChevronRight size={16} color={entryIconColor} />
+                  <PressableFeedback.Highlight />
+                  <View className="flex-row items-center gap-3">
+                    <PostageStampIcon color={entryIconColor} size={28} />
+                    <View className="flex-1">
+                      <Text
+                        className="text-[15px] font-semibold text-foreground"
+                        style={profileThemeStyles.primaryTextStyle}
+                      >
+                        {t('morePrivateMessages')}
+                      </Text>
+                      <Text
+                        className="mt-0.5 text-[12px] text-muted"
+                        style={profileThemeStyles.mutedTextStyle}
+                      >
+                        {t('morePrivateMessagesHelper')}
+                      </Text>
                     </View>
-                  </Surface>
-                </PressableFeedback>
-              </DropShadowBox>
+                    <ChevronRight size={16} color={entryIconColor} />
+                  </View>
+                </Surface>
+              </PressableFeedback>
 
               {/* Settings */}
-              <DropShadowBox shadowStyle={profilePanelShadowStyle}>
-                  <Surface
-                    className="rounded-[24px] bg-surface-secondary overflow-hidden"
-                    style={panelStyle.settings}
-                  >
+              <Surface
+                className="rounded-[24px] bg-surface-secondary overflow-hidden"
+                style={panelStyle.settings}
+              >
                     <Select
                       value={fontSelectValue}
                       onValueChange={opt =>
@@ -944,15 +932,13 @@ const MoreRouteContent = ({
                         </Select.Content>
                       </Select.Portal>
                     </Select>
-                  </Surface>
-                </DropShadowBox>
+              </Surface>
             </View>
 
             <View className="flex-1" />
 
             <View className="mt-6">
-              <DropShadowBox>
-                <Surface className="rounded-[24px] bg-surface-secondary px-4 py-3.5">
+              <Surface className="rounded-[24px] bg-surface-secondary px-4 py-3.5">
                   <View className="flex-row items-center justify-between">
                     <Text className="text-[15px] font-semibold text-foreground">
                       {t('moreFollowProfile')}
@@ -965,9 +951,8 @@ const MoreRouteContent = ({
                   <Text className="mt-3 text-[12px] text-muted">
                     {t('moreFollowProfileHint')}
                   </Text>
-                </Surface>
-              </DropShadowBox>
-              <View className="mt-12">
+              </Surface>
+              <View className="mt-8">
                 <AuthActionButton
                   label={t('moreSignOut')}
                   loadingLabel={t('moreSigningOut')}
@@ -1030,15 +1015,13 @@ const MissingUserIdPlaceholder = () => {
         }}
         contentContainerStyle={contentContainerStyle}
       >
-        <DropShadowBox>
-          <Surface className="rounded-[24px] bg-surface-secondary px-5 py-6">
-            <View className="rounded-sm border bg-danger-soft px-3 py-2">
-              <Text className="text-[12px] text-danger">
-                {t('moreAccountLoadFailedNoId')}
-              </Text>
-            </View>
-          </Surface>
-        </DropShadowBox>
+        <Surface className="rounded-[24px] bg-surface-secondary px-5 py-6">
+          <View className="rounded-sm border bg-danger-soft px-3 py-2">
+            <Text className="text-[12px] text-danger">
+              {t('moreAccountLoadFailedNoId')}
+            </Text>
+          </View>
+        </Surface>
       </Animated.ScrollView>
     </NativeEdgeScrollShadow>
   );
