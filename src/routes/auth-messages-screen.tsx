@@ -257,7 +257,7 @@ const MessageSkeletonCard = ({
                 style={SKELETON_TEXT_LINE_2_STYLE}
                 isActive={shimmerIndex === 2}
               />
-              <View className="mt-1 border-t border-dashed" />
+              <View className="mt-1 border-t border-dashed" style={{ borderColor: isDark ? muted : border }} />
               <ShimmerBar
                 className="h-2.5 w-16 bg-surface-secondary"
                 isActive={false}
