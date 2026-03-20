@@ -4,7 +4,7 @@ import {
   getContentBottomPadding,
   getScrollIndicatorBottomInset,
 } from '@/navigation/tab-bar-layout';
-export const TIMELINE_SPACING = 24;
+export const TIMELINE_SPACING = 16;
 export const TIMELINE_HORIZONTAL_PADDING = 24;
 export const TIMELINE_TOP_CONTENT_GAP = 16;
 export const TIMELINE_INITIAL_PAGE_SIZE = 60;

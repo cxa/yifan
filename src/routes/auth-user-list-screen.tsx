@@ -4,6 +4,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -31,7 +32,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
-import DropShadowBox from '@/components/drop-shadow-box';
+import DropShadowBox, {
+  CARD_BG_DARK,
+  CARD_BG_LIGHT,
+  CARD_PASTEL_CYCLE,
+} from '@/components/drop-shadow-box';
 import { countSkeletonItemsForHeight } from '@/components/timeline-skeleton-list';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import { AUTH_PROFILE_ROUTE, AUTH_STACK_ROUTE } from '@/navigation/route-names';
@@ -43,10 +48,10 @@ const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const AVATAR_SIZE = 44;
 const USERS_PAGE_SIZE = 60;
-const USER_SKELETON_ITEM_HEIGHT = 86; // avatar(44) + py-4×2(32) + border(4) + shadow(6)
-const USER_SKELETON_GAP = 24; // gap-6
+const USER_SKELETON_ITEM_HEIGHT = 76; // avatar(44) + py-4×2(32)
+const USER_SKELETON_GAP = 16; // gap-4
 const USER_SKELETON_FALLBACK_COUNT = 8;
-const UserItemSeparator = () => <View className="h-6" />;
+const UserItemSeparator = () => <View className="h-4" />;
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const getUsersByMode = (
@@ -75,6 +80,7 @@ const UserListRoute = () => {
   const { height: windowHeight } = useWindowDimensions();
   const skeletonAvailableHeight =
     windowHeight - insets.top - PAGE_BOTTOM_PADDING - insets.bottom;
+  const isDark = useColorScheme() === 'dark';
   const [background] = useThemeColor(['background']);
   const { t } = useTranslation();
   const screenTitle =
@@ -175,19 +181,27 @@ const UserListRoute = () => {
               </View>
             ) : null
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const displayName = item.screen_name || item.name || item.id;
             const handle = `@${item.id}`;
             const avatarUrl =
               item.profile_image_url_large || item.profile_image_url;
             const description = parseHtmlToText(item.description).trim();
             const initial = displayName.slice(0, 1).toUpperCase();
+            const shadowType =
+              CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length];
+            const cardBgStyle = {
+              backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
+                shadowType
+              ],
+            };
             return (
               <DropShadowBox>
                 <Pressable
                   onPress={() => handleOpenProfile(item.id)}
+                  style={cardBgStyle}
                   accessibilityRole="button"
-                  className="flex-row gap-3 bg-surface px-4 py-4 dark: active:translate-x-[-4px] active:translate-y-[4px]"
+                  className="flex-row gap-3 overflow-hidden rounded-[24px] px-4 py-4 active:translate-x-[-4px] active:translate-y-[4px]"
                 >
                   {avatarUrl ? (
                     <Image
@@ -236,7 +250,7 @@ const UserListRoute = () => {
           }}
           ListEmptyComponent={
             isPending ? (
-              <View className="gap-6">
+              <View className="gap-4">
                 {Array.from({
                   length: countSkeletonItemsForHeight(
                     skeletonAvailableHeight,
@@ -245,12 +259,12 @@ const UserListRoute = () => {
                     USER_SKELETON_FALLBACK_COUNT,
                   ),
                 }).map((_, i) => (
-                  <UserSkeletonCard key={i} />
+                  <UserSkeletonCard key={i} colorIndex={i} />
                 ))}
               </View>
             ) : (
               <DropShadowBox>
-                <Surface className="rounded-[24px] bg-surface px-4 py-4 dark:">
+                <Surface className="rounded-[24px] bg-surface-secondary px-4 py-4">
                   <Text className="text-[13px] text-muted">
                     {mode === 'following'
                       ? t(isSelf ? 'followingEmpty' : 'followingEmptyOther')

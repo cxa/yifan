@@ -208,19 +208,6 @@ const TimelineStatusCard = ({
         className="rounded-[24px] px-5 py-4 active:opacity-75"
         style={{ backgroundColor: cardBgColor }}
       >
-        {canDelete && onDelete ? (
-          <Pressable
-            onPress={event => {
-              event.stopPropagation();
-              handleDeletePress();
-            }}
-            className="absolute right-4 top-3 z-10 p-1"
-            accessibilityRole="button"
-            accessibilityLabel={t('statusDeleteTitle')}
-          >
-            <Trash2 size={16} color={danger} />
-          </Pressable>
-        ) : null}
         <View className={showAvatar ? 'flex-row gap-3' : undefined}>
           {showAvatar ? (
             <Pressable
@@ -435,6 +422,19 @@ const TimelineStatusCard = ({
                     inactiveColor={effectiveMuted}
                   />
                 </Pressable>
+                {canDelete && onDelete ? (
+                  <Pressable
+                    onPress={event => {
+                      event.stopPropagation();
+                      handleDeletePress();
+                    }}
+                    className="p-1"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('statusDeleteTitle')}
+                  >
+                    <Trash2 size={16} color={danger} />
+                  </Pressable>
+                ) : null}
               </View>
               <View className="ml-3 flex-1 min-w-0 items-end">
                 <View className="flex-row items-center gap-1">
