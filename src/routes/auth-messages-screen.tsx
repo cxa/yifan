@@ -56,7 +56,7 @@ const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 28;
 const CARD_GAP = 16;
 const MESSAGE_SKELETON_ITEM_HEIGHT = 125; // pt-5(20)+pb-4(16)+content(79)+border(4)+shadow(6)
-const MESSAGE_SKELETON_GAP = 28; // gap-7
+const MESSAGE_SKELETON_GAP = 16; // gap-4
 const MESSAGE_SKELETON_FALLBACK_COUNT = 5;
 const NAV_HEADER_HEIGHT = 44;
 const POSTAGE_STAMP_PATH =
@@ -133,7 +133,7 @@ const TimelineEmptyMessage = ({ message }: { message: string }) => (
     </Surface>
   </DropShadowBox>
 );
-const MessageItemSeparator = () => <View className="h-7" />;
+const MessageItemSeparator = () => <View className="h-4" />;
 const PostageStamp = ({
   avatarUrl,
   initial,
@@ -212,19 +212,26 @@ const PostageStamp = ({
 const SKELETON_TEXT_LINE_2_STYLE = {
   opacity: 0.7,
 };
-const MessageSkeletonCard = ({ shimmerIndex }: { shimmerIndex: number }) => {
+const MessageSkeletonCard = ({
+  shimmerIndex,
+  colorIndex,
+}: {
+  shimmerIndex: number;
+  colorIndex: number;
+}) => {
   const isDark = useColorScheme() === 'dark';
+  const shadowType = CARD_PASTEL_CYCLE[colorIndex % CARD_PASTEL_CYCLE.length];
   const skeletonBgStyle = {
-    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT).sky,
+    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
   };
   const [border] = useThemeColor(['border']);
   return (
     <DropShadowBox containerClassName="w-full">
-      <View style={skeletonBgStyle} className="w-full overflow-hidden rounded-[24px] px-4 pb-4 pt-5">
+      <View style={skeletonBgStyle} className="w-full overflow-hidden rounded-[16px] border border-border/40 px-4 pb-4 pt-5">
         <View className="flex-row gap-3">
           <PostageStamp initial="" borderColor={border} />
           <View className="flex-1">
-            <View className="absolute bottom-0 left-0 top-0 w-px bg-danger/40" />
+            <View className="absolute bottom-0 left-0 top-0 w-0.5 bg-danger/50" />
             <View className="pl-3 gap-2">
               <View className="flex-row items-baseline gap-1">
                 <ShimmerBar
@@ -320,7 +327,7 @@ const MessageCard = ({
         disabled={!isPressable}
         style={cardBgStyle}
         accessibilityRole={isPressable ? 'button' : undefined}
-        className={`relative w-full overflow-hidden rounded-[24px] px-4 pb-4 pt-5 ${isPressable
+        className={`relative w-full overflow-hidden rounded-[16px] border border-border/40 px-4 pb-4 pt-5 ${isPressable
             ? 'active:translate-x-[-4px] active:translate-y-[4px]'
             : ''
           }`}
@@ -344,7 +351,7 @@ const MessageCard = ({
           />
 
           <View className="relative flex-1">
-            <View className="absolute bottom-0 left-0 top-0 w-px bg-danger/40" />
+            <View className="absolute bottom-0 left-0 top-0 w-0.5 bg-danger/50" />
 
             <View className="pl-3">
               <View className="min-w-0 flex-row items-baseline gap-1">
@@ -637,7 +644,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           ItemSeparatorComponent={MessageItemSeparator}
           ListEmptyComponent={
             isLoading ? (
-              <View className="gap-7">
+              <View className="gap-4">
                 {Array.from({
                   length: countSkeletonItemsForHeight(
                     skeletonAvailableHeight,
@@ -646,7 +653,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
                     MESSAGE_SKELETON_FALLBACK_COUNT,
                   ),
                 }).map((_, i) => (
-                  <MessageSkeletonCard key={i} shimmerIndex={i % 3} />
+                  <MessageSkeletonCard key={i} shimmerIndex={i % 3} colorIndex={i} />
                 ))}
               </View>
             ) : (
