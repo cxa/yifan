@@ -16,9 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
 import { post } from '@/auth/fanfou-client';
 import { Text, TextInput } from '@/components/app-text';
-import DropShadowBox, {
-  getDropShadowBorderClass,
-} from '@/components/drop-shadow-box';
+import DropShadowBox from '@/components/drop-shadow-box';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import type { AuthStackParamList } from '@/navigation/types';
 import {
@@ -99,7 +97,7 @@ const EditProfileRoute = () => {
     >
       {!isInitialized && isLoading ? (
         <DropShadowBox>
-          <Surface className="rounded-[24px] bg-surface dark: px-5 py-6">
+          <Surface className="rounded-[24px] bg-surface-secondary px-5 py-6">
             <View className="flex-row items-center gap-3">
               <NeobrutalActivityIndicator size="small" />
               <Text className="text-[14px] text-foreground">
@@ -112,11 +110,7 @@ const EditProfileRoute = () => {
 
       {!user && !isLoading ? (
         <DropShadowBox type="danger" containerClassName="pb-2">
-          <Surface
-            className={`bg-surface  ${getDropShadowBorderClass(
-              'danger',
-            )} px-4 py-3`}
-          >
+          <Surface className="rounded-[24px] bg-danger-soft px-4 py-3">
             <Text className="text-[13px] text-danger">
               {errorMessage ?? t('editProfileLoadFailed')}
             </Text>
@@ -125,7 +119,7 @@ const EditProfileRoute = () => {
                 onPress={() => {
                   refetch().catch(() => undefined);
                 }}
-                className="self-start border bg-danger-soft px-3 py-2"
+                className="self-start rounded-[12px] border bg-danger-soft px-3 py-2"
                 accessibilityRole="button"
                 accessibilityLabel={t('editProfileRetry')}
               >
@@ -141,7 +135,7 @@ const EditProfileRoute = () => {
       {user ? (
         <>
           <DropShadowBox>
-            <Surface className="rounded-[24px] bg-surface dark: px-5 py-6">
+            <Surface className="rounded-[24px] bg-surface-secondary px-5 py-6">
               <View
                 style={{
                   gap: FORM_FIELD_GAP,
@@ -217,7 +211,7 @@ const EditProfileRoute = () => {
             <Pressable
               onPress={handleSave}
               disabled={isSaving}
-              className={`w-full h-14 items-center justify-center   dark: bg-accent ${isSaving
+              className={`w-full h-14 items-center justify-center bg-accent ${isSaving
                   ? 'opacity-70'
                   : 'active:translate-x-[-3px] active:translate-y-[3px]'
                 }`}
@@ -309,7 +303,7 @@ const EditProfileRoute = () => {
     );
   }
   return (
-    <NativeEdgeScrollShadow className="flex-1 bg-background" color={background}>
+    <NativeEdgeScrollShadow className="flex-1 bg-background" color={background} hasTabBar={false}>
       {Platform.OS === 'ios' ? (
         <KeyboardAvoidingView className="flex-1" behavior="padding">
           {formScrollView}

@@ -598,7 +598,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
     listRef: React.RefObject<FlatList<FanfouDirectMessage> | null>,
   ) => (
     <>
-      <NativeEdgeScrollShadow className="flex-1" color={background}>
+      <NativeEdgeScrollShadow className="flex-1" color={background} hasTabBar={false}>
         <Animated.FlatList
           ref={listRef}
           className="flex-1 bg-background"

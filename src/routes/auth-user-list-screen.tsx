@@ -150,7 +150,7 @@ const UserListRoute = () => {
   );
   return (
     <>
-      <NativeEdgeScrollShadow className="flex-1" color={background}>
+      <NativeEdgeScrollShadow className="flex-1" color={background} hasTabBar={false}>
         <Animated.FlatList
           className="flex-1 bg-background"
           data={items}
