@@ -702,7 +702,6 @@ const AuthHomeRoute = () => {
         title={composerTitle}
         placeholder={composerPlaceholder}
         submitLabel={composerSubmitLabel}
-        topInset={insets.top}
         initialText={composerInitialText}
         resetKey={composerResetKey}
         enablePhoto={composeMode === 'reply'}

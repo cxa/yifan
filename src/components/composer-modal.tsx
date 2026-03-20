@@ -7,9 +7,11 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import { Text, TextInput } from '@/components/app-text';
@@ -17,16 +19,17 @@ import {
   pickImageFromLibrary,
   type PickedImage,
 } from '@/utils/pick-image-from-library';
+
 export type ComposerModalSubmitPayload = {
   text: string;
   photo: PickedImage | null;
 };
+
 type ComposerModalProps = {
   visible: boolean;
   title: string;
   placeholder: string;
   submitLabel: string;
-  topInset: number;
   initialText?: string;
   resetKey?: string | null;
   enablePhoto?: boolean;
@@ -34,12 +37,12 @@ type ComposerModalProps = {
   onCancel: () => void;
   onSubmit: (payload: ComposerModalSubmitPayload) => Promise<void> | void;
 };
+
 const ComposerModal = ({
   visible,
   title,
   placeholder,
   submitLabel,
-  topInset,
   initialText = '',
   resetKey = null,
   enablePhoto = false,
@@ -48,10 +51,12 @@ const ComposerModal = ({
   onSubmit,
 }: ComposerModalProps) => {
   const { t } = useTranslation();
-  const [placeholderColor, foreground, danger] = useThemeColor([
+  const insets = useSafeAreaInsets();
+  const [placeholderColor, foreground, muted, border] = useThemeColor([
     'muted',
     'foreground',
-    'danger',
+    'muted',
+    'border',
   ]);
   const [value, setValue] = useState(initialText);
   const [photo, setPhoto] = useState<PickedImage | null>(null);
@@ -59,10 +64,8 @@ const ComposerModal = ({
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
   const isSubmitting = controlledIsSubmitting ?? internalIsSubmitting;
   const canDismiss = !isSubmitting && !isPhotoPicking;
-  const containerStyle = {
-    marginTop: Math.max(topInset + 10, 24),
-  };
   const photoUri = photo?.uri ?? null;
+
   useEffect(() => {
     if (!visible) {
       return;
@@ -72,6 +75,7 @@ const ComposerModal = ({
     setIsPhotoPicking(false);
     setInternalIsSubmitting(false);
   }, [initialText, resetKey, visible]);
+
   const handlePickPhoto = async () => {
     if (!enablePhoto || !canDismiss) {
       return;
@@ -92,68 +96,78 @@ const ComposerModal = ({
       setIsPhotoPicking(false);
     }
   };
+
   const handleRemovePhoto = () => {
     if (!canDismiss) {
       return;
     }
     setPhoto(null);
   };
+
   const handleSubmit = async () => {
     if (isSubmitting || isPhotoPicking) {
       return;
     }
     if (controlledIsSubmitting !== undefined) {
-      await onSubmit({
-        text: value,
-        photo,
-      });
+      await onSubmit({ text: value, photo });
       return;
     }
     setInternalIsSubmitting(true);
     try {
-      await onSubmit({
-        text: value,
-        photo,
-      });
+      await onSubmit({ text: value, photo });
     } finally {
       setInternalIsSubmitting(false);
     }
   };
+
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="fade"
+      animationType="slide"
       statusBarTranslucent
-      onRequestClose={() => undefined}
+      onRequestClose={() => canDismiss && onCancel()}
     >
-      <Pressable className="flex-1 bg-foreground/45 dark:bg-background/85 px-[18px] pb-6">
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"
         >
-          <Pressable
-            onPress={event => event.stopPropagation()}
-            className="relative rounded-[24px] bg-surface p-[14px] gap-[10px]"
-            style={containerStyle}
-          >
+          {/* Header */}
+          <View className="flex-row items-center gap-2 px-4 py-3">
             <Pressable
               onPress={canDismiss ? onCancel : undefined}
-              className="absolute right-[2px] top-[2px] z-10 h-9 w-9 items-center justify-center"
+              className="items-center justify-center rounded-full p-1"
               hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel={t('composerCancel')}
             >
-              <X size={18} color={danger} />
+              <X size={20} color={muted} />
             </Pressable>
-            <View className="flex-row items-center gap-3 pr-10">
-              <Text
-                className="flex-1 text-[22px] leading-[28px] font-semibold text-foreground"
-                dynamicTypeRamp="title2"
-              >
-                {title}
+            <Text
+              className="flex-1 text-center text-[16px] font-semibold text-foreground"
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            <Pressable
+              onPress={!isSubmitting ? handleSubmit : undefined}
+              className={`items-center rounded-[24px] bg-accent px-5 py-2 ${isSubmitting ? 'opacity-70' : ''}`}
+              accessibilityRole="button"
+              accessibilityLabel={submitLabel}
+            >
+              <Text className="text-[14px] font-semibold text-accent-foreground">
+                {isSubmitting ? t('composerSending') : submitLabel}
               </Text>
-            </View>
+            </Pressable>
+          </View>
+
+          {/* Content area */}
+          <ScrollView
+            className="flex-1 px-4"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            contentContainerStyle={styles.scrollContent}
+          >
             <TextInput
               value={value}
               onChangeText={setValue}
@@ -162,84 +176,69 @@ const ComposerModal = ({
               multiline
               textAlignVertical="top"
               autoFocus
-              className="min-h-[120px] max-h-[260px] rounded-[16px] bg-surface-secondary px-3 py-3 text-[15px] text-foreground"
-              style={
-                Platform.OS === 'android' ? styles.textInputAndroid : undefined
-              }
+              className="min-h-[160px] py-2 text-[17px] leading-relaxed text-foreground"
+              style={Platform.OS === 'android' ? styles.textInputAndroid : undefined}
               editable={!isSubmitting}
+              scrollEnabled={false}
             />
-
             {photoUri ? (
-              <View className="overflow-hidden rounded-[16px] bg-surface-secondary">
+              <View className="mb-4 overflow-hidden rounded-[16px]">
                 <Image
-                  source={{
-                    uri: photoUri,
-                  }}
-                  className="h-[180px] w-full bg-surface-secondary"
+                  source={{ uri: photoUri }}
+                  className="h-[260px] w-full bg-surface-secondary"
                   resizeMode="cover"
                 />
               </View>
             ) : null}
+          </ScrollView>
 
-            <View className="flex-row flex-wrap items-center justify-between gap-2">
-              <View className="flex-row gap-2">
-                {enablePhoto ? (
-                  <Pressable
-                    onPress={
-                      canDismiss && !isPhotoPicking
-                        ? handlePickPhoto
-                        : undefined
-                    }
-                    className={`w-12 items-center justify-center rounded-[16px] bg-surface-secondary py-2 ${isPhotoPicking ? 'opacity-60' : ''
-                      }`}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      photoUri
-                        ? t('composerChangePhoto')
-                        : t('composerAttachPhoto')
-                    }
-                  >
-                    <ImagePlus size={18} color={foreground} />
-                  </Pressable>
-                ) : null}
-
-                {photoUri ? (
-                  <Pressable
-                    onPress={canDismiss ? handleRemovePhoto : undefined}
-                    className="rounded-[16px] bg-surface-secondary px-4 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('composerRemovePhotoA11y')}
-                  >
-                    <Text className="text-[13px] text-foreground">
-                      {t('composerRemovePhoto')}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-
-              <View className="flex-row gap-2">
+          {/* Bottom toolbar */}
+          {enablePhoto ? (
+            <View
+              className="flex-row items-center gap-2 px-4 py-3"
+              style={[
+                styles.toolbar,
+                { borderTopColor: border, paddingBottom: Math.max(insets.bottom, 12) },
+              ]}
+            >
+              <Pressable
+                onPress={canDismiss && !isPhotoPicking ? handlePickPhoto : undefined}
+                className={`h-10 w-10 items-center justify-center rounded-full bg-surface-secondary ${isPhotoPicking ? 'opacity-60' : ''}`}
+                accessibilityRole="button"
+                accessibilityLabel={photoUri ? t('composerChangePhoto') : t('composerAttachPhoto')}
+              >
+                <ImagePlus size={20} color={foreground} />
+              </Pressable>
+              {photoUri ? (
                 <Pressable
-                  onPress={!isSubmitting ? handleSubmit : undefined}
-                  className="min-w-[120px] items-center justify-center rounded-[24px] bg-accent px-5 py-3"
+                  onPress={canDismiss ? handleRemovePhoto : undefined}
+                  className="rounded-[24px] bg-surface-secondary px-4 py-2"
                   accessibilityRole="button"
-                  accessibilityLabel={submitLabel}
+                  accessibilityLabel={t('composerRemovePhotoA11y')}
                 >
-                  <Text className="text-[13px] font-semibold text-accent-foreground">
-                    {isSubmitting ? t('composerSending') : submitLabel}
+                  <Text className="text-[13px] text-foreground">
+                    {t('composerRemovePhoto')}
                   </Text>
                 </Pressable>
-              </View>
+              ) : null}
             </View>
-          </Pressable>
+          ) : null}
         </KeyboardAvoidingView>
-      </Pressable>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 16,
+  },
   textInputAndroid: {
     includeFontPadding: false,
+  },
+  toolbar: {
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });
 

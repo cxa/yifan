@@ -279,7 +279,6 @@ const MoreStackRoute = () => {
 const AuthIndexRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
-  const insets = useSafeAreaInsets();
   const [backgroundColor] = useThemeColor(['background']);
   const [composeVisible, setComposeVisible] = useState(false);
   const statusUpdateMutation = useStatusUpdateMutation();
@@ -355,7 +354,6 @@ const AuthIndexRoute = () => {
         title={t('composerWritePost')}
         placeholder={t('composerWhatsNew')}
         submitLabel={t('composerSubmitPost')}
-        topInset={insets.top}
         enablePhoto
         resetKey="root-compose"
         isSubmitting={statusUpdateMutation.isPending}

@@ -706,7 +706,6 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         }
         placeholder={t('messageReplyPlaceholder')}
         submitLabel={t('messageSend')}
-        topInset={insets.top}
         resetKey={replyTarget ? `dm-reply:${replyTarget.userId}` : ''}
         isSubmitting={directMessageMutation.isPending}
         onCancel={() => setReplyTarget(null)}
