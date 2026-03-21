@@ -13,6 +13,22 @@
       ],
       "filename" : "launch_content_dark.svg",
       "idiom" : "universal"
+    },
+    {
+      "filename" : "launch_content_en_light.svg",
+      "idiom" : "universal",
+      "locale" : "en"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "launch_content_en_dark.svg",
+      "idiom" : "universal",
+      "locale" : "en"
     }
   ],
   "info" : {

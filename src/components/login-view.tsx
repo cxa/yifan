@@ -22,12 +22,16 @@ import {
   LAUNCH_CONTENT_VIEWPORT,
   LAUNCH_FAN_PATH,
   LAUNCH_POEM_PATH,
+  LAUNCH_POEM_EN_PATH,
 } from '@/components/launch-content-paths';
 
 const CALLBACK_URL = 'gohan://authorize_callback';
 
 const LoginView = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const poemPath = i18n.resolvedLanguage?.startsWith('zh')
+    ? LAUNCH_POEM_PATH
+    : LAUNCH_POEM_EN_PATH;
   const navigation = useNavigation<NavigationProp<LoginStackParamList>>();
   const rootNavigation =
     navigation.getParent<NavigationProp<RootStackParamList>>();
@@ -114,7 +118,7 @@ const LoginView = () => {
             viewBox={`0 0 ${LAUNCH_CONTENT_VIEWPORT.width} ${LAUNCH_CONTENT_VIEWPORT.height}`}
           >
             <Path d={LAUNCH_FAN_PATH} fill="#F47060" />
-            <Path d={LAUNCH_POEM_PATH} fill={foreground} fillOpacity={0.65} />
+            <Path d={poemPath} fill={foreground} fillOpacity={0.65} />
           </Svg>
         </View>
 
