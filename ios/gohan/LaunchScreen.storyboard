@@ -18,7 +18,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="launchContent" translatesAutoresizingMaskIntoConstraints="NO" id="img-content">
-                                <rect key="frame" x="47" y="320" width="320" height="186"/>
+                                <rect key="frame" x="47" y="275" width="320" height="186"/>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
@@ -26,8 +26,8 @@
                         <constraints>
                             <constraint firstItem="img-content" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="c-img-cx"/>
                             <constraint firstItem="img-content" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-80" id="c-img-cy"/>
-                            <constraint firstItem="img-content" firstAttribute="width" constant="320" id="c-img-w"/>
                             <constraint firstItem="img-content" firstAttribute="height" constant="186" id="c-img-h"/>
+                            <constraint firstItem="img-content" firstAttribute="width" constant="320" id="c-img-w"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -39,7 +39,7 @@
     <resources>
         <image name="launchContent" width="320" height="186"/>
         <namedColor name="launchBackground">
-            <color red="0.96100002527236938" green="0.96100002527236938" blue="0.94099998474121094" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.96100002527236938" green="0.92900002002716064" blue="0.84700000286102295" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
     </resources>
 </document>
