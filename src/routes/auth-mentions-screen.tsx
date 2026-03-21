@@ -279,11 +279,8 @@ const MentionsRoute = () => {
     setTimelineItems(queryItems);
     setHasReachedTimelineEnd(false);
   }, [queryItems]);
-  const errorMessage = error
-    ? error instanceof Error
-      ? error.message
-      : t('mentionsLoadFailed')
-    : null;
+  const errorMessage = error ? t('mentionsLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const setBookmarkPending = (statusId: string, pending: boolean) => {
     setPendingBookmarkIds(previous => {
       const next = new Set(previous);
@@ -571,6 +568,7 @@ const MentionsRoute = () => {
               titleContainerStyle={titleContainerStyle}
               titleTextStyle={titleTextStyle}
               errorMessage={errorMessage}
+              technicalError={technicalError}
             />
           }
           ListEmptyComponent={

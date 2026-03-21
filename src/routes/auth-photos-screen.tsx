@@ -17,7 +17,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -26,7 +26,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
-import { Text } from '@/components/app-text';
+import ErrorBanner from '@/components/error-banner';
 import ComposerModal from '@/components/composer-modal';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
@@ -52,8 +52,6 @@ const hasPhoto = (status: FanfouStatus) =>
   Boolean(
     status.photo?.largeurl || status.photo?.imageurl || status.photo?.thumburl,
   );
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback;
 type PhotosRouteContentProps = {
   userId: string;
   authUserId: string | null;
@@ -195,9 +193,8 @@ const PhotosRouteContent = ({
     retry: 1,
   });
   const items = (data?.pages ?? []).flatMap(pageItems => pageItems.items);
-  const errorMessage = error
-    ? getErrorMessage(error, t('photosLoadFailed'))
-    : null;
+  const errorMessage = error ? t('photosLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
   const refreshControl = (
     <RefreshControl
@@ -283,11 +280,7 @@ const PhotosRouteContent = ({
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                <Text className="text-[13px] text-danger-foreground">
-                  {errorMessage}
-                </Text>
-              </Surface>
+              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
             ) : null
           }
           ListEmptyComponent={
@@ -367,11 +360,7 @@ const PhotosRoute = () => {
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('notLoggedIn')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
   }

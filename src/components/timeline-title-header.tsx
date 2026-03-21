@@ -1,15 +1,16 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Surface } from 'heroui-native';
 import Animated from 'react-native-reanimated';
 
-import { AnimatedText, Text } from '@/components/app-text';
+import { AnimatedText } from '@/components/app-text';
+import ErrorBanner from '@/components/error-banner';
 
 type TimelineTitleHeaderProps = {
   title: string;
   titleContainerStyle?: React.ComponentProps<typeof Animated.View>['style'];
   titleTextStyle?: React.ComponentProps<typeof AnimatedText>['style'];
   errorMessage?: string | null;
+  technicalError?: string | null;
   containerClassName?: string;
 };
 
@@ -18,6 +19,7 @@ const TimelineTitleHeader = ({
   titleContainerStyle,
   titleTextStyle,
   errorMessage,
+  technicalError,
   containerClassName = 'px-1',
 }: TimelineTitleHeaderProps) => (
   <View className={containerClassName}>
@@ -33,11 +35,9 @@ const TimelineTitleHeader = ({
       </AnimatedText>
     </Animated.View>
     {errorMessage ? (
-      <Surface className="rounded-2xl mt-4 bg-danger-soft px-4 py-3">
-        <Text className="text-[13px] text-danger-foreground">
-          {errorMessage}
-        </Text>
-      </Surface>
+      <View className="mt-4">
+        <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
+      </View>
     ) : null}
   </View>
 );

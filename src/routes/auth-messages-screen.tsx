@@ -28,6 +28,7 @@ import {
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Dialog, Surface, Tabs, useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, Reply, Send, Trash2 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -496,9 +497,8 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
       });
     };
   }, [parentNavigation, renderHeaderTabs, t, totalMailboxCount]);
-  const errorMessage = error
-    ? getErrorMessage(error, t('messagesLoadFailed'))
-    : null;
+  const errorMessage = error ? t('messagesLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const contentContainerStyle = {
     paddingHorizontal: PAGE_HORIZONTAL_PADDING,
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
@@ -625,11 +625,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           refreshControl={createRefreshControl()}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                <Text className="text-[13px] text-danger-foreground">
-                  {errorMessage}
-                </Text>
-              </Surface>
+              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
             ) : null
           }
           ListHeaderComponentStyle={
@@ -744,11 +740,7 @@ const PrivateMessagesRoute = () => {
   if (!accessToken) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('notLoggedIn')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
   }

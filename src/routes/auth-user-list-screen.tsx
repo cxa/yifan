@@ -27,6 +27,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { Surface, useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -53,8 +54,6 @@ const USER_SKELETON_ITEM_HEIGHT = 76; // avatar(44) + py-4×2(32)
 const USER_SKELETON_GAP = 16; // gap-4
 const USER_SKELETON_FALLBACK_COUNT = 8;
 const UserItemSeparator = () => <View className="h-4" />;
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback;
 const getUsersByMode = (
   mode: 'following' | 'followers',
   userId: string,
@@ -123,9 +122,8 @@ const UserListRoute = () => {
     retry: 1,
   });
   const items = (data?.pages ?? []).flatMap(pageItems => pageItems);
-  const errorMessage = error
-    ? getErrorMessage(error, t('userListLoadFailed'))
-    : null;
+  const errorMessage = error ? t('userListLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const contentContainerStyle = {
     flexGrow: 1,
     paddingHorizontal: PAGE_HORIZONTAL_PADDING,
@@ -174,11 +172,7 @@ const UserListRoute = () => {
           ListHeaderComponent={
             errorMessage ? (
               <View className="mb-4">
-                <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                  <Text className="text-[13px] text-danger-foreground">
-                    {errorMessage}
-                  </Text>
-                </Surface>
+                <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
               </View>
             ) : null
           }

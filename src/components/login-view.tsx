@@ -11,6 +11,7 @@ import {
 import { setAuthAccessToken } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
 import AuthActionButton from '@/components/auth-action-button';
+import ErrorBanner from '@/components/error-banner';
 import { AUTH_STACK_ROUTE, ROOT_STACK_ROUTE } from '@/navigation/route-names';
 import type {
   LoginStackParamList,
@@ -37,13 +38,15 @@ const LoginView = () => {
     navigation.getParent<NavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [friendlyError, setFriendlyError] = useState<string | null>(null);
+  const [technicalError, setTechnicalError] = useState<string | null>(null);
   const signInAttemptIdRef = useRef(0);
 
   const handleCancelSignIn = () => {
     signInAttemptIdRef.current += 1;
     setIsSigningIn(false);
-    setErrorMessage(null);
+    setFriendlyError(null);
+    setTechnicalError(null);
   };
 
   const handleSignIn = async () => {
@@ -52,7 +55,8 @@ const LoginView = () => {
     }
     const attemptId = signInAttemptIdRef.current + 1;
     signInAttemptIdRef.current = attemptId;
-    setErrorMessage(null);
+    setFriendlyError(null);
+    setTechnicalError(null);
     setIsSigningIn(true);
     try {
       const rawAccessToken = await requestFanfouAccessToken(CALLBACK_URL);
@@ -85,8 +89,20 @@ const LoginView = () => {
       if (signInAttemptIdRef.current !== attemptId) {
         return;
       }
-      const message = error instanceof Error ? error.message : t('loginFailed');
-      setErrorMessage(message);
+      const raw = error instanceof Error ? error.message : '';
+      setTechnicalError(raw || null);
+      if (raw.includes('timed out')) {
+        setFriendlyError(t('loginErrorTimeout'));
+      } else if (raw.toLowerCase().includes('cancel')) {
+        setFriendlyError(t('loginErrorCancelled'));
+      } else if (
+        raw.toLowerCase().includes('network') ||
+        raw.toLowerCase().includes('connect')
+      ) {
+        setFriendlyError(t('loginErrorNetwork'));
+      } else {
+        setFriendlyError(t('loginFailed'));
+      }
     } finally {
       if (signInAttemptIdRef.current === attemptId) {
         setIsSigningIn(false);
@@ -123,13 +139,12 @@ const LoginView = () => {
         </View>
 
         {/* Error Message */}
-        {errorMessage ? (
+        {friendlyError ? (
           <View className="w-full max-w-[320px] pointer-events-auto mt-8">
-            <View className="rounded-2xl bg-danger-soft px-4 py-3">
-              <Text className="text-sm text-danger font-bold text-center tracking-wide">
-                ERROR: {errorMessage}
-              </Text>
-            </View>
+            <ErrorBanner
+              message={friendlyError}
+              technicalDetail={technicalError}
+            />
           </View>
         ) : null}
       </View>

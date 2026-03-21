@@ -22,7 +22,8 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -31,7 +32,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
-import { Text } from '@/components/app-text';
 import ComposerModal from '@/components/composer-modal';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
@@ -57,8 +57,6 @@ import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback;
 const FAVORITES_PAGE_SIZE = 60;
 const FavoritesRoute = () => {
   const { t } = useTranslation();
@@ -176,9 +174,8 @@ const FavoritesRoute = () => {
     retry: 1,
   });
   const items = (queryData?.pages ?? []).flatMap(pageItems => pageItems);
-  const errorMessage = error
-    ? getErrorMessage(error, t('favoritesLoadFailed'))
-    : null;
+  const errorMessage = error ? t('favoritesLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
   const refreshControl = (
     <RefreshControl
@@ -242,11 +239,7 @@ const FavoritesRoute = () => {
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('notLoggedIn')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
   }
@@ -272,11 +265,7 @@ const FavoritesRoute = () => {
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                <Text className="text-[13px] text-danger-foreground">
-                  {errorMessage}
-                </Text>
-              </Surface>
+              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
             ) : null
           }
           ListEmptyComponent={

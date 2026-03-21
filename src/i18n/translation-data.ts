@@ -8,6 +8,11 @@ type BaseTranslations = {
   loginLoading: string;
   loginCancel: string;
   loginFailed: string;
+  loginErrorTimeout: string;
+  loginErrorCancelled: string;
+  loginErrorNetwork: string;
+  errorTechnicalDetails: string;
+  errorHideDetails: string;
 
   // Tab labels
   tabHome: string;
@@ -234,7 +239,12 @@ const enUS: BaseTranslations = {
   loginButton: 'Sign in with Fanfou',
   loginLoading: 'Signing in…',
   loginCancel: 'Cancel',
-  loginFailed: 'Sign in failed.',
+  loginFailed: 'Sign in failed. Please try again.',
+  loginErrorTimeout: 'Sign in timed out. Please try again.',
+  loginErrorCancelled: 'Sign in was cancelled.',
+  loginErrorNetwork: 'Unable to connect. Check your network and try again.',
+  errorTechnicalDetails: 'Technical details',
+  errorHideDetails: 'Hide details',
 
   // Tab labels
   tabHome: 'Home',
@@ -464,7 +474,12 @@ const zhCN: BaseTranslations = {
   loginButton: '使用饭否登录',
   loginLoading: '登录中…',
   loginCancel: '取消',
-  loginFailed: '登录失败。',
+  loginFailed: '登录失败，请重试。',
+  loginErrorTimeout: '登录超时，请重试。',
+  loginErrorCancelled: '登录已取消。',
+  loginErrorNetwork: '无法连接，请检查网络后重试。',
+  errorTechnicalDetails: '技术详情',
+  errorHideDetails: '收起详情',
 
   // Tab labels
   tabHome: '首页',

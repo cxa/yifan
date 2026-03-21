@@ -27,6 +27,7 @@ import {
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Dialog, PressableFeedback, Select, Separator, Surface, Switch, useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -375,9 +376,8 @@ const MoreRouteContent = ({
     invalidateFocusedAccountQuery();
   }, [isFocused, userId]);
 
-  const errorMessage = error
-    ? getErrorMessage(error, t('moreAccountLoadFailed'))
-    : null;
+  const errorMessage = error ? t('moreAccountLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const profileThemePalette = (() => {
     const palette = followProfileTheme
       ? resolveProfileThemePalette(user)
@@ -769,10 +769,8 @@ const MoreRouteContent = ({
                         </View>
                       </View>
                       {errorMessage ? (
-                        <View className="mt-4 rounded-sm border bg-danger-soft px-3 py-2">
-                          <Text className="text-[12px] text-danger">
-                            {errorMessage}
-                          </Text>
+                        <View className="mt-4">
+                          <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
                         </View>
                       ) : null}
                     </Surface>
@@ -791,10 +789,8 @@ const MoreRouteContent = ({
                       linkTextStyle={profileThemeStyles.linkTextStyle}
                       footer={
                         errorMessage ? (
-                          <View className="mt-4 rounded-sm border bg-danger-soft px-3 py-2">
-                            <Text className="text-[12px] text-danger">
-                              {errorMessage}
-                            </Text>
+                          <View className="mt-4">
+                            <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
                           </View>
                         ) : null
                       }
@@ -1126,11 +1122,7 @@ const MissingUserIdPlaceholder = () => {
         contentContainerStyle={contentContainerStyle}
       >
         <Surface className="bg-surface-secondary px-5 py-6">
-          <View className="rounded-sm border bg-danger-soft px-3 py-2">
-            <Text className="text-[12px] text-danger">
-              {t('moreAccountLoadFailedNoId')}
-            </Text>
-          </View>
+          <ErrorBanner message={t('moreAccountLoadFailedNoId')} />
         </Surface>
       </Animated.ScrollView>
     </NativeEdgeScrollShadow>

@@ -25,7 +25,8 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
@@ -230,11 +231,8 @@ const TagTimelineRoute = () => {
     setTimelineItems(queryItems);
     setHasReachedTimelineEnd(false);
   }, [queryItems]);
-  const errorMessage = error
-    ? error instanceof Error
-      ? error.message
-      : t('tagTimelineLoadFailed')
-    : null;
+  const errorMessage = error ? t('tagTimelineLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const setBookmarkPending = (statusId: string, pending: boolean) => {
     setPendingBookmarkIds(previous => {
       const next = new Set(previous);
@@ -498,11 +496,7 @@ const TagTimelineRoute = () => {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
         <View>
-          <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-            <Text className="text-[13px] text-danger-foreground">
-              {t('tagMissing')}
-            </Text>
-          </Surface>
+          <ErrorBanner message={t('tagMissing')} />
         </View>
       </View>
     );
@@ -536,11 +530,7 @@ const TagTimelineRoute = () => {
           }
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                <Text className="text-[13px] text-danger-foreground">
-                  {errorMessage}
-                </Text>
-              </Surface>
+              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
             ) : null
           }
           ListEmptyComponent={

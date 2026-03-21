@@ -289,11 +289,8 @@ const AuthHomeRoute = () => {
     enabled: Boolean(authUserId),
     retry: 1,
   });
-  const errorMessage = error
-    ? error instanceof Error
-      ? error.message
-      : t('homeLoadFailed')
-    : null;
+  const errorMessage = error ? t('homeLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   useEffect(() => {
     if (initialItems.length === 0 || timelineItems.length > 0) {
       return;
@@ -650,6 +647,7 @@ const AuthHomeRoute = () => {
               titleContainerStyle={titleContainerStyle}
               titleTextStyle={titleTextStyle}
               errorMessage={errorMessage}
+              technicalError={technicalError}
             />
           }
           ListEmptyComponent={

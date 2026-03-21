@@ -12,6 +12,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
 import { post } from '@/auth/fanfou-client';
@@ -74,9 +75,8 @@ const EditProfileRoute = () => {
     setDescription(parseHtmlToText(user.description || '').trim());
     setIsInitialized(true);
   }, [isInitialized, user]);
-  const errorMessage = error
-    ? getErrorMessage(error, t('editProfileLoadFailed'))
-    : null;
+  const errorMessage = error ? t('editProfileLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const topPadding =
     Platform.OS === 'android'
       ? headerHeight + PAGE_TOP_PADDING
@@ -109,27 +109,21 @@ const EditProfileRoute = () => {
       ) : null}
 
       {!user && !isLoading ? (
-        <DropShadowBox type="danger" containerClassName="pb-2">
-          <Surface className="bg-danger-soft px-4 py-3">
-            <Text className="text-[13px] text-danger">
-              {errorMessage ?? t('editProfileLoadFailed')}
+        <View className="pb-2 gap-3">
+          <ErrorBanner message={errorMessage ?? t('editProfileLoadFailed')} technicalDetail={technicalError} />
+          <Pressable
+            onPress={() => {
+              refetch().catch(() => undefined);
+            }}
+            className="self-start rounded-xl border bg-danger-soft px-3 py-2 active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel={t('editProfileRetry')}
+          >
+            <Text className="text-[12px] text-danger">
+              {t('editProfileRetry')}
             </Text>
-            <View className="mt-3">
-              <Pressable
-                onPress={() => {
-                  refetch().catch(() => undefined);
-                }}
-                className="self-start rounded-xl border bg-danger-soft px-3 py-2"
-                accessibilityRole="button"
-                accessibilityLabel={t('editProfileRetry')}
-              >
-                <Text className="text-[12px] text-danger">
-                  {t('editProfileRetry')}
-                </Text>
-              </Pressable>
-            </View>
-          </Surface>
-        </DropShadowBox>
+          </Pressable>
+        </View>
       ) : null}
 
       {user ? (
@@ -294,11 +288,7 @@ const EditProfileRoute = () => {
   if (!userId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('notLoggedIn')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
   }

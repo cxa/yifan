@@ -24,7 +24,8 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
@@ -34,7 +35,7 @@ import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
-import DropShadowBox, {
+import {
   CARD_PASTEL_CYCLE,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
@@ -250,9 +251,11 @@ const StatusDetailRoute = () => {
   const statusErrorMessage = statusError
     ? getErrorMessage(statusError, t('statusLoadFailed'))
     : null;
+  const statusTechnicalError = statusError instanceof Error ? statusError.message : null;
   const contextErrorMessage = contextError
     ? getErrorMessage(contextError, t('conversationLoadFailed'))
     : null;
+  const contextTechnicalError = contextError instanceof Error ? contextError.message : null;
   const isHydratingStatus =
     !mainStatus && (isStatusLoading || isContextLoading);
 
@@ -579,11 +582,7 @@ const StatusDetailRoute = () => {
   if (!routeStatusId) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('statusMissingId')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('statusMissingId')} />
       </View>
     );
   }
@@ -617,15 +616,9 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {!mainStatus && !isStatusLoading && !isContextLoading ? (
-            <DropShadowBox type="danger" containerClassName="pb-2">
-              <Surface
-                className="bg-danger-soft px-4 py-3"
-              >
-                <Text className="text-[13px] text-danger">
-                  {statusErrorMessage ?? t('statusLoadFailed')}
-                </Text>
-              </Surface>
-            </DropShadowBox>
+            <View className="pb-2">
+              <ErrorBanner message={statusErrorMessage ?? t('statusLoadFailed')} technicalDetail={statusTechnicalError} />
+            </View>
           ) : null}
 
           {mainStatus ? (
@@ -646,11 +639,7 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {contextErrorMessage && mainStatus ? (
-            <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-              <Text className="text-[13px] text-danger-foreground">
-                {contextErrorMessage}
-              </Text>
-            </Surface>
+            <ErrorBanner message={contextErrorMessage} technicalDetail={contextTechnicalError} />
           ) : null}
 
           {isContextLoading && mainStatus ? (

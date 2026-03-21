@@ -22,7 +22,8 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -31,7 +32,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
-import { Text } from '@/components/app-text';
 import ComposerModal from '@/components/composer-modal';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
@@ -58,8 +58,6 @@ import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-sha
 const TIMELINE_PAGE_SIZE = 60;
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback;
 type MyTimelineRouteContentProps = {
   userId: string;
   authUserId: string | null;
@@ -176,9 +174,8 @@ const MyTimelineRouteContent = ({
     retry: 1,
   });
   const items = (queryData?.pages ?? []).flatMap(pageItems => pageItems);
-  const errorMessage = error
-    ? getErrorMessage(error, t('timelineLoadFailed'))
-    : null;
+  const errorMessage = error ? t('timelineLoadFailed') : null;
+  const technicalError = error instanceof Error ? error.message : null;
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
   const refreshControl = (
     <RefreshControl
@@ -261,11 +258,7 @@ const MyTimelineRouteContent = ({
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                <Text className="text-[13px] text-danger-foreground">
-                  {errorMessage}
-                </Text>
-              </Surface>
+              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
             ) : null
           }
           ListEmptyComponent={
@@ -350,11 +343,7 @@ const MyTimelineRoute = () => {
   if (!resolvedUserId) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('notLoggedIn')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
   }

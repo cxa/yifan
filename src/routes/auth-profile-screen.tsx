@@ -30,6 +30,7 @@ import {
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
+import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
 import { get, post } from '@/auth/fanfou-client';
@@ -646,12 +647,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       },
     });
   };
-  const profileErrorMessage = error
-    ? getErrorMessage(error, t('profileLoadFailed'))
-    : null;
-  const recentStatusesErrorMessage = recentStatusesError
-    ? getErrorMessage(recentStatusesError, t('recentActivityEmpty'))
-    : null;
+  const profileErrorMessage = error ? t('profileLoadFailed') : null;
+  const profileTechnicalError = error instanceof Error ? error.message : null;
+  const recentStatusesErrorMessage = recentStatusesError ? t('recentActivityEmpty') : null;
+  const recentStatusesTechnicalError =
+    recentStatusesError instanceof Error ? recentStatusesError.message : null;
   const profileThemePalette = (() => {
     const palette = resolveProfileThemePalette(user);
     return isDark ? adaptProfilePaletteForDarkMode(palette) : palette;
@@ -715,11 +715,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   if (!user) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {profileErrorMessage ?? t('profileLoadFailed')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={profileErrorMessage ?? t('profileLoadFailed')} technicalDetail={profileTechnicalError} />
       </View>
     );
   }
@@ -848,11 +844,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   if (!accessToken) {
     return (
       <View className="flex-1 bg-background px-6 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            {t('notLoggedIn')}
-          </Text>
-        </Surface>
+        <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
   }
@@ -1001,11 +993,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             ) : null}
 
             {profileErrorMessage ? (
-              <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                <Text className="text-[13px] text-danger-foreground">
-                  {profileErrorMessage}
-                </Text>
-              </Surface>
+              <ErrorBanner message={profileErrorMessage} technicalDetail={profileTechnicalError} />
             ) : null}
 
             {isProtectedTimeline ? (
@@ -1042,11 +1030,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   ) : null}
 
                   {recentStatusesErrorMessage ? (
-                    <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-                      <Text className="text-[13px] text-danger-foreground">
-                        {recentStatusesErrorMessage}
-                      </Text>
-                    </Surface>
+                    <ErrorBanner message={recentStatusesErrorMessage} technicalDetail={recentStatusesTechnicalError} />
                   ) : null}
 
                   {!isRecentStatusesLoading &&
@@ -1139,11 +1123,7 @@ const ProfileRoute = () => {
   if (!routeUserId) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
-        <Surface className="rounded-2xl bg-danger-soft px-4 py-3">
-          <Text className="text-[13px] text-danger-foreground">
-            Missing profile user id.
-          </Text>
-        </Surface>
+        <ErrorBanner message="Missing profile user id." />
       </View>
     );
   }
