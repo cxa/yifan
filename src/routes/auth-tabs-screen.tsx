@@ -5,6 +5,7 @@ import {
   BottomTabBarProps,
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
@@ -18,6 +19,9 @@ import Animated, {
   FadeInRight,
   FadeOutRight,
   LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
 import { AUTH_TAB_ROUTE } from '@/navigation/route-names';
 import { isNativeScrollEdgeEffectAvailable } from '@/navigation/native-scroll-edge';
@@ -36,6 +40,26 @@ import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { closePhotoViewer, usePhotoViewerStore } from '@/components/photo-viewer-store';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 const Tab = createBottomTabNavigator<AuthTabParamList>();
+const TabScaleWrapper = ({ children }: { children: React.ReactNode }) => {
+  const scale = useSharedValue(1);
+  useFocusEffect(() => {
+    scale.value = 0.99;
+    scale.value = withSpring(1, {
+      stiffness: 100,
+      damping: 20,
+      mass: 1.5,
+      overshootClamping: true,
+    });
+  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
+      {children}
+    </Animated.View>
+  );
+};
 type MoreTabStackParamList = {
   MoreRoot: undefined;
 };
@@ -350,13 +374,19 @@ const AuthIndexRoute = () => {
         }}
         tabBar={renderAuthTabBar}
       >
-        <Tab.Screen name={AUTH_TAB_ROUTE.HOME} component={AuthHomeRoute} />
-        <Tab.Screen name={AUTH_TAB_ROUTE.MENTIONS} component={MentionsRoute} />
+        <Tab.Screen name={AUTH_TAB_ROUTE.HOME}>
+          {() => <TabScaleWrapper><AuthHomeRoute /></TabScaleWrapper>}
+        </Tab.Screen>
+        <Tab.Screen name={AUTH_TAB_ROUTE.MENTIONS}>
+          {() => <TabScaleWrapper><MentionsRoute /></TabScaleWrapper>}
+        </Tab.Screen>
         <Tab.Screen
           name={AUTH_TAB_ROUTE.COMPOSE}
           component={ComposeTabPlaceholder}
         />
-        <Tab.Screen name={AUTH_TAB_ROUTE.MORE} component={MoreStackRoute} />
+        <Tab.Screen name={AUTH_TAB_ROUTE.MORE}>
+          {() => <TabScaleWrapper><MoreStackRoute /></TabScaleWrapper>}
+        </Tab.Screen>
       </Tab.Navigator>
 
       <ComposerModal
