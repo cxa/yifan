@@ -164,9 +164,9 @@ const LoginView = () => {
         className="absolute bottom-0 left-0 right-0 top-0 overflow-hidden items-start justify-end pointer-events-none"
       >
         <Image 
-          source={require('../../assets/shared/splash_botanical_bg.png')} 
-          style={{ width: width, height: width, tintColor: inkColor }}
-          className="mb-0 opacity-95"
+          source={isDark ? require('../../assets/shared/splash_botanical_dark.png') : require('../../assets/shared/splash_botanical_light.png')} 
+          style={{ width: width, height: width }}
+          className="mb-0"
         />
       </View>
       <FallingLeaves color={inkColor} />

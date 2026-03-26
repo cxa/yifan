@@ -1,8 +1,3 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/launch_background" />
-    <item
-        android:width="280dp"
-        android:height="163dp"
-        android:gravity="center"
-        android:drawable="@drawable/launch_content" />
 </layer-list>

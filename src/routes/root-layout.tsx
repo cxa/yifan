@@ -1,4 +1,5 @@
 import React from 'react';
+import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HeroUINativeProvider } from 'heroui-native';
@@ -10,8 +11,10 @@ type RootLayoutProps = {
 };
 
 const RootLayout = ({ children }: RootLayoutProps) => {
+  const isDark = useColorScheme() === 'dark';
+
   return (
-    <GestureHandlerRootView className="flex-1">
+    <GestureHandlerRootView className={`flex-1 ${isDark ? 'dark' : ''}`}>
       <SafeAreaProvider>
         <HeroUINativeProvider
           config={{ devInfo: { stylingPrinciples: false } }}
