@@ -45,7 +45,7 @@ node_modules/
 npm-debug.log
 yarn-error.log
 .env
-android/app/src/main/java/com/gohan/EnvSecrets.kt
+android/app/src/main/java/im/cxa/fanatter/EnvSecrets.kt
 ios/gohan/EnvSecrets.h
 ios/gohan/EnvSecrets.m
 

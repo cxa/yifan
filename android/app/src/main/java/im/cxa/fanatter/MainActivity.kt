@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -17,6 +19,8 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
   private var isAppReady = false
+  private var launchOverlay: View? = null
+  private var didHideLaunchOverlay = false
 
   companion object {
     private const val SPLASH_TIMEOUT_MS = 5000L
@@ -30,6 +34,16 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     val splashScreen = installSplashScreen()
     splashScreen.setKeepOnScreenCondition { !isAppReady }
+    splashScreen.setOnExitAnimationListener { provider ->
+      // Fade out our overlay in sync with the system splash exit
+      hideLaunchOverlay()
+      provider.view.animate()
+        .alpha(0f)
+        .setDuration(200)
+        .withEndAction { provider.remove() }
+        .start()
+    }
+
     Handler(Looper.getMainLooper()).postDelayed({
       isAppReady = true
     }, SPLASH_TIMEOUT_MS)
@@ -50,17 +64,38 @@ class MainActivity : ReactActivity() {
     }
 
     super.onCreate(savedInstanceState)
+    showLaunchOverlay()
     keepSplashUntilFirstReactDraw()
 
     // API 35+ (Android 15): window.navigationBarColor is fully ignored.
     // WindowInsetsControllerCompat is the only way to influence bar appearance.
     // This must be called after super.onCreate() so the decorView is attached.
     WindowInsetsControllerCompat(window, window.decorView).also { controller ->
-      // Setting light appearance to false keeps nav bar icons visible on a
-      // transparent (dark) background. RN's StatusBar component handles the
-      // status bar icons independently at the screen level.
       controller.isAppearanceLightNavigationBars = false
     }
+  }
+
+  private fun showLaunchOverlay() {
+    val overlay = LayoutInflater.from(this).inflate(R.layout.launch_screen_overlay, null)
+    window.addContentView(
+      overlay,
+      ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+    )
+    launchOverlay = overlay
+  }
+
+  private fun hideLaunchOverlay() {
+    if (didHideLaunchOverlay) return
+    didHideLaunchOverlay = true
+    val overlay = launchOverlay ?: return
+    overlay.animate()
+      .alpha(0f)
+      .setDuration(200)
+      .withEndAction {
+        (overlay.parent as? ViewGroup)?.removeView(overlay)
+        launchOverlay = null
+      }
+      .start()
   }
 
   private fun keepSplashUntilFirstReactDraw() {
