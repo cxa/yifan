@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { HeaderHeightContext } from '@react-navigation/elements';
 import { ScrollShadow } from 'heroui-native';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated from 'react-native-reanimated';
 
@@ -147,11 +147,6 @@ export const resolveNativeEdgeScrollShadowSize = ({
   return DEFAULT_SCROLL_SHADOW_SIZE;
 };
 
-// iOS 26+ provides a native scroll-edge blur effect automatically.
-// Rendering our own ScrollShadow on top would be redundant and visually noisy.
-const supportsNativeEdgeEffect =
-  Platform.OS === 'ios' && Number(Platform.Version) >= 26;
-
 const NativeEdgeScrollShadow = ({
   size,
   visibility,
@@ -174,21 +169,6 @@ const NativeEdgeScrollShadow = ({
     size,
     headerHeight,
   });
-
-  if (supportsNativeEdgeEffect) {
-    return (
-      <View style={styles.flex1}>
-        <ScrollShadowChildrenContainer
-          onContentSizeChange={scrollableProps?.onContentSizeChange}
-          onLayout={scrollableProps?.onLayout}
-          onScroll={scrollableProps?.onScroll}
-          scrollEventThrottle={scrollableProps?.scrollEventThrottle}
-        >
-          {children}
-        </ScrollShadowChildrenContainer>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.flex1}>
