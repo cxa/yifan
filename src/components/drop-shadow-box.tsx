@@ -1,6 +1,6 @@
 import React from 'react';
+import { Platform, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { View } from 'react-native';
 
 export type DropShadowBoxType =
   | 'default'
@@ -60,11 +60,26 @@ const BORDER_CLASS_BY_TYPE: Record<DropShadowBoxType, string> = {
 export const getDropShadowBorderClass = (type: DropShadowBoxType) =>
   BORDER_CLASS_BY_TYPE[type];
 
+const CARD_SHADOW: ViewStyle = Platform.select({
+  ios: {
+    shadowColor: '#1A1208',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  default: {
+    elevation: 2,
+  },
+});
+
 const DropShadowBox = ({
   children,
   containerClassName,
+  shadowStyle,
 }: DropShadowBoxProps) => (
-  <View className={containerClassName}>{children}</View>
+  <View className={containerClassName} style={[CARD_SHADOW, shadowStyle]}>
+    {children}
+  </View>
 );
 
 export default DropShadowBox;

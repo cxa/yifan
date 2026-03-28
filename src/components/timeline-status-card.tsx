@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text as RNText, useColorScheme, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text as RNText, useColorScheme, View } from 'react-native';
 import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
@@ -512,6 +512,17 @@ const TimelineStatusCard = ({
 const styles = StyleSheet.create({
   card: {
     borderCurve: 'continuous',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1A1208',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      default: {
+        elevation: 2,
+      },
+    }),
   },
   photoPlaceholder: {
     height: 220,
