@@ -176,7 +176,18 @@ const NativeEdgeScrollShadow = ({
   });
 
   if (supportsNativeEdgeEffect) {
-    return <View style={styles.flex1}>{children}</View>;
+    return (
+      <View style={styles.flex1}>
+        <ScrollShadowChildrenContainer
+          onContentSizeChange={scrollableProps?.onContentSizeChange}
+          onLayout={scrollableProps?.onLayout}
+          onScroll={scrollableProps?.onScroll}
+          scrollEventThrottle={scrollableProps?.scrollEventThrottle}
+        >
+          {children}
+        </ScrollShadowChildrenContainer>
+      </View>
+    );
   }
 
   return (
