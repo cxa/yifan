@@ -75,9 +75,8 @@ const CARD_SHADOW: ViewStyle = Platform.select({
 const DropShadowBox = ({
   children,
   containerClassName,
-  shadowStyle,
 }: DropShadowBoxProps) => (
-  <View className={containerClassName} style={[CARD_SHADOW, shadowStyle]}>
+  <View className={containerClassName} style={CARD_SHADOW}>
     {children}
   </View>
 );
