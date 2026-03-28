@@ -29,8 +29,8 @@
     --accent: oklch(63% 0.18 25);
     /* Coral #F47060 — primary CTA */
     --accent-foreground: oklch(99% 0 0);
-    --background: #F5EDD8;
-    /* Warm cream — exact reference image value */
+    --background: #FAF4E8;
+    /* Warm cream — lightened */
     --border: oklch(87% 0.04 80);
     --danger: oklch(60% 0.22 25);
     /* Bright Red */
@@ -57,10 +57,10 @@
     --surface: oklch(100% 0 0);
     /* Pure white — modals, overlays, composer */
     --surface-foreground: oklch(14% 0.03 60);
-    --surface-secondary: oklch(97% 0.04 82);
+    --surface-secondary: oklch(98.5% 0.025 82);
     /* Warm pale cream — default cards */
     --surface-secondary-foreground: oklch(14% 0.03 60);
-    --surface-tertiary: oklch(94% 0.04 78);
+    --surface-tertiary: oklch(96% 0.04 78);
     /* Slightly deeper cream — shimmer bars, icon boxes */
     --surface-tertiary-foreground: oklch(14% 0.03 60);
     --warning: oklch(88% 0.10 90);

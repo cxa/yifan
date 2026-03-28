@@ -62,7 +62,7 @@ GestureHandlerRootView → SafeAreaProvider → HeroUINativeProvider → ToastMa
 ## Design System
 
 See AGENTS.md §"Design System" for full rules. Summary:
-- Background: `#F5EDD8` (warm cream), surfaces: per-category pastel fills (pink, yellow, lavender, mint, sky) — never uniform white
+- Background: `#FAF4E8` (warm cream), surfaces: per-category pastel fills (pink, yellow, lavender, mint, sky) — never uniform white
 - Primary/CTA: Coral `#F47060` (FAB, primary buttons, active tab)
 - Text: Dark brown-black `#1A1208`
 - Border radius: `1.5rem` / `24px` on cards; `9999px` pill on FAB and badges
