@@ -37,7 +37,7 @@ const SERVICE = 'app.font-preference';
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
-let appFontPreference: AppFontOption = APP_FONT_OPTION.HUIWEN_HKHEI;
+let appFontPreference: AppFontOption = APP_FONT_OPTION.SYSTEM;
 let hydrationPromise: Promise<void> | null = null;
 
 const emitChange = () => {
