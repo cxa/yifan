@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -160,7 +161,7 @@ const NeobrutalActivityIndicator = ({
   size = 'default',
   animate = true,
 }: NeobrutalActivityIndicatorProps) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const petalColors = isDark ? PETAL_COLORS_DARK : PETAL_COLORS_LIGHT;
   const centerColor = isDark ? CENTER_COLOR_DARK : CENTER_COLOR_LIGHT;
   const scale = size === 'small' ? 0.7 : 1;
@@ -187,7 +188,7 @@ export const NeobrutalRefreshIndicator = ({
   scrollInsetTop: SharedValue<number>;
   pullThreshold?: number;
 }) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const petalColors = isDark ? PETAL_COLORS_DARK : PETAL_COLORS_LIGHT;
   const centerColor = isDark ? CENTER_COLOR_DARK : CENTER_COLOR_LIGHT;
   const refreshLock = useSharedValue(0);

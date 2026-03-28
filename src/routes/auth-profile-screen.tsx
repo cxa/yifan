@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  useColorScheme,
   View,
 } from 'react-native';
 import Animated, {
@@ -94,6 +93,7 @@ import {
   resolveProfileThemePalette,
 } from '@/utils/profile-theme';
 import { useTranslation } from 'react-i18next';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 const PROFILE_CARD_GAP = 16;
 type ComposerMode = 'mention' | 'dm' | 'reply' | 'repost' | null;
 type ReplyTarget = {
@@ -125,7 +125,7 @@ type ProfileRouteContentProps = {
 };
 const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const { t } = useTranslation();
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();

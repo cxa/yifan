@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Pressable, Image, useWindowDimensions, useColorScheme } from 'react-native';
+import { View, Pressable, Image, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useThemeColor } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +33,7 @@ import {
   LAUNCH_POEM_PATH,
   LAUNCH_POEM_EN_PATH,
 } from '@/components/launch-content-paths';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 
 const CALLBACK_URL = 'gohan://authorize_callback';
 
@@ -152,7 +153,7 @@ const LoginView = () => {
   const [background] = useThemeColor(['background']);
 
   const { width } = useWindowDimensions();
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const inkColor = isDark ? '#F5EED7' : '#2A3B4C';
 
   return (

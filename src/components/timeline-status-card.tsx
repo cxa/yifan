@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text as RNText, useColorScheme, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/component
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
 import { useAppFontFamily } from '@/settings/app-font-preference';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 import { openLink } from '@/utils/open-link';
@@ -116,7 +117,7 @@ const TimelineStatusCard = ({
   onDelete,
 }: TimelineStatusCardProps) => {
   const { t } = useTranslation();
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const effectiveIsDark = invertColorScheme ? !isDark : isDark;
   const textColor = invertColorScheme
     ? isDark ? FOREGROUND_LIGHT : FOREGROUND_DARK

@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -46,6 +45,7 @@ import DropShadowBox, {
 } from '@/components/drop-shadow-box';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { countSkeletonItemsForHeight } from '@/components/timeline-skeleton-list';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import { AUTH_PROFILE_ROUTE, AUTH_STACK_ROUTE } from '@/navigation/route-names';
@@ -221,7 +221,7 @@ const MessageSkeletonCard = ({
   shimmerIndex: number;
   colorIndex: number;
 }) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const themePreference = useAppThemePreference();
   const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const shadowType = CARD_PASTEL_CYCLE[colorIndex % CARD_PASTEL_CYCLE.length];
@@ -278,7 +278,7 @@ const MessageCard = ({
   onDelete,
   onReply,
 }: MessageCardProps) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const themePreference = useAppThemePreference();
   const counterpart = mailbox === 'inbox' ? message.sender : message.recipient;
   const counterpartId =

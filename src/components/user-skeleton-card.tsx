@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, useColorScheme, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import {
   CARD_BG_DARK,
@@ -8,7 +9,7 @@ import {
 } from '@/components/drop-shadow-box';
 const AVATAR_SIZE = 44;
 const UserSkeletonCard = ({ colorIndex = 0 }: { colorIndex?: number }) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const shadowType = CARD_PASTEL_CYCLE[colorIndex % CARD_PASTEL_CYCLE.length];
   const cardBgStyle = {
     backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],

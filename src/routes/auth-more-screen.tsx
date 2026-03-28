@@ -1,11 +1,11 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
+import { useThemeTransition } from '@/context/theme-transition';
 import {
   Image,
   NativeModules,
   Platform,
   StatusBar,
-  useColorScheme,
   View,
 } from 'react-native';
 import Animated, {
@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Dialog, PressableFeedback, Select, Separator, Surface, Switch, useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Leaf } from 'lucide-react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
@@ -90,6 +90,7 @@ import {
   setAppAppearancePreference,
   type AppAppearanceOption,
   useAppAppearancePreference,
+  useEffectiveIsDark,
 } from '@/settings/app-appearance-preference';
 import {
   setAppProfileThemePreference,
@@ -193,7 +194,7 @@ const STAMP_HILL2_MOON_PATH = 'M9.5 12.5 Q12 9.5 13 12.5';
 // Moon crescent aligned left, centered higher around (4.5, 3.8)
 const STAMP_MOON_PATH = 'M6 2.8 A2.2 2.2 0 1 1 3.2 5.8 A1.5 1.5 0 0 0 6 2.8';
 const PostageStampIcon = ({ color, size }: { color: string; size: number }) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   return (
     <Svg width={size} height={size} viewBox="0 0 15 15">
       <Path
@@ -309,7 +310,8 @@ const MoreRouteContent = ({
   });
   const queryClient = useQueryClient();
   const [background, muted] = useThemeColor(['background', 'muted']);
-  const isDark = useColorScheme() === 'dark';
+  const { prepareSnapshot, requestTransition } = useThemeTransition();
+  const isDark = useEffectiveIsDark();
   const followProfileTheme = useAppProfileThemePreference();
   const appFontPreference = useAppFontPreference();
   const appFontSizePreference = useAppFontSizePreference();
@@ -322,6 +324,7 @@ const MoreRouteContent = ({
   const headerTitleVisible = useSharedValue(false);
   const [showHeaderTitle, setShowHeaderTitle] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isPostcardExpanded, setIsPostcardExpanded] = useState(false);
   const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
   const scrollRef =
     useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
@@ -667,19 +670,19 @@ const MoreRouteContent = ({
       );
     }
   };
-  const handleSelectAppearancePreference = async (next: AppAppearanceOption) => {
+  const handleSelectAppearancePreference = (next: AppAppearanceOption) => {
     if (appAppearancePreference === next) {
       return;
     }
-    try {
-      await setAppAppearancePreference(next);
-    } catch (updateError) {
-      showVariantToast(
-        'danger',
-        t('moreFontUpdateFailed'),
-        getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
-      );
-    }
+    requestTransition(() =>
+      setAppAppearancePreference(next).catch(updateError => {
+        showVariantToast(
+          'danger',
+          t('moreFontUpdateFailed'),
+          getErrorMessage(updateError, t('moreFontUpdateFailedMessage')),
+        );
+      }),
+    );
   };
   const handleSelectUiStylePreference = async (next: AppUiStyleOption) => {
     if (appUiStylePreference === next) {
@@ -995,7 +998,7 @@ const MoreRouteContent = ({
                         handleSelectAppearancePreference(opt.value as AppAppearanceOption)
                       }
                     >
-                      <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                      <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70" onPress={prepareSnapshot}>
                         <Text
                           className="flex-1 text-[15px] font-semibold text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
@@ -1108,6 +1111,39 @@ const MoreRouteContent = ({
                   onPress={handleSignOut}
                   isLoading={isSigningOut}
                 />
+              </View>
+              <View className="mt-12 px-1">
+                <PressableFeedback
+                  className="items-center active:opacity-60"
+                  onPress={() => {
+                    setIsPostcardExpanded(v => {
+                      if (!v) {
+                        setTimeout(() => (scrollRef.current as { scrollToEnd?: (opts: { animated: boolean }) => void } | null)?.scrollToEnd?.({ animated: true }), 50);
+                      }
+                      return !v;
+                    });
+                  }}
+                >
+                  <Text className="text-[13px] text-muted opacity-50 text-center">请寄我一张明信片</Text>
+                  <Text className="text-[10px] text-muted opacity-30 text-center mt-1">如果你愿意的话</Text>
+                </PressableFeedback>
+                {isPostcardExpanded && (
+                  <>
+                    <View className="flex-row items-center mt-5 mb-5">
+                      <View className="flex-1 h-px bg-muted opacity-20" />
+                      <Leaf size={13} color={muted} className="mx-2" />
+                      <View className="flex-1 h-px bg-muted opacity-20" />
+                    </View>
+                    <Text className="text-[13px] text-muted leading-6 text-center">
+                      广西南宁市青秀区凤凰岭路1号{'\n'}荣和大地二组团 10B202（邮编 530028）{'\n'}realazy 收
+                    </Text>
+                    <View className="flex-row items-center mt-5">
+                      <View className="flex-1 h-px bg-muted opacity-20" />
+                      <Leaf size={13} color={muted} className="mx-2" />
+                      <View className="flex-1 h-px bg-muted opacity-20" />
+                    </View>
+                  </>
+                )}
               </View>
             </View>
           </View>

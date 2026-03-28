@@ -27,6 +27,16 @@ const listeners = new Set<Listener>();
 let appAppearancePreference: AppAppearanceOption = APP_APPEARANCE_OPTION.AUTO;
 let hydrationPromise: Promise<void> | null = null;
 
+// Track the current color scheme via Appearance listener so we always have
+// the latest value synchronously — without depending on useColorScheme() which
+// can lag behind when switching from forced dark/light back to auto.
+let systemColorScheme = Appearance.getColorScheme();
+
+Appearance.addChangeListener(({ colorScheme }) => {
+  systemColorScheme = colorScheme;
+  emitChange();
+});
+
 const emitChange = () => {
   listeners.forEach(listener => listener());
 };
@@ -61,8 +71,9 @@ const hydrateAppAppearancePreference = async () => {
     if (!parsed) {
       return;
     }
-    setAppAppearanceSnapshot(parsed);
+    // Apply Appearance first so systemColorScheme updates before snapshot emits.
     applyAppearance(parsed);
+    setAppAppearanceSnapshot(parsed);
   } catch {
     // Ignore hydration failures and keep default.
   }
@@ -89,20 +100,35 @@ export const useAppAppearancePreference = () =>
     getAppAppearancePreferenceSnapshot,
   );
 
+const getIsDarkSnapshot = (): boolean => {
+  if (appAppearancePreference === APP_APPEARANCE_OPTION.DARK) return true;
+  if (appAppearancePreference === APP_APPEARANCE_OPTION.LIGHT) return false;
+  return systemColorScheme === 'dark';
+};
+
+export const useEffectiveIsDark = (): boolean =>
+  useSyncExternalStore(
+    subscribeToAppAppearancePreference,
+    getIsDarkSnapshot,
+    getIsDarkSnapshot,
+  );
+
 export const setAppAppearancePreference = async (
   next: AppAppearanceOption,
 ) => {
   const prev = appAppearancePreference;
-  setAppAppearanceSnapshot(next);
+  // Apply Appearance first — if setColorScheme fires addChangeListener synchronously,
+  // systemColorScheme is already correct before setAppAppearanceSnapshot triggers re-renders.
   applyAppearance(next);
+  setAppAppearanceSnapshot(next);
   try {
     await Keychain.setGenericPassword('appearance', next, {
       service: SERVICE,
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED,
     });
   } catch (error) {
-    setAppAppearanceSnapshot(prev);
     applyAppearance(prev);
+    setAppAppearanceSnapshot(prev);
     throw error;
   }
 };

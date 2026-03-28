@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, StyleSheet, View } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import LinearGradient from 'react-native-linear-gradient';
 import { Text } from '@/components/app-text';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
@@ -32,7 +32,7 @@ type ShimmerBarProps = {
 };
 
 export const ShimmerBar = ({ className, style, barColor, isActive }: ShimmerBarProps) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const shimmer = useRef(new Animated.Value(0)).current;
   const [width, setWidth] = useState(0);
 
@@ -96,7 +96,7 @@ const TimelineSkeletonCard = ({
   lineCount = 2,
   message,
 }: TimelineSkeletonCardProps) => {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const themePreference = useAppThemePreference();
   const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const paletteIndex = index % CARD_BG_LIGHT.length;

@@ -5,7 +5,6 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -46,6 +45,7 @@ import useUserTimelineHeader from '@/navigation/use-user-timeline-header';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouUser } from '@/types/fanfou';
 import { parseHtmlToText } from '@/utils/parse-html';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const AVATAR_SIZE = 44;
@@ -80,7 +80,7 @@ const UserListRoute = () => {
   const { height: windowHeight } = useWindowDimensions();
   const skeletonAvailableHeight =
     windowHeight - insets.top - PAGE_BOTTOM_PADDING - insets.bottom;
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useEffectiveIsDark();
   const [background] = useThemeColor(['background']);
   const { t } = useTranslation();
   const screenTitle =
