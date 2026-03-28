@@ -94,6 +94,8 @@ const ProfileStatRow = ({
               <Text
                 className="text-sm text-foreground"
                 numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
                 style={labelTextStyle}
               >
                 {stat.label}

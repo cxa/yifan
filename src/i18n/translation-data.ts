@@ -594,10 +594,10 @@ const zhCN: BaseTranslations = {
 
   // Profile screen
   profileStatPosts: '消息',
-  profileStatFollowing: '我关注的人',
-  profileStatFollowers: '关注我的人',
-  profileStatFollowingOther: 'TA关注的人',
-  profileStatFollowersOther: '关注TA的人',
+  profileStatFollowing: '我关注',
+  profileStatFollowers: '关注我',
+  profileStatFollowingOther: 'TA关注',
+  profileStatFollowersOther: '关注TA',
   profileStatFavorites: '收藏',
   profileStatPhotos: '照片',
   recentActivity: '最近动态',
