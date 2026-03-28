@@ -205,6 +205,9 @@ type BaseTranslations = {
   moreAccountLoading: string;
   moreAccountLoadFailed: string;
   moreAccountLoadFailedNoId: string;
+  morePostcardCraftedByPrefix: string;
+  morePostcardCraftedBySuffix: string;
+  morePostcardLabel: string;
 
   // Edit profile screen
   editProfileLoading: string;
@@ -441,6 +444,9 @@ const enUS: BaseTranslations = {
   moreAccountLoading: 'Loading account…',
   moreAccountLoadFailed: 'Failed to load account.',
   moreAccountLoadFailedNoId: 'Cannot load account: missing user ID.',
+  morePostcardCraftedByPrefix: 'Crafted by ',
+  morePostcardCraftedBySuffix: '',
+  morePostcardLabel: 'Would you send me a postcard? Tap to see address',
 
   // Edit profile screen
   editProfileLoading: 'Loading profile…',
@@ -677,6 +683,9 @@ const zhCN: BaseTranslations = {
   moreAccountLoading: '正在加载账号…',
   moreAccountLoadFailed: '无法加载账号信息。',
   moreAccountLoadFailedNoId: '无法加载账号信息，缺少用户 ID。',
+  morePostcardCraftedByPrefix: '由 ',
+  morePostcardCraftedBySuffix: ' 制作',
+  morePostcardLabel: '能寄我一张明信片吗？点击查看地址',
 
   // Edit profile screen
   editProfileLoading: '正在加载个人资料…',

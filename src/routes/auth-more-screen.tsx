@@ -42,6 +42,7 @@ import ProfileSummaryCard from '@/components/profile-summary-card';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import {
   AUTH_MESSAGES_ROUTE,
+  AUTH_PROFILE_ROUTE,
   AUTH_STACK_ROUTE,
 } from '@/navigation/route-names';
 import useUserTimelineHeader from '@/navigation/use-user-timeline-header';
@@ -1113,6 +1114,19 @@ const MoreRouteContent = ({
                 />
               </View>
               <View className="mt-12 px-1">
+                <Text className="text-[13px] text-muted opacity-40 text-center tracking-widest mb-2">
+                  {t('morePostcardCraftedByPrefix')}<Text
+                    className="underline active:opacity-50"
+                    onPress={() => {
+                      const parentNavigation = navigation.getParent<NavigationProp<AuthStackParamList>>();
+                      if (!parentNavigation) return;
+                      parentNavigation.navigate(AUTH_STACK_ROUTE.PROFILE, {
+                        screen: AUTH_PROFILE_ROUTE.DETAIL,
+                        params: { userId: 'realazy' },
+                      });
+                    }}
+                  >@realazy</Text>{t('morePostcardCraftedBySuffix')}
+                </Text>
                 <PressableFeedback
                   className="items-center active:opacity-60"
                   onPress={() => {
@@ -1124,8 +1138,7 @@ const MoreRouteContent = ({
                     });
                   }}
                 >
-                  <Text className="text-[13px] text-muted opacity-50 text-center">请寄我一张明信片</Text>
-                  <Text className="text-[10px] text-muted opacity-30 text-center mt-1">如果你愿意的话</Text>
+                  <Text className="text-[11px] text-muted opacity-30 text-center">{t('morePostcardLabel')}</Text>
                 </PressableFeedback>
                 {isPostcardExpanded && (
                   <>
@@ -1135,7 +1148,7 @@ const MoreRouteContent = ({
                       <View className="flex-1 h-px bg-muted opacity-20" />
                     </View>
                     <Text className="text-[13px] text-muted leading-6 text-center">
-                      广西南宁市青秀区凤凰岭路1号{'\n'}荣和大地二组团 10B202（邮编 530028）{'\n'}realazy 收
+                      广西南宁市青秀区凤凰岭路1号{'\n'}荣和大地二组团10B202（邮编 530028）{'\n'}realazy 收
                     </Text>
                     <View className="flex-row items-center mt-5">
                       <View className="flex-1 h-px bg-muted opacity-20" />
