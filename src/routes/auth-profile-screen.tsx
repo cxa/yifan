@@ -28,7 +28,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Surface, useThemeColor } from 'heroui-native';
+import { Surface, Switch, useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
@@ -94,6 +94,10 @@ import {
 } from '@/utils/profile-theme';
 import { useTranslation } from 'react-i18next';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
+import {
+  useAppProfileThemePreference,
+  setAppProfileThemePreference,
+} from '@/settings/app-profile-theme-preference';
 const PROFILE_CARD_GAP = 16;
 type ComposerMode = 'mention' | 'dm' | 'reply' | 'repost' | null;
 type ReplyTarget = {
@@ -126,6 +130,14 @@ type ProfileRouteContentProps = {
 const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const { t } = useTranslation();
   const isDark = useEffectiveIsDark();
+  const followProfileTheme = useAppProfileThemePreference();
+  const handleToggleFollowProfile = async (next: boolean) => {
+    try {
+      await setAppProfileThemePreference(next);
+    } catch {
+      // ignore — UI already reverted optimistically inside the store
+    }
+  };
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -657,8 +669,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const recentStatusesTechnicalError =
     recentStatusesError instanceof Error ? recentStatusesError.message : null;
   const profileThemePalette = (() => {
-    const palette = resolveProfileThemePalette(user);
-    return isDark ? adaptProfilePaletteForDarkMode(palette) : palette;
+    const palette = followProfileTheme
+      ? resolveProfileThemePalette(user)
+      : resolveProfileThemePalette(undefined);
+    return followProfileTheme && isDark
+      ? adaptProfilePaletteForDarkMode(palette)
+      : palette;
   })();
   const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
   const preferredHeaderTintColor =
@@ -893,6 +909,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 mutedTextStyle={profileThemeStyles.mutedTextStyle}
                 linkTextStyle={profileThemeStyles.linkTextStyle}
               />
+            </DropShadowBox>
+
+            <DropShadowBox containerClassName="pb-2" shadowStyle={profilePanelShadowStyle}>
+              <Surface className="bg-surface-secondary px-4 py-3" style={profileThemeStyles.panelStyle}>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-[14px] font-semibold text-foreground" style={profileThemeStyles.primaryTextStyle}>
+                    {t('moreFollowProfile')}
+                  </Text>
+                  <Switch isSelected={followProfileTheme} onSelectedChange={handleToggleFollowProfile} />
+                </View>
+              </Surface>
             </DropShadowBox>
 
             <ProfileStatRow

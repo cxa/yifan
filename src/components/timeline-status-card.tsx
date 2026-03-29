@@ -183,19 +183,17 @@ const TimelineStatusCard = ({
     setIsDeleteDialogOpen(nextIsOpen);
   };
   const normalizedActiveTag = activeTag?.toLowerCase();
+  const shouldWrapFooter = (() => {
+    if (!footerWidth || !actionsWidth || !timestampWidth) return false;
+    return footerWidth < actionsWidth + FOOTER_META_GAP + timestampWidth;
+  })();
   const canShowVia = (() => {
-    if (!viaLabel) {
-      return false;
-    }
-    if (!footerWidth || !actionsWidth || !timestampWidth || !viaWidth) {
-      return false;
-    }
-    const availableMetaWidth = footerWidth - actionsWidth - FOOTER_META_GAP;
-    const requiredMetaWidth = timestampWidth + FOOTER_META_ITEM_GAP + viaWidth;
-    return (
-      availableMetaWidth >=
-      requiredMetaWidth + FOOTER_META_VIA_VISIBILITY_BUFFER
-    );
+    if (!viaLabel) return false;
+    if (!footerWidth || !timestampWidth || !viaWidth) return false;
+    const availableWidth = shouldWrapFooter
+      ? footerWidth
+      : footerWidth - actionsWidth - FOOTER_META_GAP;
+    return availableWidth >= timestampWidth + FOOTER_META_ITEM_GAP + viaWidth + FOOTER_META_VIA_VISIBILITY_BUFFER;
   })();
 
   return (
@@ -376,7 +374,7 @@ const TimelineStatusCard = ({
               ) : null}
             </View>
             <View
-              className="mt-3 flex-row items-center justify-between"
+              className={`mt-3 ${shouldWrapFooter ? 'items-end gap-2' : 'flex-row items-center justify-between'}`}
               onLayout={event => {
                 updateMeasuredWidth(
                   setFooterWidth,
@@ -384,6 +382,14 @@ const TimelineStatusCard = ({
                 );
               }}
             >
+              {shouldWrapFooter ? (
+                <View className="flex-row items-center gap-1">
+                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
+                  {canShowVia ? (
+                    <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
+                  ) : null}
+                </View>
+              ) : null}
               <View
                 className="flex-row items-center gap-4"
                 onLayout={event => {
@@ -439,14 +445,16 @@ const TimelineStatusCard = ({
                   </Pressable>
                 ) : null}
               </View>
-              <View className="ml-3 flex-1 min-w-0 items-end">
-                <View className="flex-row items-center gap-1">
-                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
-                  {canShowVia ? (
-                    <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
-                  ) : null}
+              {!shouldWrapFooter ? (
+                <View className="ml-3 flex-1 min-w-0 items-end">
+                  <View className="flex-row items-center gap-1">
+                    <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
+                    {canShowVia ? (
+                      <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
+              ) : null}
             </View>
           </View>
         </View>
