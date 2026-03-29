@@ -1,6 +1,6 @@
 {
   "name": "gohan",
-  "version": "0.0.1",
+  "version": "2603.30",
   "private": true,
   "workspaces": [
     "packages/*"

@@ -16,6 +16,7 @@
 		B1C2D3E4F5A60718293B4C5D /* EnvSecrets.m in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60718293E4F5A /* EnvSecrets.m */; };
 		B2C3D4E5F60718293A4B6C7D /* HuiwenHKHei-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B6C7C /* HuiwenHKHei-Regular.ttf */; };
 		C3D4E5F60718293A4B6C7D8E /* Huiwen-MinchoGBK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B6C7D8D /* Huiwen-MinchoGBK-Regular.ttf */; };
+		A2B3C4D5E6F70718293A4B5D /* ReadableContentGuideModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F70718293A4B5C /* ReadableContentGuideModule.m */; };
 		F1A2B3C4D5E60718293A4B5C /* FanfouSecretsLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */; };
 /* End PBXBuildFile section */
 
@@ -35,6 +36,7 @@
 		D1E2F3A4B5C60718293D4E5F /* EnvSecrets.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EnvSecrets.h; path = gohan/EnvSecrets.h; sourceTree = "<group>"; };
 		E1F2A3B4C5D60718293E4F5A /* EnvSecrets.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EnvSecrets.m; path = gohan/EnvSecrets.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		A2B3C4D5E6F70718293A4B5C /* ReadableContentGuideModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ReadableContentGuideModule.m; path = gohan/ReadableContentGuideModule.m; sourceTree = "<group>"; };
 		F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FanfouSecretsLoader.m; path = gohan/FanfouSecretsLoader.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -58,6 +60,7 @@
 				A1B2C3D4E5F60718293A4B6D /* Xiaolai.ttf */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				A2B3C4D5E6F70718293A4B5C /* ReadableContentGuideModule.m */,
 				F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */,
 				D1E2F3A4B5C60718293D4E5F /* EnvSecrets.h */,
 				E1F2A3B4C5D60718293E4F5A /* EnvSecrets.m */,
@@ -212,13 +215,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-gohan/Pods-gohan-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-gohan/Pods-gohan-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -255,13 +254,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-gohan/Pods-gohan-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-gohan/Pods-gohan-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -276,6 +271,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				A2B3C4D5E6F70718293A4B5D /* ReadableContentGuideModule.m in Sources */,
 				B1C2D3E4F5A60718293B4C5D /* EnvSecrets.m in Sources */,
 				F1A2B3C4D5E60718293A4B5C /* FanfouSecretsLoader.m in Sources */,
 			);
@@ -300,7 +296,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2603.30;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -331,7 +327,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2603.30;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
