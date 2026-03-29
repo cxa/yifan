@@ -203,7 +203,7 @@ const TimelineStatusCard = ({
       <Pressable
         onPress={() => onPressStatus(statusId, shadowType)}
         unstable_pressDelay={100}
-        className="rounded-3xl px-5 py-4 active:opacity-75"
+        className="rounded-3xl p-4 active:opacity-75"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
         <View className={showAvatar ? 'flex-row gap-3' : undefined}>
@@ -228,7 +228,7 @@ const TimelineStatusCard = ({
 
           <View className={showAvatar ? 'flex-1' : undefined}>
             {showAuthor ? (
-              <View className="mt-0.5 flex-row items-center gap-2">
+              <View className="flex-row items-center gap-2">
                 <Pressable
                   onPress={event => {
                     event.stopPropagation();
