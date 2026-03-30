@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   Extrapolation,
@@ -643,7 +643,9 @@ const PhotoViewerModal = ({
         statusBarTranslucent
         onRequestClose={() => scheduleOnUI(startCloseTransition)}
       >
-        {content}
+        <GestureHandlerRootView style={styles.gestureRoot}>
+          {content}
+        </GestureHandlerRootView>
       </Modal>
     );
   }
@@ -656,6 +658,9 @@ const PhotoViewerModal = ({
 const styles = StyleSheet.create({
   closeButton: {
     borderCurve: 'continuous',
+  },
+  gestureRoot: {
+    flex: 1,
   },
   overlay: {
     position: 'absolute',
