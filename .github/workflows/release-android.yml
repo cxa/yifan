@@ -1,0 +1,72 @@
+name: Release Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env
+        run: |
+          echo "FANFOU_CONSUMER_KEY=${{ secrets.FANFOU_CONSUMER_KEY }}" >> .env
+          echo "FANFOU_CONSUMER_SECRET=${{ secrets.FANFOU_CONSUMER_SECRET }}" >> .env
+
+      - name: Generate native secrets
+        run: npm run env:generate
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.GOHAN_RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/gohan-release.keystore
+
+      - name: Build release APK
+        env:
+          GOHAN_RELEASE_STORE_FILE: gohan-release.keystore
+          GOHAN_RELEASE_STORE_PASSWORD: ${{ secrets.GOHAN_RELEASE_STORE_PASSWORD }}
+          GOHAN_RELEASE_KEY_ALIAS: ${{ secrets.GOHAN_RELEASE_KEY_ALIAS }}
+          GOHAN_RELEASE_KEY_PASSWORD: ${{ secrets.GOHAN_RELEASE_KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew assembleRelease \
+            -PreactNativeArchitectures=arm64-v8a \
+            -PGOHAN_RELEASE_STORE_FILE=$GOHAN_RELEASE_STORE_FILE \
+            -PGOHAN_RELEASE_STORE_PASSWORD=$GOHAN_RELEASE_STORE_PASSWORD \
+            -PGOHAN_RELEASE_KEY_ALIAS=$GOHAN_RELEASE_KEY_ALIAS \
+            -PGOHAN_RELEASE_KEY_PASSWORD=$GOHAN_RELEASE_KEY_PASSWORD
+
+      - name: Rename APK
+        run: |
+          VERSION=$(grep versionName android/app/build.gradle | grep -o '".*"' | tr -d '"')
+          mv android/app/build/outputs/apk/release/app-release.apk \
+             android/app/build/outputs/apk/release/gohan-${VERSION}.apk
+          echo "APK_PATH=android/app/build/outputs/apk/release/gohan-${VERSION}.apk" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          files: ${{ env.APK_PATH }}
+          generate_release_notes: true
