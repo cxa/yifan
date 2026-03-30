@@ -114,7 +114,6 @@ import {
   resolveReadableTextColor,
   resolveProfileThemePalette,
 } from '@/utils/profile-theme';
-import { fixImageUrl } from '@/utils/fix-image-url';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const SECTION_GAP = 20;
@@ -470,7 +469,7 @@ const MoreRouteContent = ({
     hasAvatar && avatarUrl ? (
       <Image
         source={{
-          uri: fixImageUrl(avatarUrl),
+          uri: avatarUrl,
         }}
         className="rounded-full bg-surface-secondary"
         style={{

@@ -99,7 +99,6 @@ import {
   useAppProfileThemePreference,
   setAppProfileThemePreference,
 } from '@/settings/app-profile-theme-preference';
-import { fixImageUrl } from '@/utils/fix-image-url';
 const PROFILE_CARD_GAP = 16;
 type ComposerMode = 'mention' | 'dm' | 'reply' | 'repost' | null;
 type ReplyTarget = {
@@ -758,7 +757,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       <View className="h-20 w-20">
         <Image
           source={{
-            uri: fixImageUrl(avatarUrl),
+            uri: avatarUrl,
           }}
           className="h-full w-full rounded-full bg-surface-secondary"
         />

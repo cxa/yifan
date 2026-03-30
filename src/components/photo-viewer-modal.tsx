@@ -27,7 +27,6 @@ import { useThemeColor } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setPhotoViewerLayerMode } from '@/navigation/photo-viewer-layer-state';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
-import { fixImageUrl } from '@/utils/fix-image-url';
 type PhotoViewerModalProps = {
   visible: boolean;
   photoUrl: string | null;
@@ -594,7 +593,7 @@ const PhotoViewerModal = ({
               <Animated.View style={imageTransformStyle}>
                 <Animated.View style={[imageAnimatedStyle, imageRadiusStyle]}>
                   <Animated.Image
-                    source={{ uri: fixImageUrl(photoUrl) }}
+                    source={{ uri: photoUrl }}
                     style={imageAnimatedStyle}
                     resizeMode="contain"
                     onLoad={markImageLoaded}
