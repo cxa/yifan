@@ -1,7 +1,9 @@
+import CoreSpotlight
 import React
 import ReactAppDependencyProvider
 import React_RCTAppDelegate
 import UIKit
+import UniformTypeIdentifiers
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -37,8 +39,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       launchOptions: launchOptions
     )
     scheduleLaunchScreenFallbackHide()
+    donateSpotlightItem()
 
     return true
+  }
+
+  private func donateSpotlightItem() {
+    let attributes = CSSearchableItemAttributeSet(contentType: UTType.application)
+    attributes.title = "Gohan"
+    attributes.contentDescription = "饭否客户端"
+    attributes.keywords = ["fanfou", "饭否", "gohan", "悟饭", "Fanfou", "饭唠"]
+    let item = CSSearchableItem(
+      uniqueIdentifier: "im.cxa.fanatter.app",
+      domainIdentifier: "app",
+      attributeSet: attributes
+    )
+    item.expirationDate = .distantFuture
+    CSSearchableIndex.default().indexSearchableItems([item]) { _ in }
   }
 
   func application(
