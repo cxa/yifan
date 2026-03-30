@@ -9,6 +9,23 @@ A React Native client for [Fanfou](https://fanfou.com), the Chinese microbloggin
 
 ## Getting Started
 
+### Configure credentials
+
+The app uses Fanfou's OAuth 1.0a API. You need a consumer key and secret from [Fanfou's developer platform](https://fanfou.com/apps).
+
+Create a `.env` file in the repo root:
+
+```sh
+FANFOU_CONSUMER_KEY=your_consumer_key
+FANFOU_CONSUMER_SECRET=your_consumer_secret
+```
+
+This file is gitignored. The `env:generate` script reads it and produces obfuscated native source files (`EnvSecrets.kt` for Android, `EnvSecrets.h`/`EnvSecrets.m` for iOS) that are also gitignored. The script runs automatically before `start`, `test`, `android`, and `ios` — you only need to run it manually if you change `.env` without triggering those commands:
+
+```sh
+npm run env:generate
+```
+
 ### Install dependencies
 
 ```sh
