@@ -521,53 +521,63 @@ const TagTimelineRoute = () => {
           contentContainerStyle={listContentContainerStyle}
           ListFooterComponent={
             isFetchingMore ? (
-              <View className="items-center py-6">
-                <NeobrutalActivityIndicator size="small" />
-              </View>
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <View className="items-center py-6">
+                  <NeobrutalActivityIndicator size="small" />
+                </View>
+              </Animated.View>
             ) : hasReachedTimelineEnd && timelineItems.length > 0 ? (
-              <View className="items-center py-6">
-                <Text className="text-[12px] tracking-[4px] text-muted">
-                  FIN
-                </Text>
-              </View>
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <View className="items-center py-6">
+                  <Text className="text-[12px] tracking-[4px] text-muted">
+                    FIN
+                  </Text>
+                </View>
+              </Animated.View>
             ) : null
           }
           ListHeaderComponent={
             errorMessage ? (
-              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
+              </Animated.View>
             ) : null
           }
           ListEmptyComponent={
-            isLoading || isHydratingTimelineItems ? (
-              <TimelineSkeletonList
-                keyPrefix="tag-timeline-skeleton"
-                availableHeight={skeletonAvailableHeight}
-              />
-            ) : (
-              <TimelineSkeletonCard message={t('tagTimelineEmpty')} />
-            )
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              {isLoading || isHydratingTimelineItems ? (
+                <TimelineSkeletonList
+                  keyPrefix="tag-timeline-skeleton"
+                  availableHeight={skeletonAvailableHeight}
+                />
+              ) : (
+                <TimelineSkeletonCard message={t('tagTimelineEmpty')} />
+              )}
+            </Animated.View>
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}
           renderItem={({ item, index }) => (
-            <TimelineStatusCard
-              status={item}
-              accent={accent}
-              muted={muted}
-              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
-              isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
-              activeTag={routeTag}
-              onOpenPhoto={handlePhotoPress}
-              onPressStatus={handleStatusPress}
-              onPressProfile={handleProfilePress}
-              onPressMention={handleMentionPress}
-              onPressTag={handleTagPress}
-              onReply={handleOpenReplyComposer}
-              onRepost={handleOpenRepostComposer}
-              onToggleBookmark={handleToggleBookmark}
-              canDelete={isStatusOwnedByUser(item, authUserId)}
-              onDelete={handleDeleteStatus}
-            />
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              <TimelineStatusCard
+                status={item}
+                accent={accent}
+                muted={muted}
+                shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
+                isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
+                activeTag={routeTag}
+                onOpenPhoto={handlePhotoPress}
+                onPressStatus={handleStatusPress}
+                onPressProfile={handleProfilePress}
+                onPressMention={handleMentionPress}
+                onPressTag={handleTagPress}
+                onReply={handleOpenReplyComposer}
+                onRepost={handleOpenRepostComposer}
+                onToggleBookmark={handleToggleBookmark}
+                canDelete={isStatusOwnedByUser(item, authUserId)}
+                onDelete={handleDeleteStatus}
+              />
+            </Animated.View>
           )}
         />
         <PhotoViewerModal

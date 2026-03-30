@@ -46,6 +46,7 @@ import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouUser } from '@/types/fanfou';
 import { parseHtmlToText } from '@/utils/parse-html';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
+import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const AVATAR_SIZE = 44;
@@ -124,9 +125,10 @@ const UserListRoute = () => {
   const items = (data?.pages ?? []).flatMap(pageItems => pageItems);
   const errorMessage = error ? t('userListLoadFailed') : null;
   const technicalError = error instanceof Error ? error.message : null;
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
     flexGrow: 1,
-    paddingHorizontal: PAGE_HORIZONTAL_PADDING,
+    paddingHorizontal: Math.max(PAGE_HORIZONTAL_PADDING, readableInsets.left),
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + PAGE_BOTTOM_PADDING,
   };

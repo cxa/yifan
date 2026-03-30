@@ -68,6 +68,7 @@ import {
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
 import useUserTimelineHeader from '@/navigation/use-user-timeline-header';
+import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 import type {
   AuthProfileStackParamList,
   AuthStackParamList,
@@ -703,8 +704,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     headerBackgroundColor,
     showHeaderTitle,
   });
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
-    paddingHorizontal: 16,
+    paddingHorizontal: Math.max(16, readableInsets.left),
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + TIMELINE_SPACING,
     gap: PROFILE_CARD_GAP,

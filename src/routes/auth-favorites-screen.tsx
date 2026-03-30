@@ -266,43 +266,51 @@ const FavoritesRoute = () => {
           }}
           ListHeaderComponent={
             errorMessage ? (
-              <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
+              </Animated.View>
             ) : null
           }
           ListEmptyComponent={
-            isPending ? (
-              <TimelineSkeletonList
-                keyPrefix="favorite-skeleton"
-                availableHeight={skeletonAvailableHeight}
-              />
-            ) : (
-              <TimelineSkeletonCard message={t('favoritesEmpty')} />
-            )
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              {isPending ? (
+                <TimelineSkeletonList
+                  keyPrefix="favorite-skeleton"
+                  availableHeight={skeletonAvailableHeight}
+                />
+              ) : (
+                <TimelineSkeletonCard message={t('favoritesEmpty')} />
+              )}
+            </Animated.View>
           }
           renderItem={({ item, index }) => (
-            <TimelineStatusCard
-              status={item}
-              accent={accent}
-              muted={muted}
-              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
-              isBookmarkPending={pendingBookmarkIds.has(item.id)}
-              onOpenPhoto={handlePhotoPress}
-              onPressStatus={handleOpenStatus}
-              onPressProfile={handleOpenProfile}
-              onPressMention={handleOpenProfile}
-              onPressTag={handleTagPress}
-              onReply={handleOpenReplyComposer}
-              onRepost={handleOpenRepostComposer}
-              onToggleBookmark={handleToggleBookmark}
-              canDelete={isStatusOwnedByUser(item, authUserId)}
-              onDelete={handleDeleteStatus}
-            />
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              <TimelineStatusCard
+                status={item}
+                accent={accent}
+                muted={muted}
+                shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
+                isBookmarkPending={pendingBookmarkIds.has(item.id)}
+                onOpenPhoto={handlePhotoPress}
+                onPressStatus={handleOpenStatus}
+                onPressProfile={handleOpenProfile}
+                onPressMention={handleOpenProfile}
+                onPressTag={handleTagPress}
+                onReply={handleOpenReplyComposer}
+                onRepost={handleOpenRepostComposer}
+                onToggleBookmark={handleToggleBookmark}
+                canDelete={isStatusOwnedByUser(item, authUserId)}
+                onDelete={handleDeleteStatus}
+              />
+            </Animated.View>
           )}
           ListFooterComponent={
             isFetchingNextPage || (isRefetching && !isPending) ? (
-              <View className="items-center py-6">
-                <NeobrutalActivityIndicator size="small" />
-              </View>
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <View className="items-center py-6">
+                  <NeobrutalActivityIndicator size="small" />
+                </View>
+              </Animated.View>
             ) : null
           }
         />

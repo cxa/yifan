@@ -27,6 +27,7 @@ import {
 import type { FanfouUser } from '@/types/fanfou';
 import { parseHtmlToText } from '@/utils/parse-html';
 import { useTranslation } from 'react-i18next';
+import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const PAGE_TOP_PADDING = 16;
@@ -81,8 +82,9 @@ const EditProfileRoute = () => {
     Platform.OS === 'android'
       ? headerHeight + PAGE_TOP_PADDING
       : PAGE_TOP_PADDING;
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
-    paddingHorizontal: PAGE_HORIZONTAL_PADDING,
+    paddingHorizontal: Math.max(PAGE_HORIZONTAL_PADDING, readableInsets.left),
     paddingTop: topPadding,
     paddingBottom: insets.bottom + PAGE_BOTTOM_PADDING,
     gap: PAGE_SECTION_GAP,

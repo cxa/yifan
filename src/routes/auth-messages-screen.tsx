@@ -54,6 +54,7 @@ import { useDirectMessageMutation } from '@/query/post-mutations';
 import type { FanfouUser } from '@/types/fanfou';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToText } from '@/utils/parse-html';
+import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 28;
 const CARD_GAP = 16;
@@ -499,8 +500,9 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
   }, [parentNavigation, renderHeaderTabs, t, totalMailboxCount]);
   const errorMessage = error ? t('messagesLoadFailed') : null;
   const technicalError = error instanceof Error ? error.message : null;
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
-    paddingHorizontal: PAGE_HORIZONTAL_PADDING,
+    paddingHorizontal: Math.max(PAGE_HORIZONTAL_PADDING, readableInsets.left),
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + PAGE_BOTTOM_PADDING,
     flexGrow: 1,

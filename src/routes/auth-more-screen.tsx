@@ -50,6 +50,8 @@ import {
   getContentBottomPadding,
   getScrollIndicatorBottomInset,
 } from '@/navigation/tab-bar-layout';
+import { useReadableContentInsets } from '@/navigation/readable-content-guide';
+import { setMoreBackgroundColor } from '@/routes/more-background-store';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
 import NativeEdgeScrollShadow, {
   resolveNativeEdgeScrollShadowSize,
@@ -446,6 +448,7 @@ const MoreRouteContent = ({
   };
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
+  useEffect(() => { setMoreBackgroundColor(pageBackgroundColor); }, [pageBackgroundColor]);
   const entryIconColor = profileThemePalette.linkColor ?? muted;
   const displayName = user
     ? user.name || user.screen_name || displayNameFallback
@@ -486,9 +489,10 @@ const MoreRouteContent = ({
       </View>
     );
   const showLoadingState = !user && (isLoading || isFetching);
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
     flexGrow: 1,
-    paddingHorizontal: PAGE_HORIZONTAL_PADDING,
+    paddingHorizontal: Math.max(PAGE_HORIZONTAL_PADDING, readableInsets.left),
     paddingTop: resolveTopContentPadding({
       safeAreaTop: insets.top,
       statusBarHeight,
@@ -1204,9 +1208,10 @@ const MissingUserIdPlaceholder = () => {
     true,
   );
   useScrollToTop(scrollRef);
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
     flexGrow: 1,
-    paddingHorizontal: PAGE_HORIZONTAL_PADDING,
+    paddingHorizontal: Math.max(PAGE_HORIZONTAL_PADDING, readableInsets.left),
     paddingTop: resolveTopContentPadding({
       safeAreaTop: insets.top,
       statusBarHeight,

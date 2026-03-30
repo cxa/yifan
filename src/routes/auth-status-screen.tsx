@@ -55,6 +55,7 @@ import {
   TIMELINE_HORIZONTAL_PADDING,
   TIMELINE_SPACING,
 } from '@/components/timeline-list-settings';
+import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 import type {
   AuthStackParamList,
   AuthStatusStackParamList,
@@ -285,8 +286,9 @@ const StatusDetailRoute = () => {
       .scrollTo({ y: scrollTarget, animated: false });
   }, [cardSectionTop, mainCardTop, beforeStatuses.length, viewportHeight, headerHeight, insets.bottom]);
 
+  const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
-    paddingHorizontal: TIMELINE_HORIZONTAL_PADDING,
+    paddingHorizontal: Math.max(TIMELINE_HORIZONTAL_PADDING, readableInsets.left),
     paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingBottom: insets.bottom + TIMELINE_SPACING,
     gap: STATUS_THREAD_CARD_GAP,

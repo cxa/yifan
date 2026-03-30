@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { scheduleOnRN } from 'react-native-worklets';
-import {
+import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedScrollHandler,
@@ -624,56 +624,66 @@ const AuthHomeRoute = () => {
           ItemSeparatorComponent={TimelineItemSeparator}
           ListFooterComponent={
             isFetchingMore ? (
-              <View className="items-center py-6">
-                <NeobrutalActivityIndicator size="small" />
-              </View>
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <View className="items-center py-6">
+                  <NeobrutalActivityIndicator size="small" />
+                </View>
+              </Animated.View>
             ) : hasReachedTimelineEnd && timelineItems.length > 0 ? (
-              <View className="items-center py-6">
-                <Text className="text-[12px] tracking-[4px] text-muted">
-                  FIN
-                </Text>
-              </View>
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <View className="items-center py-6">
+                  <Text className="text-[12px] tracking-[4px] text-muted">
+                    FIN
+                  </Text>
+                </View>
+              </Animated.View>
             ) : null
           }
           ListHeaderComponent={
-            <TimelineTitleHeader
-              title={t('homeTitle')}
-              titleContainerStyle={titleContainerStyle}
-              titleTextStyle={titleTextStyle}
-              errorMessage={errorMessage}
-              technicalError={technicalError}
-            />
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              <TimelineTitleHeader
+                title={t('homeTitle')}
+                titleContainerStyle={titleContainerStyle}
+                titleTextStyle={titleTextStyle}
+                errorMessage={errorMessage}
+                technicalError={technicalError}
+              />
+            </Animated.View>
           }
           ListEmptyComponent={
-            isLoading || isHydratingTimelineItems ? (
-              <TimelineSkeletonList
-                keyPrefix="timeline-skeleton"
-                availableHeight={skeletonAvailableHeight}
-              />
-            ) : (
-              <TimelineSkeletonCard message={t('homeEmpty')} />
-            )
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              {isLoading || isHydratingTimelineItems ? (
+                <TimelineSkeletonList
+                  keyPrefix="timeline-skeleton"
+                  availableHeight={skeletonAvailableHeight}
+                />
+              ) : (
+                <TimelineSkeletonCard message={t('homeEmpty')} />
+              )}
+            </Animated.View>
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}
           renderItem={({ item, index }) => (
-            <TimelineStatusCard
-              status={item}
-              accent={accent}
-              muted={muted}
-              shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
-              isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
-              onOpenPhoto={handlePhotoPress}
-              onPressStatus={handleStatusPress}
-              onPressProfile={handleProfilePress}
-              onPressMention={handleMentionPress}
-              onPressTag={handleTagPress}
-              onReply={handleOpenReplyComposer}
-              onRepost={handleOpenRepostComposer}
-              onToggleBookmark={handleToggleBookmark}
-              canDelete={isStatusOwnedByUser(item, authUserId)}
-              onDelete={handleDeleteStatus}
-            />
+            <Animated.View style={timelineListSettings.animatedItemStyle}>
+              <TimelineStatusCard
+                status={item}
+                accent={accent}
+                muted={muted}
+                shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
+                isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
+                onOpenPhoto={handlePhotoPress}
+                onPressStatus={handleStatusPress}
+                onPressProfile={handleProfilePress}
+                onPressMention={handleMentionPress}
+                onPressTag={handleTagPress}
+                onReply={handleOpenReplyComposer}
+                onRepost={handleOpenRepostComposer}
+                onToggleBookmark={handleToggleBookmark}
+                canDelete={isStatusOwnedByUser(item, authUserId)}
+                onDelete={handleDeleteStatus}
+              />
+            </Animated.View>
           )}
         />
       </NativeEdgeScrollShadow>
