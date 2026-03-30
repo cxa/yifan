@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Fanfou API (api.fanfou.com) uses plain HTTP -->
+    <!-- localhost / 10.0.2.2 needed for Metro bundler in dev -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">fanfou.com</domain>
+        <domain>localhost</domain>
+        <domain>10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
