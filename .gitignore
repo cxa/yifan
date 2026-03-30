@@ -1,6 +1,10 @@
 .agent-shell
+.agent
+.agents
 .claude
+.pi
 tmp/
+skills-lock.json
 
 # OSX
 #
