@@ -55,6 +55,7 @@ import type { FanfouUser } from '@/types/fanfou';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToText } from '@/utils/parse-html';
 import { useReadableContentInsets } from '@/navigation/readable-content-guide';
+import { fixImageUrl } from '@/utils/fix-image-url';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 28;
 const CARD_GAP = 16;
@@ -165,7 +166,7 @@ const PostageStamp = ({
       {avatarUrl ? (
         <Image
           source={{
-            uri: avatarUrl,
+            uri: fixImageUrl(avatarUrl),
           }}
           className="h-full w-full"
         />

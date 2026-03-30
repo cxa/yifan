@@ -47,6 +47,7 @@ import type { FanfouUser } from '@/types/fanfou';
 import { parseHtmlToText } from '@/utils/parse-html';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { useReadableContentInsets } from '@/navigation/readable-content-guide';
+import { fixImageUrl } from '@/utils/fix-image-url';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const AVATAR_SIZE = 44;
@@ -203,7 +204,7 @@ const UserListRoute = () => {
                   {avatarUrl ? (
                     <Image
                       source={{
-                        uri: avatarUrl,
+                        uri: fixImageUrl(avatarUrl),
                       }}
                       className="rounded-full bg-surface-secondary"
                       style={{

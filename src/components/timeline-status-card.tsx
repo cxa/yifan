@@ -14,6 +14,7 @@ import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
 import { openLink } from '@/utils/open-link';
+import { fixImageUrl } from '@/utils/fix-image-url';
 // Surrogate-pair emoji regex — avoids \p{} Unicode property escapes which
 // some Hermes versions parse but silently fail to match.
 const EMOJI_RE = /([\uD83C-\uD83F][\uDC00-\uDFFF]|[\u2600-\u27BF]|\u2764[\uFE0F]?)/;
@@ -217,7 +218,7 @@ const TimelineStatusCard = ({
             >
               <Image
                 source={{
-                  uri: avatarUrl,
+                  uri: fixImageUrl(avatarUrl),
                 }}
                 className="h-10 w-10 rounded-full bg-surface-secondary"
               />
@@ -334,7 +335,7 @@ const TimelineStatusCard = ({
                   }
                 >
                   <Image
-                    source={{ uri: photoUrl }}
+                    source={{ uri: fixImageUrl(photoUrl) }}
                     className="h-full w-full"
                     resizeMode="cover"
                     onLoad={event => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
+import { fixImageUrl } from '@/utils/fix-image-url';
 
 type ProfilePageBackdropProps = {
   backgroundColor: string;
@@ -20,7 +21,7 @@ const ProfilePageBackdrop = ({
     <View className="flex-1" style={{ backgroundColor }}>
       {backgroundImageUrl ? (
         <Image
-          source={{ uri: backgroundImageUrl }}
+          source={{ uri: fixImageUrl(backgroundImageUrl) }}
           resizeMode={isBackgroundImageTiled ? 'repeat' : 'cover'}
           style={StyleSheet.absoluteFill}
         />

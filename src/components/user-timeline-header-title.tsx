@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Text } from '@/components/app-text';
+import { fixImageUrl } from '@/utils/fix-image-url';
 
 const HEADER_AVATAR_SIZE = 26;
 const styles = StyleSheet.create({
@@ -60,7 +61,7 @@ const UserTimelineHeaderTitle = ({
         <View className="min-w-0 flex-row items-center gap-2 shrink">
           {avatarUrl ? (
             <Image
-              source={{ uri: avatarUrl }}
+              source={{ uri: avatarUrl && fixImageUrl(avatarUrl) }}
               className="rounded-full bg-surface-secondary"
               style={{ width: HEADER_AVATAR_SIZE, height: HEADER_AVATAR_SIZE }}
             />
