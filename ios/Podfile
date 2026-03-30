@@ -38,5 +38,9 @@ target 'gohan' do
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
       end
     end
+    # Fix missing MinimumOSVersion in embedded framework Info.plist (e.g. hermesvm.framework)
+    Dir.glob("#{installer.sandbox.root}/**/*.framework/Info.plist").each do |plist|
+      system("plutil -replace MinimumOSVersion -string '#{min_ios_version_supported}' '#{plist}' 2>/dev/null || plutil -insert MinimumOSVersion -string '#{min_ios_version_supported}' '#{plist}' 2>/dev/null")
+    end
   end
 end
