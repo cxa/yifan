@@ -3,31 +3,9 @@ const mockGetAccessToken = jest.fn();
 const mockRequest = jest.fn();
 const mockUploadPhoto = jest.fn();
 const mockUploadProfileImage = jest.fn();
-const mockOpenURL = jest.fn();
-const mockGetInitialURL = jest.fn().mockResolvedValue(null);
-const linkingListeners: Array<(event: { url: string }) => void> = [];
-const mockAddEventListener = jest
-  .fn()
-  .mockImplementation(
-    (_event: string, handler: (event: { url: string }) => void) => {
-      linkingListeners.push(handler);
-      return {
-        remove: jest.fn(() => {
-          const index = linkingListeners.indexOf(handler);
-          if (index >= 0) {
-            linkingListeners.splice(index, 1);
-          }
-        }),
-      };
-    },
-  );
+const mockOpenAuth = jest.fn();
 
 jest.mock('react-native', () => ({
-  Linking: {
-    addEventListener: (...args: unknown[]) => mockAddEventListener(...args),
-    openURL: (...args: unknown[]) => mockOpenURL(...args),
-    getInitialURL: (...args: unknown[]) => mockGetInitialURL(...args),
-  },
   NativeModules: {
     FanfouOAuthModule: {
       getRequestToken: (...args: unknown[]) => mockGetRequestToken(...args),
@@ -40,6 +18,13 @@ jest.mock('react-native', () => ({
   },
 }));
 
+jest.mock('react-native-inappbrowser-reborn', () => ({
+  __esModule: true,
+  default: {
+    openAuth: (...args: unknown[]) => mockOpenAuth(...args),
+  },
+}));
+
 import { FanfouClient, getAccessToken } from 'rn-fanfou-client';
 
 const OAUTH_CALLBACK_URL = 'gohan://authorize_callback';
@@ -47,10 +32,9 @@ const OAUTH_CALLBACK_URL = 'gohan://authorize_callback';
 describe('FanfouClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    linkingListeners.splice(0, linkingListeners.length);
   });
 
-  test('getAccessToken opens authorize URL and resolves access token', async () => {
+  test('getAccessToken opens authorize URL in InAppBrowser and resolves access token', async () => {
     mockGetRequestToken.mockResolvedValueOnce({
       oauthToken: 'rt',
       oauthTokenSecret: 'rs',
@@ -61,25 +45,19 @@ describe('FanfouClient', () => {
       userId: '1',
       screenName: 'gohan',
     });
-
-    const accessTokenPromise = getAccessToken({
-      callbackUrl: OAUTH_CALLBACK_URL,
-    });
-    await new Promise<void>(resolve => {
-      setImmediate(() => resolve());
+    mockOpenAuth.mockResolvedValueOnce({
+      type: 'success',
+      url: `${OAUTH_CALLBACK_URL}?oauth_token=rt`,
     });
 
-    expect(mockOpenURL).toHaveBeenCalledWith(
-      'https://m.fanfou.com/oauth/authorize?oauth_token=rt&oauth_callback=gohan%3A%2F%2Fauthorize_callback',
-    );
+    const accessToken = await getAccessToken({ callbackUrl: OAUTH_CALLBACK_URL });
+
     expect(mockGetRequestToken).toHaveBeenCalledWith(OAUTH_CALLBACK_URL);
-    expect(mockAddEventListener).toHaveBeenCalled();
-
-    linkingListeners.forEach(handler => {
-      handler({ url: `${OAUTH_CALLBACK_URL}?oauth_token=rt` });
-    });
-    const accessToken = await accessTokenPromise;
-
+    expect(mockOpenAuth).toHaveBeenCalledWith(
+      'https://m.fanfou.com/oauth/authorize?oauth_token=rt&oauth_callback=gohan%3A%2F%2Fauthorize_callback',
+      OAUTH_CALLBACK_URL,
+      expect.any(Object),
+    );
     expect(accessToken).toEqual({
       oauthToken: 'at',
       oauthTokenSecret: 'as',
@@ -89,34 +67,18 @@ describe('FanfouClient', () => {
     expect(mockGetAccessToken).toHaveBeenCalledWith('rt', 'rs');
   });
 
-  test('getAccessToken rejects when callback times out', async () => {
-    jest.useFakeTimers();
-    try {
-      mockGetRequestToken.mockResolvedValueOnce({
-        oauthToken: 'rt',
-        oauthTokenSecret: 'rs',
-      });
+  test('getAccessToken rejects when user cancels InAppBrowser', async () => {
+    mockGetRequestToken.mockResolvedValueOnce({
+      oauthToken: 'rt',
+      oauthTokenSecret: 'rs',
+    });
+    mockOpenAuth.mockResolvedValueOnce({ type: 'cancel' });
 
-      const accessTokenPromise = getAccessToken({
-        callbackUrl: OAUTH_CALLBACK_URL,
-        timeoutMs: 5,
-      });
-      const handledTimeout = accessTokenPromise.then(
-        () => new Error('Expected OAuth timeout error.'),
-        error => error as Error,
-      );
-      await Promise.resolve();
-      await Promise.resolve();
+    await expect(
+      getAccessToken({ callbackUrl: OAUTH_CALLBACK_URL }),
+    ).rejects.toThrow('cancelled');
 
-      await jest.advanceTimersByTimeAsync(5);
-
-      const timeoutError = await handledTimeout;
-      expect(timeoutError).toBeInstanceOf(Error);
-      expect(timeoutError.message).toBe('OAuth callback timed out after 5ms.');
-      expect(mockGetAccessToken).not.toHaveBeenCalled();
-    } finally {
-      jest.useRealTimers();
-    }
+    expect(mockGetAccessToken).not.toHaveBeenCalled();
   });
 
   test('get parses JSON response body', async () => {
