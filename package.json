@@ -1,11 +1,12 @@
 {
   "name": "gohan",
-  "version": "2603.30",
+  "version": "2603.31",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
+    "bump-version": "node scripts/bump-version.js",
     "android": "react-native run-android",
     "env:generate": "node scripts/generate-env.js",
     "ios": "react-native run-ios",
