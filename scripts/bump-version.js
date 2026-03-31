@@ -23,7 +23,7 @@ function getNextVersion() {
   }
   const suffixMatch = current.match(/^(\d{4}\.\d{2})\.(\d+)$/);
   if (suffixMatch && suffixMatch[1] === today) {
-    return `${today}.${parseInt(suffixMatch[2]) + 1}`;
+    return `${today}.${parseInt(suffixMatch[2], 10) + 1}`;
   }
   return today;
 }
@@ -34,9 +34,9 @@ function versionToCode(version) {
   const parts = version.split('.');
   const base = parts[0] + parts[1]; // "2603" + "31" = "260331"
   if (parts.length === 3) {
-    return parseInt(base) * 100 + parseInt(parts[2]);
+    return parseInt(base, 10) * 100 + parseInt(parts[2], 10);
   }
-  return parseInt(base);
+  return parseInt(base, 10);
 }
 
 function updateFile(filePath, replacer) {
