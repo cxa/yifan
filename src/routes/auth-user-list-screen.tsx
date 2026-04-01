@@ -46,6 +46,7 @@ import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouUser } from '@/types/fanfou';
 import { parseHtmlToText } from '@/utils/parse-html';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
+import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
@@ -82,6 +83,8 @@ const UserListRoute = () => {
   const skeletonAvailableHeight =
     windowHeight - insets.top - PAGE_BOTTOM_PADDING - insets.bottom;
   const isDark = useEffectiveIsDark();
+  const themePreference = useAppThemePreference();
+  const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const [background] = useThemeColor(['background']);
   const { t } = useTranslation();
   const screenTitle =
@@ -188,9 +191,9 @@ const UserListRoute = () => {
             const shadowType =
               CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length];
             const cardBgStyle = {
-              backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
-                shadowType
-              ],
+              backgroundColor: isPlain
+                ? (isDark ? '#1E1E1E' : '#FFFFFF')
+                : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
             };
             return (
               <DropShadowBox>
