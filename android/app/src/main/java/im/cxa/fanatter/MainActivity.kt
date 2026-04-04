@@ -26,7 +26,7 @@ class MainActivity : ReactActivity() {
     private const val SPLASH_TIMEOUT_MS = 5000L
   }
 
-  override fun getMainComponentName(): String = "gohan"
+  override fun getMainComponentName(): String = "yifan"
 
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)

@@ -24,7 +24,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     showLaunchScreenOverlayIfNeeded()
 
     appDelegate.reactNativeFactory?.startReactNative(
-      withModuleName: "gohan",
+      withModuleName: "yifan",
       in: window,
       launchOptions: appDelegate.launchOptions
     )

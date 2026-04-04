@@ -14,7 +14,7 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'gohan' do
+target 'yifan' do
   config = use_native_modules!
 
   use_react_native!(
@@ -42,10 +42,10 @@ target 'gohan' do
     # embedded prebuilt frameworks (e.g. hermesvm.framework) at build time, inside the .app bundle.
     # This is more robust than patching Pods files, which can be overwritten by subsequent builds.
     require 'xcodeproj'
-    app_project_path = File.join(installer.sandbox.root, '..', 'gohan.xcodeproj')
+    app_project_path = File.join(installer.sandbox.root, '..', 'yifan.xcodeproj')
     app_project = Xcodeproj::Project.open(app_project_path)
     app_project.targets.each do |target|
-      next unless target.name == 'gohan'
+      next unless target.name == 'yifan'
       phase_name = 'Fix MinimumOSVersion in Embedded Frameworks'
       next if target.shell_script_build_phases.any? { |p| p.name == phase_name }
       phase = target.new_shell_script_build_phase(phase_name)

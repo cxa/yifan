@@ -27,7 +27,7 @@
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="gohan" android:host="authorize_callback" />
+            <data android:scheme="yifan" android:host="authorize_callback" />
         </intent-filter>
       </activity>
     </application>

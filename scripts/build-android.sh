@@ -9,7 +9,7 @@ echo "Building release APK for version $VERSION (arm64)..."
 ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 
 SRC="app/build/outputs/apk/release/app-release.apk"
-DST="app/build/outputs/apk/release/gohan-${VERSION}.apk"
+DST="app/build/outputs/apk/release/yifan-${VERSION}.apk"
 mv "$SRC" "$DST"
 
 echo "Done: $DST"

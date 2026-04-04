@@ -26,7 +26,7 @@
 - Mirror the site’s core UI and flows.
 - Use the Fanfou REST API docs at https://github.com/FanfouAPI/FanFouAPIDoc/wiki for endpoints, payloads, and error behavior.
 - Authentication uses OAuth 1.0; avoid Basic Auth unless docs require it.
-- OAuth callback URL: `gohan://authorize_callback`.
+- OAuth callback URL: `yifan://authorize_callback`.
 - `rn-fanfou-client` is minimal: the app must supply the consumer key/secret and handle token persistence.
 - API base URL: `http://api.fanfou.com`. OAuth endpoints use `http://fanfou.com` with mobile authorize at `https://m.fanfou.com/oauth/authorize`.
 - OAuth signing/requests are native: iOS uses a custom Objective-C OAuth 1.0a signer, Android uses `com.github.scribejava:scribejava-core` (Gradle).
@@ -96,9 +96,9 @@ The visual language is warm, playful, and handcrafted — pastel card colors wit
 - Node.js: `>= 22.11.0` (see `package.json`).
 - Keep `.env` out of version control; do not add a `.env.example` unless explicitly requested.
 - `scripts/generate-env.js` writes native obfuscated secrets for the app:
-  - `android/app/src/main/java/com/gohan/EnvSecrets.kt`
-  - `ios/gohan/EnvSecrets.h`
-  - `ios/gohan/EnvSecrets.m`
+  - `android/app/src/main/java/im/cxa/fanatter/EnvSecrets.kt`
+  - `ios/yifan/EnvSecrets.h`
+  - `ios/yifan/EnvSecrets.m`
 - Fanfou consumer credentials are stored in those native files (obfuscated, no plain strings in JS).
 - App native startup config loads these secrets into `rn-fanfou-client`; JS never reads them.
 

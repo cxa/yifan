@@ -86,7 +86,7 @@ security boundary.
 ```ts
 import { FanfouClient, getAccessToken } from 'rn-fanfou-client';
 
-const CALLBACK_URL = 'gohan://authorize_callback';
+const CALLBACK_URL = 'yifan://authorize_callback';
 
 // One call: opens authorize URL, waits for callback, exchanges access token.
 const accessToken = await getAccessToken({

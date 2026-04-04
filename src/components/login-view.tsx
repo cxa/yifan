@@ -35,7 +35,7 @@ import {
 } from '@/components/launch-content-paths';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 
-const CALLBACK_URL = 'gohan://authorize_callback';
+const CALLBACK_URL = 'yifan://authorize_callback';
 
 const LoginView = () => {
   const { t, i18n } = useTranslation();

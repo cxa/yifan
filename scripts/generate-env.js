@@ -20,8 +20,8 @@ const outputAndroidPath = path.join(
   'fanatter',
   'EnvSecrets.kt',
 );
-const outputIosHeaderPath = path.join(rootDir, 'ios', 'gohan', 'EnvSecrets.h');
-const outputIosImplPath = path.join(rootDir, 'ios', 'gohan', 'EnvSecrets.m');
+const outputIosHeaderPath = path.join(rootDir, 'ios', 'yifan', 'EnvSecrets.h');
+const outputIosImplPath = path.join(rootDir, 'ios', 'yifan', 'EnvSecrets.m');
 
 const parseEnv = content => {
   const env = {};

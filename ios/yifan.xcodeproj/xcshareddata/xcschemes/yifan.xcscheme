@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "gohan.app"
-               BlueprintName = "gohan"
-               ReferencedContainer = "container:gohan.xcodeproj">
+               BuildableName = "yifan.app"
+               BlueprintName = "yifan"
+               ReferencedContainer = "container:yifan.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "gohanTests.xctest"
-               BlueprintName = "gohanTests"
-               ReferencedContainer = "container:gohan.xcodeproj">
+               BuildableName = "yifanTests.xctest"
+               BlueprintName = "yifanTests"
+               ReferencedContainer = "container:yifan.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -56,9 +56,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "gohan.app"
-            BlueprintName = "gohan"
-            ReferencedContainer = "container:gohan.xcodeproj">
+            BuildableName = "yifan.app"
+            BlueprintName = "yifan"
+            ReferencedContainer = "container:yifan.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -73,9 +73,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "gohan.app"
-            BlueprintName = "gohan"
-            ReferencedContainer = "container:gohan.xcodeproj">
+            BuildableName = "yifan.app"
+            BlueprintName = "yifan"
+            ReferencedContainer = "container:yifan.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

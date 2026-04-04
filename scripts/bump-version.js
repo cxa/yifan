@@ -65,8 +65,8 @@ updateFile(path.join(ROOT, 'android/app/build.gradle'), c =>
     .replace(/versionName "[^"]+"/, `versionName "${version}"`),
 );
 
-// ios/gohan.xcodeproj/project.pbxproj (two occurrences: Debug + Release)
-updateFile(path.join(ROOT, 'ios/gohan.xcodeproj/project.pbxproj'), c =>
+// ios/yifan.xcodeproj/project.pbxproj (two occurrences: Debug + Release)
+updateFile(path.join(ROOT, 'ios/yifan.xcodeproj/project.pbxproj'), c =>
   c.replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${version};`),
 );
 

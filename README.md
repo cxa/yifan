@@ -1,4 +1,4 @@
-# Gohan
+# 一饭
 
 A React Native client for [Fanfou](https://fanfou.com), the Chinese microblogging platform.
 

@@ -58,9 +58,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
   private func donateSpotlightItem() {
     let attributes = CSSearchableItemAttributeSet(contentType: UTType.application)
-    attributes.title = "Gohan"
+    attributes.title = "一饭"
     attributes.contentDescription = "饭否客户端"
-    attributes.keywords = ["fanfou", "饭否", "gohan", "悟饭", "Fanfou", "饭唠"]
+    attributes.keywords = ["fanfou", "饭否", "yifan", "一饭", "Fanfou", "饭唠"]
     let item = CSSearchableItem(
       uniqueIdentifier: "im.cxa.fanatter.app",
       domainIdentifier: "app",
