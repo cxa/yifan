@@ -240,7 +240,7 @@ type BaseTranslations = {
 
 const enUS: BaseTranslations = {
   // Login screen
-  loginButton: 'Sign in with Fanfou',
+  loginButton: 'Sign In',
   loginLoading: 'Signing in…',
   loginCancel: 'Cancel',
   loginFailed: 'Sign in failed. Please try again.',
@@ -480,7 +480,7 @@ const enUS: BaseTranslations = {
 
 const zhCN: BaseTranslations = {
   // Login screen
-  loginButton: '使用饭否登录',
+  loginButton: '登录',
   loginLoading: '登录中…',
   loginCancel: '取消',
   loginFailed: '登录失败，请重试。',
