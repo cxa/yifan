@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Pressable, Image, useWindowDimensions } from 'react-native';
+import { View, Pressable, Image, useWindowDimensions, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useThemeColor } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -157,7 +157,7 @@ const LoginView = () => {
   };
 
   const handleSignIn = () => {
-    if (!getHasAgreedToTermsSnapshot()) {
+    if (Platform.OS === 'ios' && !getHasAgreedToTermsSnapshot()) {
       setIsTermsOpen(true);
       return;
     }

@@ -12,6 +12,23 @@ type TermsModalProps = {
   onDecline: () => void;
 };
 
+const renderWithItalic = (text: string, fontFamily?: string) => {
+  const parts = text.split(/(\*[^*]+\*)/);
+  if (parts.length === 1) {
+    return text;
+  }
+  return parts.map((part, i) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <Text key={i} className="text-[13px] leading-5 text-muted italic" style={fontFamily ? { fontFamily } : undefined}>
+          {part.slice(1, -1)}
+        </Text>
+      );
+    }
+    return part;
+  });
+};
+
 type TermsSection =
   | { headingKey: null; bodyKey: TranslationKey }
   | { headingKey: TranslationKey; bodyKey: TranslationKey };
@@ -31,10 +48,10 @@ const TermsModal = ({ isOpen, onAgree, onDecline }: TermsModalProps) => {
   const fontFamily = useAppFontFamily();
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={open => { if (!open) onDecline(); }}>
+    <Dialog isOpen={isOpen}>
       <Dialog.Portal>
-        <Dialog.Overlay className="bg-foreground/55 dark:bg-background/85" />
-        <Dialog.Content className="w-[92%] max-w-[400px] self-center rounded-3xl bg-surface px-5 py-5">
+        <Dialog.Overlay className="bg-foreground/55 dark:bg-background/85" isCloseOnPress={false} />
+        <Dialog.Content className="w-[92%] max-w-[400px] self-center rounded-3xl bg-surface px-5 py-5" isSwipeable={false}>
           <Dialog.Title
             className="text-[20px] leading-[26px] font-bold text-foreground mb-3"
             style={fontFamily ? { fontFamily } : undefined}
@@ -61,7 +78,7 @@ const TermsModal = ({ isOpen, onAgree, onDecline }: TermsModalProps) => {
                     className="text-[13px] leading-5 text-muted"
                     style={fontFamily ? { fontFamily } : undefined}
                   >
-                    {t(section.bodyKey)}
+                    {renderWithItalic(t(section.bodyKey), fontFamily)}
                   </Text>
                 </View>
               ))}
@@ -71,12 +88,12 @@ const TermsModal = ({ isOpen, onAgree, onDecline }: TermsModalProps) => {
           <View className="mt-4 flex-row gap-2">
             <Pressable
               onPress={onDecline}
-              className="flex-1 items-center justify-center rounded-2xl bg-surface-secondary px-3 py-3 active:opacity-75"
+              className="flex-1 items-center justify-center rounded-2xl bg-danger-soft px-3 py-3 active:opacity-75"
               accessibilityRole="button"
               accessibilityLabel={t('termsDecline')}
             >
               <Text
-                className="text-[14px] font-semibold text-foreground"
+                className="text-[14px] font-semibold text-danger"
                 style={fontFamily ? { fontFamily } : undefined}
               >
                 {t('termsDecline')}

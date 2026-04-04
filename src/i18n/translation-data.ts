@@ -268,16 +268,16 @@ const enUS: BaseTranslations = {
   termsAgree: 'I Agree',
   termsDecline: 'Decline',
   termsIntro:
-    'Yifan is an independent third-party client for Fanfou. It is not affiliated with, authorized by, or endorsed by Fanfou.',
+    '*Yifan* is an independent third-party client for Fanfou. It is not affiliated with, authorized by, or endorsed by Fanfou.',
   termsUgcHeading: 'User-Generated Content',
   termsUgcBody:
-    "All content displayed in this app is published by users on the Fanfou platform. Yifan does not host, create, or control any user content. Fanfou's Terms of Service and Community Guidelines apply to all content.",
+    "All content displayed in this app is published by users on the Fanfou platform. *Yifan* does not host, create, or control any user content. Fanfou's Terms of Service and Community Guidelines apply to all content.",
   termsZeroToleranceHeading: 'Zero Tolerance Policy',
   termsZeroToleranceBody:
     'This app has zero tolerance for objectionable content or abusive behavior. By using this app, you agree not to post, share, or promote content that is hateful, violent, threatening, sexually explicit, or otherwise harmful or illegal.',
   termsBlockingHeading: 'Blocking Users',
   termsBlockingBody:
-    'You may block any user from their profile page. Blocking immediately removes their content from your feed.',
+    '*Yifan* does not support blocking users directly. To block someone, please visit Fanfou at fanfou.com.',
   termsReportingHeading: 'Reporting Content',
   termsReportingBody:
     "To report content that violates community standards, please use Fanfou's official reporting tools at fanfou.com.",
@@ -529,15 +529,15 @@ const zhCN: BaseTranslations = {
   termsTitle: '使用条款',
   termsAgree: '同意',
   termsDecline: '拒绝',
-  termsIntro: '一饭是饭否的独立第三方客户端，与饭否官方无关联，未经其授权或认可。',
+  termsIntro: '《一饭》是饭否的独立第三方客户端，与饭否官方无关联，未经其授权或认可。',
   termsUgcHeading: '用户生成内容',
   termsUgcBody:
-    '本应用展示的所有内容均由用户在饭否平台发布。一饭不托管、创建或控制任何用户内容，所有内容受饭否服务条款和社区准则的约束。',
+    '本应用展示的所有内容均由用户在饭否平台发布。《一饭》不托管、创建或控制任何用户内容，所有内容受饭否服务条款和社区准则的约束。',
   termsZeroToleranceHeading: '零容忍政策',
   termsZeroToleranceBody:
     '本应用对不当内容及滥用行为零容忍。使用本应用即表示您同意不发布、分享或传播任何仇恨、暴力、威胁、色情或其他有害、违法的内容。',
   termsBlockingHeading: '屏蔽用户',
-  termsBlockingBody: '您可随时在用户主页屏蔽该用户，屏蔽后其内容将立即从您的时间轴中移除。',
+  termsBlockingBody: '《一饭》暂不支持直接屏蔽用户，如需屏蔽，请前往饭否网站（fanfou.com）操作。',
   termsReportingHeading: '举报内容',
   termsReportingBody: '如需举报违反社区准则的内容，请使用饭否官方举报工具（fanfou.com）。',
   termsAgeHeading: '年龄要求',
