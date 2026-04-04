@@ -3,6 +3,18 @@
  */
 
 import 'react-native-gesture-handler';
+
+// react-native-safe-area-context and react-native-screens ship old-arch
+// (Paper) event classes compiled unconditionally alongside their Fabric
+// counterparts. In RN 0.84 bridgeless mode the legacy RCTEventEmitter
+// callable module is never registered, causing a fatal dev-overlay on
+// startup. The actual events are delivered correctly via Fabric; this error
+// is a false alarm that only appears in debug builds.
+if (__DEV__) {
+  const { LogBox } = require('react-native');
+  LogBox.ignoreLogs(['RCTEventEmitter.receiveEvent']);
+}
+
 import '@formatjs/intl-locale/polyfill.js';
 import '@formatjs/intl-relativetimeformat/polyfill';
 import '@formatjs/intl-relativetimeformat/dist/include-aliases';
