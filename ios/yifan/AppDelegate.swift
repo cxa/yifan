@@ -7,6 +7,9 @@ import UniformTypeIdentifiers
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+  // Required by UIApplicationDelegate protocol; used by RCTLogBoxView.dealloc
+  // to restore the key window after dismissing the LogBox overlay.
+  var window: UIWindow?
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
   var launchOptions: [UIApplication.LaunchOptionsKey: Any]?

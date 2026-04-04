@@ -9,7 +9,6 @@ import './global.css';
 
 const App = () => {
   const isDark = useColorScheme() === 'dark';
-
   return (
     <RootLayout>
       {Platform.OS === 'android' && (

@@ -23,15 +23,15 @@ static NSString *FFDecode(const uint8_t *cipherEven, size_t cipherEvenLen,
   return result ?: @"";
 }
 
-static const uint8_t kConsumerKeyCipherEven[] = {181, 71, 184, 126, 131, 2, 29, 75, 18, 21, 145, 245, 54, 111, 222, 4};
-static const uint8_t kConsumerKeyCipherOdd[] = {140, 176, 45, 112, 242, 25, 128, 54, 51, 87, 212, 44, 199, 84, 147, 95};
-static const uint8_t kConsumerKeyMaskEven[] = {141, 113, 219, 29, 230, 55, 127, 126, 34, 113, 243, 148, 2, 89, 239, 50};
-static const uint8_t kConsumerKeyMaskOdd[] = {238, 136, 29, 69, 144, 42, 185, 3, 7, 49, 224, 20, 246, 108, 162, 62};
+static const uint8_t kConsumerKeyCipherEven[] = {72, 252, 207, 94, 64, 29, 254, 172, 74, 48, 24, 48, 121, 238, 252, 211};
+static const uint8_t kConsumerKeyCipherOdd[] = {66, 137, 143, 244, 61, 4, 179, 180, 36, 17, 126, 246, 24, 146, 214, 77};
+static const uint8_t kConsumerKeyMaskEven[] = {112, 202, 172, 61, 37, 40, 156, 153, 122, 84, 122, 81, 77, 216, 205, 229};
+static const uint8_t kConsumerKeyMaskOdd[] = {32, 177, 191, 193, 95, 55, 138, 129, 16, 119, 74, 206, 41, 170, 231, 44};
 
-static const uint8_t kConsumerSecretCipherEven[] = {34, 216, 245, 80, 152, 166, 7, 247, 9, 64, 52, 127, 149, 102, 213, 219};
-static const uint8_t kConsumerSecretCipherOdd[] = {111, 192, 212, 219, 98, 160, 150, 245, 14, 203, 118, 63, 207, 66, 97, 10};
-static const uint8_t kConsumerSecretMaskEven[] = {21, 237, 192, 104, 175, 196, 54, 146, 106, 118, 85, 29, 164, 85, 180, 235};
-static const uint8_t kConsumerSecretMaskOdd[] = {90, 249, 236, 189, 1, 153, 242, 150, 57, 173, 68, 12, 253, 119, 2, 104};
+static const uint8_t kConsumerSecretCipherEven[] = {101, 34, 203, 106, 207, 91, 160, 45, 114, 87, 23, 51, 28, 179, 247, 234};
+static const uint8_t kConsumerSecretCipherOdd[] = {150, 72, 39, 141, 43, 189, 77, 254, 243, 232, 158, 28, 0, 97, 229, 78};
+static const uint8_t kConsumerSecretMaskEven[] = {82, 23, 254, 82, 248, 57, 145, 72, 17, 97, 118, 81, 45, 128, 150, 218};
+static const uint8_t kConsumerSecretMaskOdd[] = {163, 113, 31, 235, 72, 132, 41, 157, 196, 142, 172, 47, 50, 84, 134, 44};
 
 NSString *FFConsumerKey(void) {
   return FFDecode(kConsumerKeyCipherEven, 16, kConsumerKeyCipherOdd, 16, kConsumerKeyMaskEven, 16, kConsumerKeyMaskOdd, 16, 32);

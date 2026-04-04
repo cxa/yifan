@@ -4,17 +4,6 @@
 
 import 'react-native-gesture-handler';
 
-// react-native-safe-area-context and react-native-screens ship old-arch
-// (Paper) event classes compiled unconditionally alongside their Fabric
-// counterparts. In RN 0.84 bridgeless mode the legacy RCTEventEmitter
-// callable module is never registered, causing a fatal dev-overlay on
-// startup. The actual events are delivered correctly via Fabric; this error
-// is a false alarm that only appears in debug builds.
-if (__DEV__) {
-  const { LogBox } = require('react-native');
-  LogBox.ignoreLogs(['RCTEventEmitter.receiveEvent']);
-}
-
 import '@formatjs/intl-locale/polyfill.js';
 import '@formatjs/intl-relativetimeformat/polyfill';
 import '@formatjs/intl-relativetimeformat/dist/include-aliases';
@@ -37,5 +26,15 @@ import { name as appName } from './app.json';
 // landscape bounds are committed atomically before any JS re-render can race
 // against them.
 featureFlags.experiment.synchronousScreenUpdatesEnabled = true;
+
+// react-native-screens and react-native-safe-area-context unconditionally
+// call RCTEventEmitter.receiveEvent() via the old-arch notification path even
+// under Fabric/bridgeless. In RN 0.84 bridgeless mode that module is never
+// registered, which throws a fatal error. Register a no-op so those calls
+// succeed; Fabric delivers the real events through its own system.
+global.__fbBatchedBridge?.registerCallableModule('RCTEventEmitter', {
+  receiveEvent: () => {},
+  receiveTouches: () => {},
+});
 
 AppRegistry.registerComponent(appName, () => App);
