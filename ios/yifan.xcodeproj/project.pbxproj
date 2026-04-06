@@ -136,7 +136,6 @@
 				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
 				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
 				7A8B9C0D1E2F3A4B00000001 /* Set Build Number from Git */,
-				D1B3C42112F9F045C1B5A396 /* Fix MinimumOSVersion in Embedded Frameworks */,
 			);
 			buildRules = (
 			);
@@ -265,24 +264,6 @@
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
-		};
-		D1B3C42112F9F045C1B5A396 /* Fix MinimumOSVersion in Embedded Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Fix MinimumOSVersion in Embedded Frameworks";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "find \"${CODESIGNING_FOLDER_PATH}/Frameworks\" -name \"Info.plist\" | while read plist; do\n  val=$(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" \"$plist\" 2>/dev/null)\n  if [ -z \"$val\" ]; then\n    /usr/libexec/PlistBuddy -c \"Add :MinimumOSVersion string ${IPHONEOS_DEPLOYMENT_TARGET}\" \"$plist\"\n  fi\ndone\n";
 		};
 		E235C05ADACE081382539298 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
