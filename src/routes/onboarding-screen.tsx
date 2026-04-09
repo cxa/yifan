@@ -135,7 +135,7 @@ const OptionPanel = ({
   accentColor,
   onPress,
 }: OptionPanelProps) => {
-  const borderColor = isSelected ? accentColor : 'transparent';
+  const borderColor = isSelected ? accentColor : 'rgba(128,128,128,0.25)';
   const labelBg    = previewIsDark ? LIST_BG_DARK  : LIST_BG_LIGHT;
   const labelColor  = previewIsDark ? '#D4C4A8' : '#1A1208';
   return (
