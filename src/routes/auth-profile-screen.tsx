@@ -997,7 +997,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     <Pressable
                       onPress={handleBlockToggle}
                       disabled={isBlockSubmitting || isBlockChecking}
-                      className="flex-1 rounded-2xl border bg-surface-secondary px-3 py-2"
+                      className={`flex-1 rounded-2xl border px-3 py-2 ${isBlocked ? 'bg-success' : 'bg-danger-soft'}`}
                       accessibilityRole="button"
                       accessibilityLabel={
                         isBlocked
@@ -1005,7 +1005,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                           : t('profileActionBlock')
                       }
                     >
-                      <Text className="text-[13px] text-center text-foreground">
+                      <Text className={`text-[13px] text-center ${isBlocked ? 'text-success-foreground' : 'text-danger'}`}>
                         {isBlockChecking
                           ? t('profileActionChecking')
                           : isBlockSubmitting
@@ -1143,39 +1143,16 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   className="bg-surface-secondary px-4 py-4"
                   style={profileThemeStyles.panelStyle}
                 >
-                  <View className="flex-row gap-3">
-                    <Pressable
-                      onPress={handleBlockToggle}
-                      disabled={isBlockSubmitting || isBlockChecking}
-                      className={`flex-1 rounded-2xl border px-3 py-2 ${isBlocked ? 'bg-surface-secondary' : 'bg-danger-soft'}`}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        isBlocked
-                          ? t('profileActionUnblock')
-                          : t('profileActionBlock')
-                      }
-                    >
-                      <Text className={`text-[13px] text-center ${isBlocked ? 'text-success' : 'text-danger'}`}>
-                        {isBlockChecking
-                          ? t('profileActionChecking')
-                          : isBlockSubmitting
-                            ? t('profileActionUpdating')
-                            : isBlocked
-                              ? t('profileActionUnblock')
-                              : t('profileActionBlock')}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={handleReport}
-                      className="flex-1 rounded-2xl border bg-surface-secondary px-3 py-2"
-                      accessibilityRole="button"
-                      accessibilityLabel={t('profileActionReport')}
-                    >
-                      <Text className="text-[13px] text-center text-foreground">
-                        {t('profileActionReport')}
-                      </Text>
-                    </Pressable>
-                  </View>
+                  <Pressable
+                    onPress={handleReport}
+                    className="rounded-2xl border bg-surface-secondary px-3 py-2"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('profileActionReport')}
+                  >
+                    <Text className="text-[13px] text-center text-foreground">
+                      {t('profileActionReport')}
+                    </Text>
+                  </Pressable>
                 </Surface>
               </DropShadowBox>
             ) : null}
