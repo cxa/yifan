@@ -68,7 +68,6 @@ type MiniSkeletonCardProps = {
 const MiniSkeletonCard = ({ cardBg, barColor, lineWidths, isLast, isSharp }: MiniSkeletonCardProps) => {
   const mb = isLast ? 0 : 6;
   const radius = isSharp ? 'rounded-none' : 'rounded-3xl';
-  const avatarRadius = isSharp ? 'rounded-none' : 'rounded-full';
   const barRadius = isSharp ? 'rounded-none' : 'rounded-full';
   return (
     <View
@@ -76,7 +75,7 @@ const MiniSkeletonCard = ({ cardBg, barColor, lineWidths, isLast, isSharp }: Min
       style={[{ backgroundColor: cardBg, marginBottom: mb }]}
     >
       <View className="flex-row gap-2">
-        <View className={`h-8 w-8 ${avatarRadius}`} style={[{ backgroundColor: barColor }]} />
+        <View className="h-8 w-8 rounded-full" style={[{ backgroundColor: barColor }]} />
         <View className="flex-1 gap-[5px]">
           <View className={`h-[7px] w-14 ${barRadius}`} style={[{ backgroundColor: barColor }]} />
           {lineWidths.map((w, i) => {
