@@ -167,7 +167,8 @@ const OptionPanel = ({
 // ---------------------------------------------------------------------------
 // Main onboarding screen
 // ---------------------------------------------------------------------------
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
+const TOTAL_STEPS = 3;
 
 const OnboardingScreen = () => {
   const [step, setStep] = useState<Step>(1);
@@ -180,28 +181,47 @@ const OnboardingScreen = () => {
   const appearance = useAppAppearancePreference();
   const theme = useAppThemePreference();
   const isDark = useEffectiveIsDark();
-  const isColorful = theme === APP_THEME_OPTION.COLORFUL;
   const [accent] = useThemeColor(['accent']);
 
   const goToApp = () =>
     navigation.reset({ index: 0, routes: [{ name: ROOT_STACK_ROUTE.AUTH }] });
 
-  const handleNext = () => (step === 1 ? setStep(2) : goToApp());
+  const handleNext = () => {
+    if (step === 1) setStep(2);
+    else if (step === 2) setStep(3);
+    else goToApp();
+  };
 
   const handleSelect = (value: string) => {
     if (step === 1) {
-      setAppThemePreference(
-        value as (typeof APP_THEME_OPTION)[keyof typeof APP_THEME_OPTION],
-      ).catch(() => {});
-    } else {
       setAppAppearancePreference(
         value as (typeof APP_APPEARANCE_OPTION)[keyof typeof APP_APPEARANCE_OPTION],
+      ).catch(() => {});
+    } else if (step === 2) {
+      setAppThemePreference(
+        value as (typeof APP_THEME_OPTION)[keyof typeof APP_THEME_OPTION],
       ).catch(() => {});
     }
   };
 
-  // Step 1: pick theme — preview both styles in current appearance
+  // Step 1: pick appearance — preview both modes with colorful theme
   const step1Options = [
+    {
+      value: APP_APPEARANCE_OPTION.LIGHT,
+      label: t('onboardingOptionLight'),
+      previewIsDark: false,
+      previewIsColorful: true,
+    },
+    {
+      value: APP_APPEARANCE_OPTION.DARK,
+      label: t('onboardingOptionDark'),
+      previewIsDark: true,
+      previewIsColorful: true,
+    },
+  ];
+
+  // Step 2: pick theme — preview both styles in chosen appearance
+  const step2Options = [
     {
       value: APP_THEME_OPTION.COLORFUL,
       label: t('onboardingOptionColorful'),
@@ -216,24 +236,8 @@ const OnboardingScreen = () => {
     },
   ];
 
-  // Step 2: pick appearance — preview both modes in chosen theme
-  const step2Options = [
-    {
-      value: APP_APPEARANCE_OPTION.LIGHT,
-      label: t('onboardingOptionLight'),
-      previewIsDark: false,
-      previewIsColorful: isColorful,
-    },
-    {
-      value: APP_APPEARANCE_OPTION.DARK,
-      label: t('onboardingOptionDark'),
-      previewIsDark: true,
-      previewIsColorful: isColorful,
-    },
-  ];
-
   const options = step === 1 ? step1Options : step2Options;
-  const selectedValue = step === 1 ? theme : appearance;
+  const selectedValue = step === 1 ? appearance : theme;
 
   return (
     <View
@@ -247,7 +251,7 @@ const OnboardingScreen = () => {
     >
       {/* Header: step indicator + skip */}
       <View className="flex-row items-center justify-between px-5 py-3">
-        <Text className="text-[13px] text-muted">{step} / 2</Text>
+        <Text className="text-[13px] text-muted">{step} / {TOTAL_STEPS}</Text>
         <Pressable onPress={goToApp} hitSlop={12} accessibilityRole="button">
           <Text className="text-[15px] text-muted">{t('onboardingSkip')}</Text>
         </Pressable>
@@ -255,7 +259,7 @@ const OnboardingScreen = () => {
 
       {/* Title */}
       <Text className="px-5 pb-4 text-[22px] font-bold text-foreground">
-        {step === 1 ? t('onboardingStepTheme') : t('onboardingStepAppearance')}
+        {step === 1 ? t('onboardingStepAppearance') : t('onboardingStepTheme')}
       </Text>
 
       {/* Option panels */}
@@ -283,7 +287,7 @@ const OnboardingScreen = () => {
           accessibilityRole="button"
         >
           <Text className="text-[16px] font-bold text-accent-foreground">
-            {step === 2 ? t('onboardingDone') : t('onboardingNext')}
+            {step === TOTAL_STEPS ? t('onboardingDone') : t('onboardingNext')}
           </Text>
         </Pressable>
       </View>
