@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
   Animated,
-  LayoutAnimation,
   Platform,
   Pressable,
   UIManager,
@@ -197,9 +196,11 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
-const SLIDE_DIST = 32;
+const SLIDE_DIST   = 32;
 const SLIDE_OUT_MS = 130;
 const SLIDE_IN_MS  = 200;
+const FOOTER_H_PAD = 40; // px-5 * 2
+const FOOTER_GAP   = 12; // gap-3
 
 const OnboardingScreen = () => {
   const [step, setStep] = useState<Step>(1);
@@ -216,21 +217,43 @@ const OnboardingScreen = () => {
   const isColorful = theme === APP_THEME_OPTION.COLORFUL;
   const [accent, appBg] = useThemeColor(['accent', 'background']);
 
-  // Tab-bar-style slide + fade animation for the content area
-  const slideX  = useRef(new Animated.Value(0)).current;
+  // Content: tab-bar-style horizontal slide + fade (native driver)
+  const slideX   = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Footer Previous button: spring-driven width + opacity (JS driver)
+  // prevProgress: 0 = hidden, 1 = fully shown
+  const prevProgress = useRef(new Animated.Value(0)).current;
+  // 1/3 of available footer width (mirrors flex-[1] out of 3 total parts)
+  const prevTargetWidth = (width - FOOTER_H_PAD - FOOTER_GAP) / 3;
+  const prevAnimWidth   = prevProgress.interpolate({
+    inputRange: [0, 1], outputRange: [0, prevTargetWidth],
+  });
+  const prevAnimMargin  = prevProgress.interpolate({
+    inputRange: [0, 1], outputRange: [0, FOOTER_GAP],
+  });
 
   const goToApp = () =>
     navigation.reset({ index: 0, routes: [{ name: ROOT_STACK_ROUTE.AUTH }] });
 
   const transitionTo = (next: Step) => {
-    const dir = next > step ? 1 : -1;
+    const dir     = next > step ? 1 : -1;
+    const showPrev = next > 1 ? 1 : 0;
+
+    // Spring the Previous button immediately (JS thread)
+    Animated.spring(prevProgress, {
+      toValue: showPrev,
+      bounciness: 10,
+      speed: 14,
+      useNativeDriver: false,
+    }).start();
+
+    // Slide + fade the content area (native thread)
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 0, duration: SLIDE_OUT_MS, useNativeDriver: true }),
       Animated.timing(slideX,   { toValue: -SLIDE_DIST * dir, duration: SLIDE_OUT_MS, useNativeDriver: true }),
     ]).start(() => {
       slideX.setValue(SLIDE_DIST * dir);
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStep(next);
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: SLIDE_IN_MS, useNativeDriver: true }),
@@ -340,22 +363,25 @@ const OnboardingScreen = () => {
         </View>
       </Animated.View>
 
-      {/* Footer: previous (1/3) + next/done (2/3) */}
-      <View className="flex-row gap-3 px-5 pb-2 pt-4">
-        {step > 1 ? (
+      {/* Footer: Previous springs in/out; Next fills remaining space */}
+      <View className="flex-row px-5 pb-2 pt-4">
+        <Animated.View
+          className="overflow-hidden"
+          style={[{ width: prevAnimWidth, marginRight: prevAnimMargin }]}
+        >
           <Pressable
             onPress={handlePrev}
-            className="flex-[1] items-center rounded-full border border-muted py-4"
+            className="flex-1 items-center rounded-full border border-muted py-4"
             accessibilityRole="button"
           >
-            <Text className="text-[16px] font-semibold text-muted">
+            <Text className="text-[16px] font-semibold text-muted" numberOfLines={1}>
               {t('onboardingBack')}
             </Text>
           </Pressable>
-        ) : null}
+        </Animated.View>
         <Pressable
           onPress={handleNext}
-          className="flex-[2] items-center rounded-full bg-accent py-4"
+          className="flex-1 items-center rounded-full bg-accent py-4"
           accessibilityRole="button"
         >
           <Text className="text-[16px] font-bold text-accent-foreground">
