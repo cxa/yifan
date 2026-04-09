@@ -249,9 +249,15 @@ const OnboardingScreen = () => {
         paddingRight: insets.right,
       }]}
     >
-      {/* Header: step indicator + skip */}
+      {/* Header: back + step indicator + skip */}
       <View className="flex-row items-center justify-between px-5 py-3">
-        <Text className="text-[13px] text-muted">{step} / {TOTAL_STEPS}</Text>
+        {step > 1 ? (
+          <Pressable onPress={() => setStep((step - 1) as Step)} hitSlop={12} accessibilityRole="button">
+            <Text className="text-[15px] text-muted">‹ {t('onboardingBack')}</Text>
+          </Pressable>
+        ) : (
+          <Text className="text-[13px] text-muted">{step} / {TOTAL_STEPS}</Text>
+        )}
         <Pressable onPress={goToApp} hitSlop={12} accessibilityRole="button">
           <Text className="text-[15px] text-muted">{t('onboardingSkip')}</Text>
         </Pressable>
@@ -259,7 +265,7 @@ const OnboardingScreen = () => {
 
       {/* Title */}
       <Text className="px-5 pb-4 text-[22px] font-bold text-foreground">
-        {step === 1 ? t('onboardingStepAppearance') : t('onboardingStepTheme')}
+        {step === 1 ? t('onboardingStepAppearance') : step === 2 ? t('onboardingStepTheme') : ''}
       </Text>
 
       {/* Option panels */}

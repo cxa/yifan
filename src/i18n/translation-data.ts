@@ -4,6 +4,7 @@ export const SUPPORTED_LOCALES: ReadonlyArray<LocaleKey> = ['en-US', 'zh-CN'];
 
 type BaseTranslations = {
   // Onboarding screen
+  onboardingBack: string;
   onboardingSkip: string;
   onboardingNext: string;
   onboardingDone: string;
@@ -272,11 +273,12 @@ type BaseTranslations = {
 
 const enUS: BaseTranslations = {
   // Onboarding screen
+  onboardingBack: 'Back',
   onboardingSkip: 'Skip',
   onboardingNext: 'Next',
   onboardingDone: 'Done',
-  onboardingStepAppearance: 'Choose a color mode',
-  onboardingStepTheme: 'Choose a style',
+  onboardingStepAppearance: 'Appearance',
+  onboardingStepTheme: 'Style',
   onboardingOptionLight: 'Light',
   onboardingOptionDark: 'Dark',
   onboardingOptionColorful: 'Colorful',
@@ -550,11 +552,12 @@ const enUS: BaseTranslations = {
 
 const zhCN: BaseTranslations = {
   // Onboarding screen
+  onboardingBack: '返回',
   onboardingSkip: '跳过',
   onboardingNext: '下一步',
   onboardingDone: '完成',
-  onboardingStepAppearance: '选择色彩模式',
-  onboardingStepTheme: '选择风格',
+  onboardingStepAppearance: '外观',
+  onboardingStepTheme: '风格',
   onboardingOptionLight: '浅色',
   onboardingOptionDark: '深色',
   onboardingOptionColorful: '多彩',
