@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Animated, LayoutAnimation, Platform, Pressable, UIManager, View, useWindowDimensions, type DimensionValue } from 'react-native';
+import React, { useState } from 'react';
+import { LayoutAnimation, Platform, Pressable, UIManager, View, useWindowDimensions, type DimensionValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -189,26 +189,12 @@ const OnboardingScreen = () => {
   const isDark = useEffectiveIsDark();
   const [accent, appBg] = useThemeColor(['accent', 'background']);
 
-  // Footer fade animation — fade out, change step, fade in
-  const footerOpacity = useRef(new Animated.Value(1)).current;
-
   const goToApp = () =>
     navigation.reset({ index: 0, routes: [{ name: ROOT_STACK_ROUTE.AUTH }] });
 
   const transitionTo = (next: Step) => {
-    Animated.timing(footerOpacity, {
-      toValue: 0,
-      duration: 100,
-      useNativeDriver: true,
-    }).start(() => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setStep(next);
-      Animated.timing(footerOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    });
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setStep(next);
   };
 
   const handleNext = () => {
@@ -308,7 +294,7 @@ const OnboardingScreen = () => {
       </View>
 
       {/* Footer: back (1/3) + next (2/3) */}
-      <Animated.View className="flex-row gap-3 px-5 pb-2 pt-4" style={[{ opacity: footerOpacity }]}>
+      <View className="flex-row gap-3 px-5 pb-2 pt-4">
         {step > 1 ? (
           <Pressable
             onPress={handlePrev}
@@ -329,7 +315,7 @@ const OnboardingScreen = () => {
             {step === TOTAL_STEPS ? t('onboardingDone') : t('onboardingNext')}
           </Text>
         </Pressable>
-      </Animated.View>
+      </View>
     </View>
   );
 };
