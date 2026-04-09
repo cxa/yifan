@@ -249,15 +249,9 @@ const OnboardingScreen = () => {
         paddingRight: insets.right,
       }]}
     >
-      {/* Header: back + step indicator + skip */}
+      {/* Header: step indicator + skip */}
       <View className="flex-row items-center justify-between px-5 py-3">
-        {step > 1 ? (
-          <Pressable onPress={() => setStep((step - 1) as Step)} hitSlop={12} accessibilityRole="button">
-            <Text className="text-[15px] text-muted">‹ {t('onboardingBack')}</Text>
-          </Pressable>
-        ) : (
-          <Text className="text-[13px] text-muted">{step} / {TOTAL_STEPS}</Text>
-        )}
+        <Text className="text-[13px] text-muted">{step} / {TOTAL_STEPS}</Text>
         <Pressable onPress={goToApp} hitSlop={12} accessibilityRole="button">
           <Text className="text-[15px] text-muted">{t('onboardingSkip')}</Text>
         </Pressable>
@@ -285,11 +279,22 @@ const OnboardingScreen = () => {
         ))}
       </View>
 
-      {/* Footer: next / done */}
-      <View className="px-5 pb-2 pt-4">
+      {/* Footer: back (1/3) + next (2/3) */}
+      <View className="flex-row gap-3 px-5 pb-2 pt-4">
+        {step > 1 ? (
+          <Pressable
+            onPress={() => setStep((step - 1) as Step)}
+            className="flex-[1] items-center rounded-full border border-muted py-4"
+            accessibilityRole="button"
+          >
+            <Text className="text-[16px] font-semibold text-muted">
+              {t('onboardingBack')}
+            </Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={handleNext}
-          className="items-center rounded-full bg-accent py-4"
+          className="flex-[2] items-center rounded-full bg-accent py-4"
           accessibilityRole="button"
         >
           <Text className="text-[16px] font-bold text-accent-foreground">
