@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { LayoutAnimation, Platform, Pressable, UIManager, View, useWindowDimensions, type DimensionValue } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  Animated,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  UIManager,
+  View,
+  useWindowDimensions,
+  type DimensionValue,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -16,25 +25,29 @@ import {
   useAppThemePreference,
   setAppThemePreference,
 } from '@/settings/app-theme-preference';
+import {
+  APP_UI_STYLE_OPTION,
+  useAppUiStylePreference,
+  setAppUiStylePreference,
+} from '@/settings/app-ui-style-preference';
 import type { RootStackParamList } from '@/navigation/types';
 import { ROOT_STACK_ROUTE } from '@/navigation/route-names';
 
 // ---------------------------------------------------------------------------
-// Preview palette — mirrors timeline-skeleton-card.tsx exactly, no shimmer
+// Preview palette — mirrors timeline-skeleton-card.tsx, no shimmer
 // ---------------------------------------------------------------------------
 const CARD_BG_LIGHT = ['#FDDBD5', '#FDF3C8', '#E8D5F5', '#D0E8F5'] as const;
 const CARD_BG_DARK  = ['#3D2820', '#352E18', '#2D1E38', '#1A2E3D'] as const;
 const BAR_BG_LIGHT  = ['#F5C4B8', '#F5E298', '#CCBAEC', '#A8D0EC'] as const;
 const BAR_BG_DARK   = ['#5A3830', '#4A4020', '#402850', '#203A50'] as const;
 
-const LIST_BG_LIGHT   = '#F5EDE0';
-const LIST_BG_DARK    = '#0E0B07';
+const LIST_BG_LIGHT    = '#F5EDE0';
+const LIST_BG_DARK     = '#0E0B07';
 const PLAIN_CARD_LIGHT = '#FFFFFF';
 const PLAIN_CARD_DARK  = '#1E1E1E';
 const PLAIN_BAR_LIGHT  = 'rgba(0,0,0,0.08)';
 const PLAIN_BAR_DARK   = 'rgba(255,255,255,0.12)';
 
-// One row of skeleton bars per card (line widths match the real skeleton card)
 const LINE_CONFIGS: readonly (readonly DimensionValue[])[] = [
   ['75%', '90%'],
   ['85%', '65%', '80%'],
@@ -43,56 +56,57 @@ const LINE_CONFIGS: readonly (readonly DimensionValue[])[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// MiniSkeletonCard — mirrors TimelineSkeletonCard without shimmer animation
+// MiniSkeletonCard
 // ---------------------------------------------------------------------------
 type MiniSkeletonCardProps = {
   cardBg: string;
   barColor: string;
   lineWidths: readonly DimensionValue[];
   isLast: boolean;
+  isSharp: boolean;
 };
 
-const MiniSkeletonCard = ({ cardBg, barColor, lineWidths, isLast }: MiniSkeletonCardProps) => {
+const MiniSkeletonCard = ({ cardBg, barColor, lineWidths, isLast, isSharp }: MiniSkeletonCardProps) => {
   const mb = isLast ? 0 : 6;
+  const radius = isSharp ? 'rounded-none' : 'rounded-3xl';
+  const avatarRadius = isSharp ? 'rounded-none' : 'rounded-full';
+  const barRadius = isSharp ? 'rounded-none' : 'rounded-full';
   return (
-  <View
-    className="rounded-3xl px-4 py-4"
-    style={[{ backgroundColor: cardBg, marginBottom: mb }]}
-  >
-    <View className="flex-row gap-2">
-      {/* Avatar circle */}
-      <View className="h-8 w-8 rounded-full" style={[{ backgroundColor: barColor }]} />
-      {/* Text lines */}
-      <View className="flex-1 gap-[5px]">
-        {/* Name bar */}
-        <View className="h-[7px] w-14 rounded-full" style={[{ backgroundColor: barColor }]} />
-        {/* Content bars */}
-        {lineWidths.map((w, i) => {
-          const opacity = 0.7 - i * 0.15;
-          return (
-            <View
-              key={i}
-              className="h-[7px] rounded-full"
-              style={[{ width: w, backgroundColor: barColor, opacity }]}
-            />
-          );
-        })}
+    <View
+      className={`${radius} px-4 py-4`}
+      style={[{ backgroundColor: cardBg, marginBottom: mb }]}
+    >
+      <View className="flex-row gap-2">
+        <View className={`h-8 w-8 ${avatarRadius}`} style={[{ backgroundColor: barColor }]} />
+        <View className="flex-1 gap-[5px]">
+          <View className={`h-[7px] w-14 ${barRadius}`} style={[{ backgroundColor: barColor }]} />
+          {lineWidths.map((w, i) => {
+            const opacity = 0.7 - i * 0.15;
+            return (
+              <View
+                key={i}
+                className={`h-[7px] ${barRadius}`}
+                style={[{ width: w, backgroundColor: barColor, opacity }]}
+              />
+            );
+          })}
+        </View>
       </View>
     </View>
-  </View>
   );
 };
 
 // ---------------------------------------------------------------------------
-// MiniTimeline — 4 skeleton cards rendered for the given mode combination
+// MiniTimeline
 // ---------------------------------------------------------------------------
 type MiniTimelineProps = {
   previewIsDark: boolean;
   previewIsColorful: boolean;
+  previewIsSharp: boolean;
 };
 
-const MiniTimeline = ({ previewIsDark, previewIsColorful }: MiniTimelineProps) => {
-  const listBg = previewIsDark ? LIST_BG_DARK : LIST_BG_LIGHT;
+const MiniTimeline = ({ previewIsDark, previewIsColorful, previewIsSharp }: MiniTimelineProps) => {
+  const listBg    = previewIsDark ? LIST_BG_DARK  : LIST_BG_LIGHT;
   const plainCard = previewIsDark ? PLAIN_CARD_DARK : PLAIN_CARD_LIGHT;
   const plainBar  = previewIsDark ? PLAIN_BAR_DARK  : PLAIN_BAR_LIGHT;
 
@@ -108,6 +122,7 @@ const MiniTimeline = ({ previewIsDark, previewIsColorful }: MiniTimelineProps) =
             barColor={barColor}
             lineWidths={lineWidths}
             isLast={i === LINE_CONFIGS.length - 1}
+            isSharp={previewIsSharp}
           />
         );
       })}
@@ -116,12 +131,13 @@ const MiniTimeline = ({ previewIsDark, previewIsColorful }: MiniTimelineProps) =
 };
 
 // ---------------------------------------------------------------------------
-// OptionPanel — preview + label, highlighted border when selected
+// OptionPanel
 // ---------------------------------------------------------------------------
 type OptionPanelProps = {
   label: string;
   previewIsDark: boolean;
   previewIsColorful: boolean;
+  previewIsSharp: boolean;
   isSelected: boolean;
   accentColor: string;
   appBg: string;
@@ -132,6 +148,7 @@ const OptionPanel = ({
   label,
   previewIsDark,
   previewIsColorful,
+  previewIsSharp,
   isSelected,
   accentColor,
   appBg,
@@ -152,7 +169,11 @@ const OptionPanel = ({
         className="flex-1 rounded-3xl overflow-hidden border-[2.5px]"
         style={[{ borderColor }]}
       >
-        <MiniTimeline previewIsDark={previewIsDark} previewIsColorful={previewIsColorful} />
+        <MiniTimeline
+          previewIsDark={previewIsDark}
+          previewIsColorful={previewIsColorful}
+          previewIsSharp={previewIsSharp}
+        />
         <View
           className="py-[10px] items-center"
           style={[{ backgroundColor: labelBg }]}
@@ -167,7 +188,7 @@ const OptionPanel = ({
 };
 
 // ---------------------------------------------------------------------------
-// Main onboarding screen
+// Main screen
 // ---------------------------------------------------------------------------
 type Step = 1 | 2 | 3;
 const TOTAL_STEPS = 3;
@@ -175,6 +196,10 @@ const TOTAL_STEPS = 3;
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
+
+const SLIDE_DIST = 32;
+const SLIDE_OUT_MS = 130;
+const SLIDE_IN_MS  = 200;
 
 const OnboardingScreen = () => {
   const [step, setStep] = useState<Step>(1);
@@ -185,16 +210,33 @@ const OnboardingScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const appearance = useAppAppearancePreference();
-  const theme = useAppThemePreference();
-  const isDark = useEffectiveIsDark();
+  const theme      = useAppThemePreference();
+  const uiStyle    = useAppUiStylePreference();
+  const isDark     = useEffectiveIsDark();
+  const isColorful = theme === APP_THEME_OPTION.COLORFUL;
   const [accent, appBg] = useThemeColor(['accent', 'background']);
+
+  // Tab-bar-style slide + fade animation for the content area
+  const slideX  = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const goToApp = () =>
     navigation.reset({ index: 0, routes: [{ name: ROOT_STACK_ROUTE.AUTH }] });
 
   const transitionTo = (next: Step) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setStep(next);
+    const dir = next > step ? 1 : -1;
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: SLIDE_OUT_MS, useNativeDriver: true }),
+      Animated.timing(slideX,   { toValue: -SLIDE_DIST * dir, duration: SLIDE_OUT_MS, useNativeDriver: true }),
+    ]).start(() => {
+      slideX.setValue(SLIDE_DIST * dir);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setStep(next);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: SLIDE_IN_MS, useNativeDriver: true }),
+        Animated.timing(slideX,   { toValue: 0, duration: SLIDE_IN_MS, useNativeDriver: true }),
+      ]).start();
+    });
   };
 
   const handleNext = () => {
@@ -210,47 +252,49 @@ const OnboardingScreen = () => {
       setAppAppearancePreference(
         value as (typeof APP_APPEARANCE_OPTION)[keyof typeof APP_APPEARANCE_OPTION],
       ).catch(() => {});
-    } else if (step === 3) {
+    } else if (step === 2) {
       setAppThemePreference(
         value as (typeof APP_THEME_OPTION)[keyof typeof APP_THEME_OPTION],
+      ).catch(() => {});
+    } else {
+      setAppUiStylePreference(
+        value as (typeof APP_UI_STYLE_OPTION)[keyof typeof APP_UI_STYLE_OPTION],
       ).catch(() => {});
     }
   };
 
-  // Step 1: pick appearance — preview both modes with colorful theme
+  // Step 1: appearance — preview both light/dark with colorful cards
   const step1Options = [
-    {
-      value: APP_APPEARANCE_OPTION.LIGHT,
-      label: t('onboardingOptionLight'),
-      previewIsDark: false,
-      previewIsColorful: true,
-    },
-    {
-      value: APP_APPEARANCE_OPTION.DARK,
-      label: t('onboardingOptionDark'),
-      previewIsDark: true,
-      previewIsColorful: true,
-    },
+    { value: APP_APPEARANCE_OPTION.LIGHT, label: t('onboardingOptionLight'),
+      previewIsDark: false, previewIsColorful: true,  previewIsSharp: false },
+    { value: APP_APPEARANCE_OPTION.DARK,  label: t('onboardingOptionDark'),
+      previewIsDark: true,  previewIsColorful: true,  previewIsSharp: false },
   ];
 
-  // Step 3: pick theme — preview both styles in chosen appearance
+  // Step 2: theme — preview colorful vs plain in chosen appearance
+  const step2Options = [
+    { value: APP_THEME_OPTION.COLORFUL, label: t('onboardingOptionColorful'),
+      previewIsDark: isDark, previewIsColorful: true,  previewIsSharp: false },
+    { value: APP_THEME_OPTION.PLAIN,    label: t('onboardingOptionPlain'),
+      previewIsDark: isDark, previewIsColorful: false, previewIsSharp: false },
+  ];
+
+  // Step 3: UI style — preview soft (rounded) vs sharp (square)
   const step3Options = [
-    {
-      value: APP_THEME_OPTION.COLORFUL,
-      label: t('onboardingOptionColorful'),
-      previewIsDark: isDark,
-      previewIsColorful: true,
-    },
-    {
-      value: APP_THEME_OPTION.PLAIN,
-      label: t('onboardingOptionPlain'),
-      previewIsDark: isDark,
-      previewIsColorful: false,
-    },
+    { value: APP_UI_STYLE_OPTION.SOFT,  label: t('onboardingOptionSoft'),
+      previewIsDark: isDark, previewIsColorful: isColorful, previewIsSharp: false },
+    { value: APP_UI_STYLE_OPTION.SHARP, label: t('onboardingOptionSharp'),
+      previewIsDark: isDark, previewIsColorful: isColorful, previewIsSharp: true },
   ];
 
-  const options = step === 1 ? step1Options : step === 3 ? step3Options : [];
-  const selectedValue = step === 1 ? appearance : theme;
+  const options = step === 1 ? step1Options : step === 2 ? step2Options : step3Options;
+  const selectedValue = step === 1 ? appearance : step === 2 ? theme : uiStyle;
+
+  const stepTitle = step === 1
+    ? t('onboardingStepAppearance')
+    : step === 2
+    ? t('onboardingStepTheme')
+    : t('onboardingStepUiStyle');
 
   return (
     <View
@@ -262,7 +306,7 @@ const OnboardingScreen = () => {
         paddingRight: insets.right,
       }]}
     >
-      {/* Header: step indicator + skip */}
+      {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
         <Text className="text-[13px] text-muted">{step} / {TOTAL_STEPS}</Text>
         <Pressable onPress={goToApp} hitSlop={12} accessibilityRole="button">
@@ -270,30 +314,33 @@ const OnboardingScreen = () => {
         </Pressable>
       </View>
 
-      {/* Title */}
-      <Text className="px-5 pb-4 text-[22px] font-bold text-foreground">
-        {step === 1 ? t('onboardingStepAppearance') : step === 3 ? t('onboardingStepTheme') : ''}
-      </Text>
-
-      {/* Option panels */}
-      <View
-        className={`flex-1 gap-3 px-5 ${isLandscape ? 'flex-row' : 'flex-col'}`}
+      {/* Animated content: title + panels */}
+      <Animated.View
+        className="flex-1"
+        style={[{ opacity: fadeAnim, transform: [{ translateX: slideX }] }]}
       >
-        {options.map(option => (
-          <OptionPanel
-            key={option.value}
-            label={option.label}
-            previewIsDark={option.previewIsDark}
-            previewIsColorful={option.previewIsColorful}
-            isSelected={selectedValue === option.value}
-            accentColor={accent}
-            appBg={appBg}
-            onPress={() => handleSelect(option.value)}
-          />
-        ))}
-      </View>
+        <Text className="px-5 pb-4 text-[22px] font-bold text-foreground">
+          {stepTitle}
+        </Text>
 
-      {/* Footer: back (1/3) + next (2/3) */}
+        <View className={`flex-1 gap-3 px-5 ${isLandscape ? 'flex-row' : 'flex-col'}`}>
+          {options.map(option => (
+            <OptionPanel
+              key={option.value}
+              label={option.label}
+              previewIsDark={option.previewIsDark}
+              previewIsColorful={option.previewIsColorful}
+              previewIsSharp={option.previewIsSharp}
+              isSelected={selectedValue === option.value}
+              accentColor={accent}
+              appBg={appBg}
+              onPress={() => handleSelect(option.value)}
+            />
+          ))}
+        </View>
+      </Animated.View>
+
+      {/* Footer: previous (1/3) + next/done (2/3) */}
       <View className="flex-row gap-3 px-5 pb-2 pt-4">
         {step > 1 ? (
           <Pressable

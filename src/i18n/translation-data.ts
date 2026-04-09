@@ -10,10 +10,13 @@ type BaseTranslations = {
   onboardingDone: string;
   onboardingStepAppearance: string;
   onboardingStepTheme: string;
+  onboardingStepUiStyle: string;
   onboardingOptionLight: string;
   onboardingOptionDark: string;
   onboardingOptionColorful: string;
   onboardingOptionPlain: string;
+  onboardingOptionSoft: string;
+  onboardingOptionSharp: string;
 
   // Login screen
   loginButton: string;
@@ -279,10 +282,13 @@ const enUS: BaseTranslations = {
   onboardingDone: 'Done',
   onboardingStepAppearance: 'Appearance',
   onboardingStepTheme: 'Style',
+  onboardingStepUiStyle: 'Shape',
   onboardingOptionLight: 'Light',
   onboardingOptionDark: 'Dark',
   onboardingOptionColorful: 'Colorful',
   onboardingOptionPlain: 'Plain',
+  onboardingOptionSoft: 'Soft',
+  onboardingOptionSharp: 'Sharp',
 
   // Login screen
   loginButton: 'Sign In',
@@ -558,10 +564,13 @@ const zhCN: BaseTranslations = {
   onboardingDone: '完成',
   onboardingStepAppearance: '外观',
   onboardingStepTheme: '风格',
+  onboardingStepUiStyle: '形状',
   onboardingOptionLight: '浅色',
   onboardingOptionDark: '深色',
   onboardingOptionColorful: '多彩',
   onboardingOptionPlain: '纯色',
+  onboardingOptionSoft: '圆润',
+  onboardingOptionSharp: '方正',
 
   // Login screen
   loginButton: '登录',
