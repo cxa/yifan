@@ -1135,26 +1135,16 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             ) : null}
 
             {!isSelf && user ? (
-              <DropShadowBox
-                containerClassName="mt-4 pb-2"
-                shadowStyle={profilePanelShadowStyle}
+              <Pressable
+                onPress={handleReport}
+                className="py-6"
+                accessibilityRole="button"
+                accessibilityLabel={t('profileActionReport')}
               >
-                <Surface
-                  className="bg-surface-secondary px-4 py-4"
-                  style={profileThemeStyles.panelStyle}
-                >
-                  <Pressable
-                    onPress={handleReport}
-                    className="rounded-2xl border bg-surface-secondary px-3 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('profileActionReport')}
-                  >
-                    <Text className="text-[13px] text-center text-foreground">
-                      {t('profileActionReport')}
-                    </Text>
-                  </Pressable>
-                </Surface>
-              </DropShadowBox>
+                <Text className="text-[13px] text-center text-muted">
+                  {t('profileActionReport')}
+                </Text>
+              </Pressable>
             ) : null}
           </Animated.ScrollView>
           <PhotoViewerModal
