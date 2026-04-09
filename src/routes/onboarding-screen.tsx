@@ -240,13 +240,21 @@ const OnboardingScreen = () => {
     const dir     = next > step ? 1 : -1;
     const showPrev = next > 1 ? 1 : 0;
 
-    // Spring the Previous button immediately (JS thread)
-    Animated.spring(prevProgress, {
-      toValue: showPrev,
-      bounciness: 10,
-      speed: 14,
-      useNativeDriver: false,
-    }).start();
+    // Previous button: spring open, ease closed (JS thread)
+    if (showPrev === 1) {
+      Animated.spring(prevProgress, {
+        toValue: 1,
+        bounciness: 10,
+        speed: 14,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      Animated.timing(prevProgress, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: false,
+      }).start();
+    }
 
     // Slide + fade the content area (native thread)
     Animated.parallel([
