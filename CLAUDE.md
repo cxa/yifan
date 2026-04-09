@@ -59,6 +59,12 @@ GestureHandlerRootView → SafeAreaProvider → HeroUINativeProvider → ToastMa
 
 ---
 
+## Fanfou API Reference
+
+Full API documentation: https://github.com/FanfouAPI/FanFouAPIDoc/wiki/Apicategory
+
+---
+
 ## Design System
 
 See AGENTS.md §"Design System" for full rules. Summary:
