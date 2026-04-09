@@ -273,7 +273,7 @@ type BaseTranslations = {
 
 const enUS: BaseTranslations = {
   // Onboarding screen
-  onboardingBack: 'Back',
+  onboardingBack: 'Previous',
   onboardingSkip: 'Skip',
   onboardingNext: 'Next',
   onboardingDone: 'Done',
