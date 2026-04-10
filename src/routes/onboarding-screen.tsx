@@ -242,7 +242,6 @@ type OptionPanelProps = {
   previewIsSharp: boolean;
   isSelected: boolean;
   accentColor: string;
-  unselectedBorder: string;
   onPress: () => void;
   customPreview?: React.ReactNode;
 };
@@ -254,14 +253,16 @@ const OptionPanel = ({
   previewIsSharp,
   isSelected,
   accentColor,
-  unselectedBorder,
   onPress,
   customPreview,
 }: OptionPanelProps) => {
-  const borderColor = isSelected ? accentColor : unselectedBorder;
+  // Unselected border matches the panel's own background → blends in, no visible line
+  const panelBg   = previewIsDark ? LIST_BG_DARK  : LIST_BG_LIGHT;
+  const labelColor = previewIsDark ? '#D4C4A8' : '#1A1208';
+  const borderColor = isSelected ? accentColor : panelBg;
   return (
     <Pressable
-      className="flex-1 gap-2"
+      className="flex-1"
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected: isSelected }}
@@ -278,10 +279,15 @@ const OptionPanel = ({
             previewIsSharp={previewIsSharp}
           />
         )}
+        <View
+          className="py-[10px] items-center"
+          style={[{ backgroundColor: panelBg }]}
+        >
+          <Text className="text-[13px] font-semibold" style={[{ color: labelColor }]}>
+            {label}
+          </Text>
+        </View>
       </View>
-      <Text className="text-center text-[13px] font-semibold text-foreground">
-        {label}
-      </Text>
     </Pressable>
   );
 };
@@ -315,10 +321,7 @@ const OnboardingScreen = () => {
   const uiStyle    = useAppUiStylePreference();
   const isDark     = useEffectiveIsDark();
   const isColorful = theme === APP_THEME_OPTION.COLORFUL;
-  const [accent, appBg] = useThemeColor(['accent', 'background']);
-  // Dark mode: subtle white frame so light-bg panels don't float on dark screen
-  // Light mode: match background so border is invisible — content shape speaks for itself
-  const unselectedBorder = isDark ? 'rgba(255,255,255,0.12)' : appBg;
+  const [accent] = useThemeColor(['accent']);
 
   // Content: tab-bar-style horizontal slide + fade (native driver)
   const slideX   = useRef(new Animated.Value(0)).current;
@@ -470,7 +473,7 @@ const OnboardingScreen = () => {
               previewIsSharp={option.previewIsSharp}
               isSelected={selectedValue === option.value}
               accentColor={accent}
-              unselectedBorder={unselectedBorder}
+
               onPress={() => handleSelect(option.value)}
               customPreview={'customPreview' in option ? option.customPreview : undefined}
             />
