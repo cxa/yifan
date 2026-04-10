@@ -338,6 +338,7 @@ const AuthIndexRoute = () => {
         photoBase64: photo?.base64,
       }),
       t('postFailedTitle'),
+      () => showVariantToast('success', t('sentTitle'), t('postPendingReviewMessage')),
     );
   };
   const renderAuthTabBar = (props: BottomTabBarProps) => (

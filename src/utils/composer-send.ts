@@ -6,12 +6,14 @@ const getErrorMessage = (error: unknown, fallback: string) =>
 export const executeComposerSend = (
   sendFn: () => Promise<unknown>,
   failedTitle: string,
+  onSuccess?: () => void,
 ): void => {
   const run = async () => {
     const toastId = showProgressToast('发送中…');
     try {
       await sendFn();
       hideToast(toastId);
+      onSuccess?.();
     } catch (requestError) {
       hideToast(toastId);
       showVariantToast(
