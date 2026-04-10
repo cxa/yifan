@@ -77,24 +77,24 @@ const AppUpdateDialog = () => {
             </Text>
           )}
 
-          <View className="flex-row gap-3 pt-1">
-            <Pressable
-              onPress={handleDismiss}
-              disabled={isDownloading}
-              className="flex-1 items-center rounded-full border border-muted py-3"
-            >
-              <Text className="text-[15px] font-semibold text-muted">
-                {t('updateLater')}
-              </Text>
-            </Pressable>
+          <View className="gap-3 pt-1">
             <Pressable
               onPress={isDownloading ? undefined : handleInstall}
               disabled={isDownloading}
-              className="flex-1 items-center rounded-full bg-accent py-3"
+              className="w-full items-center rounded-full bg-accent py-3"
               style={isDownloading ? [{ opacity: 0.5 }] : undefined}
             >
               <Text className="text-[15px] font-bold text-accent-foreground">
                 {t('updateInstall')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleDismiss}
+              disabled={isDownloading}
+              className="w-full items-center rounded-full border border-muted py-3"
+            >
+              <Text className="text-[15px] font-semibold text-muted">
+                {t('updateLater')}
               </Text>
             </Pressable>
           </View>
