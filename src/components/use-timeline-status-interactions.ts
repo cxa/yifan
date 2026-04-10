@@ -15,6 +15,7 @@ type ReplyTarget = {
 type RepostTarget = {
   statusId: string;
   screenName: string;
+  statusText: string;
 };
 type UseTimelineStatusInteractionsParams = {
   updateStatusById: (
@@ -74,9 +75,11 @@ const useTimelineStatusInteractions = ({
   };
   const handleOpenRepostComposer = (status: FanfouStatus) => {
     const screenName = status.user.screen_name || status.user.id;
+    const statusText = status.text.replace(/<[^>]+>/g, '');
     setComposeRepostTarget({
       statusId: status.id,
       screenName,
+      statusText,
     });
     setComposeReplyTarget(null);
     setComposeMode('repost');
@@ -125,8 +128,10 @@ const useTimelineStatusInteractions = ({
         });
       }
       if (composeMode === 'repost' && composeRepostTarget) {
+        const repostSuffix = `转@${composeRepostTarget.screenName}: ${composeRepostTarget.statusText}`;
+        const repostStatus = trimmedText ? `${trimmedText} ${repostSuffix}` : repostSuffix;
         await statusUpdateMutation.mutateAsync({
-          status: trimmedText || undefined,
+          status: repostStatus,
           params: {
             repost_status_id: composeRepostTarget.statusId,
           },
