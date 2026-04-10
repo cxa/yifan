@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { showVariantToast } from '@/utils/toast-alert';
 import {
   FlatList,
   Image,
@@ -32,13 +31,11 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { useAuthSession } from '@/auth/auth-session';
-import { get, post } from '@/auth/fanfou-client';
+import { get } from '@/auth/fanfou-client';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
-import ComposerModal, {
-  type ComposerModalSubmitPayload,
-} from '@/components/composer-modal';
+import ComposerModal from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
-import { buildRepostStatus, executeComposerSend, toPlainText } from '@/utils/composer-send';
+import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
@@ -58,24 +55,12 @@ import {
   AUTH_STATUS_ROUTE,
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
-import { useStatusUpdateMutation } from '@/query/post-mutations';
 import { openPhotoViewer } from '@/components/photo-viewer-store';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import type { FanfouStatus } from '@/types/fanfou';
 import { Text } from '@/components/app-text';
 import { useTranslation } from 'react-i18next';
-type TimelineComposerMode = 'reply' | 'repost' | null;
-type ReplyTarget = {
-  statusId: string;
-  userId: string;
-  screenName: string;
-};
-type RepostTarget = {
-  statusId: string;
-  screenName: string;
-  plainText: string;
-};
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
@@ -120,18 +105,27 @@ const MentionsRoute = () => {
     TIMELINE_TOP_CONTENT_GAP -
     getTabBarOccludedHeight(insets.bottom);
   const [timelineItems, setTimelineItems] = useState<FanfouStatus[]>([]);
-  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
-    () => new Set(),
-  );
   const listRef = useRef<FlatList<FanfouStatus>>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasReachedTimelineEnd, setHasReachedTimelineEnd] = useState(false);
-  const [composeMode, setComposeMode] = useState<TimelineComposerMode>(null);
-  const [composeReplyTarget, setComposeReplyTarget] =
-    useState<ReplyTarget | null>(null);
-  const [composeRepostTarget, setComposeRepostTarget] =
-    useState<RepostTarget | null>(null);
-  const statusUpdateMutation = useStatusUpdateMutation();
+  const updateStatusById = (statusId: string, updater: (s: FanfouStatus) => FanfouStatus) => {
+    setTimelineItems(previous => previous.map(item => item.id === statusId ? updater(item) : item));
+  };
+  const {
+    composeMode,
+    composerTitle,
+    composerPlaceholder,
+    composerSubmitLabel,
+    composerInitialText,
+    composerResetKey,
+    isComposerSubmitting,
+    pendingBookmarkIds,
+    handleOpenReplyComposer,
+    handleOpenRepostComposer,
+    handleCloseComposer,
+    handleSendComposer,
+    handleToggleBookmark,
+  } = useTimelineStatusInteractions({ updateStatusById });
   useEffect(() => {
     setTimelineItems([]);
     setHasReachedTimelineEnd(false);
@@ -277,146 +271,6 @@ const MentionsRoute = () => {
   }, [queryItems]);
   const errorMessage = error ? t('mentionsLoadFailed') : null;
   const technicalError = error instanceof Error ? error.message : null;
-  const setBookmarkPending = (statusId: string, pending: boolean) => {
-    setPendingBookmarkIds(previous => {
-      const next = new Set(previous);
-      if (pending) {
-        next.add(statusId);
-      } else {
-        next.delete(statusId);
-      }
-      return next;
-    });
-  };
-  const handleOpenReplyComposer = (status: FanfouStatus) => {
-    const statusId = getStatusId(status);
-    const userId = status.user.id.trim();
-    const screenName = status.user.screen_name.trim();
-    setComposeMode('reply');
-    setComposeReplyTarget({
-      statusId,
-      userId,
-      screenName,
-    });
-    setComposeRepostTarget(null);
-  };
-  const handleOpenRepostComposer = (status: FanfouStatus) => {
-    const statusId = getStatusId(status);
-    const screenName = status.user.screen_name.trim();
-    const plainText = toPlainText(status.text);
-    setComposeMode('repost');
-    setComposeRepostTarget({
-      statusId,
-      screenName,
-      plainText,
-    });
-    setComposeReplyTarget(null);
-  };
-  const handleCloseComposer = () => {
-    setComposeMode(null);
-    setComposeReplyTarget(null);
-    setComposeRepostTarget(null);
-  };
-  const handleSendComposer = ({
-    text,
-    photo,
-  }: ComposerModalSubmitPayload) => {
-    if (!composeMode) {
-      return;
-    }
-    const trimmedText = text.trim();
-    const hasPhoto = Boolean(photo?.base64);
-
-    // Validate — keep composer open on error
-    if (composeMode === 'reply') {
-      if (!composeReplyTarget) {
-        showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
-        return;
-      }
-      if (!trimmedText && !hasPhoto) {
-        showVariantToast('danger', t('cannotReplyTitle'), t('replyNeedsContent'));
-        return;
-      }
-    }
-    if (composeMode === 'repost' && !composeRepostTarget) {
-      showVariantToast('danger', t('cannotRepostTitle'), t('repostMissingTarget'));
-      return;
-    }
-
-    // Build send function before closing
-    let sendFn: () => Promise<unknown>;
-    let failedTitle: string;
-    if (composeMode === 'reply' && composeReplyTarget) {
-      const replyTarget = composeReplyTarget;
-      sendFn = () => statusUpdateMutation.mutateAsync({
-        status: photo?.base64 ? trimmedText || undefined : trimmedText,
-        photoBase64: photo?.base64,
-        params: {
-          in_reply_to_status_id: replyTarget.statusId,
-          in_reply_to_user_id: replyTarget.userId,
-        },
-      });
-      failedTitle = t('replyFailedTitle');
-    } else if (composeMode === 'repost' && composeRepostTarget) {
-      const repostTarget = composeRepostTarget;
-      sendFn = () => statusUpdateMutation.mutateAsync({
-        status: buildRepostStatus(trimmedText, repostTarget.screenName, repostTarget.plainText),
-        params: { repost_status_id: repostTarget.statusId },
-      });
-      failedTitle = t('repostFailedTitle');
-    } else {
-      return;
-    }
-
-    // Close composer immediately, send in background
-    setComposeMode(null);
-    setComposeReplyTarget(null);
-    setComposeRepostTarget(null);
-    executeComposerSend(sendFn, failedTitle);
-  };
-  const handleToggleBookmark = async (status: FanfouStatus) => {
-    const statusId = getStatusId(status);
-    if (pendingBookmarkIds.has(statusId)) {
-      return;
-    }
-    const nextFavorited = !status.favorited;
-    setBookmarkPending(statusId, true);
-    setTimelineItems(previous =>
-      previous.map(item =>
-        getStatusId(item) === statusId
-          ? {
-              ...item,
-              favorited: nextFavorited,
-            }
-          : item,
-      ),
-    );
-    try {
-      await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', {
-        id: statusId,
-      });
-    } catch (requestError) {
-      setTimelineItems(previous =>
-        previous.map(item =>
-          getStatusId(item) === statusId
-            ? {
-                ...item,
-                favorited: !nextFavorited,
-              }
-            : item,
-        ),
-      );
-      showVariantToast(
-        'danger',
-        t('bookmarkFailedTitle'),
-        requestError instanceof Error
-          ? requestError.message
-          : t('retryMessage'),
-      );
-    } finally {
-      setBookmarkPending(statusId, false);
-    }
-  };
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     return deleteStatus({
@@ -476,38 +330,6 @@ const MentionsRoute = () => {
     />
   );
   const timelineListSettings = useTimelineListSettings(insets);
-  const composerTitle =
-    composeMode === 'reply'
-      ? composeReplyTarget
-        ? t('composerReplyTo', {
-            name: composeReplyTarget.screenName,
-          })
-        : t('composerReply')
-      : composeMode === 'repost'
-      ? composeRepostTarget?.screenName
-        ? t('composerRepostTo', {
-            name: composeRepostTarget.screenName,
-          })
-        : t('composerRepost')
-      : t('composerWritePost');
-  const composerPlaceholder =
-    composeMode === 'reply'
-      ? t('composerReplyPlaceholder')
-      : t('composerCommentPlaceholder');
-  const composerSubmitLabel =
-    composeMode === 'reply'
-      ? t('composerSubmitReply')
-      : t('composerSubmitRepost');
-  const composerInitialText =
-    composeMode === 'reply' && composeReplyTarget
-      ? `@${composeReplyTarget.screenName} `
-      : '';
-  const composerResetKey =
-    composeMode === 'reply'
-      ? `reply:${composeReplyTarget?.statusId ?? ''}`
-      : composeMode === 'repost'
-      ? `repost:${composeRepostTarget?.statusId ?? ''}`
-      : 'closed';
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
     renderedItems: timelineItems,
@@ -610,7 +432,7 @@ const MentionsRoute = () => {
         initialText={composerInitialText}
         resetKey={composerResetKey}
         enablePhoto={composeMode === 'reply'}
-        isSubmitting={statusUpdateMutation.isPending}
+        isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />

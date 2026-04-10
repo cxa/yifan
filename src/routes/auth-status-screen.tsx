@@ -31,11 +31,9 @@ import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get, post } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
-import ComposerModal, {
-  type ComposerModalSubmitPayload,
-} from '@/components/composer-modal';
+import ComposerModal from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
-import { buildRepostStatus, executeComposerSend, toPlainText } from '@/utils/composer-send';
+import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
 import {
   CARD_PASTEL_CYCLE,
   type DropShadowBoxType,
@@ -50,7 +48,6 @@ import {
   AUTH_STATUS_ROUTE,
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
-import { useStatusUpdateMutation } from '@/query/post-mutations';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import {
   TIMELINE_HORIZONTAL_PADDING,
@@ -65,17 +62,6 @@ import type { FanfouStatus } from '@/types/fanfou';
 import { parseFanfouDate } from '@/utils/fanfou-date';
 const STATUS_THREAD_CARD_GAP = 8;
 const STATUS_THREAD_STACK_STYLE = { gap: STATUS_THREAD_CARD_GAP } as const;
-type ComposerMode = 'reply' | 'repost' | null;
-type ReplyTarget = {
-  statusId: string;
-  userId: string;
-  screenName: string;
-};
-type RepostTarget = {
-  statusId: string;
-  screenName: string;
-  plainText: string;
-};
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 const normalizeStatus = (value: unknown): FanfouStatus | null =>
@@ -174,18 +160,25 @@ const StatusDetailRoute = () => {
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
-  const [composeMode, setComposeMode] = useState<ComposerMode>(null);
-  const [composeReplyTarget, setComposeReplyTarget] =
-    useState<ReplyTarget | null>(null);
-  const [composeRepostTarget, setComposeRepostTarget] =
-    useState<RepostTarget | null>(null);
-  const statusUpdateMutation = useStatusUpdateMutation();
   const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [favoritedOverrides, setFavoritedOverrides] = useState<
     Record<string, boolean>
   >({});
+  const {
+    composeMode,
+    composerTitle,
+    composerPlaceholder,
+    composerSubmitLabel,
+    composerInitialText,
+    composerResetKey,
+    isComposerSubmitting,
+    handleOpenReplyComposer,
+    handleOpenRepostComposer,
+    handleCloseComposer,
+    handleSendComposer,
+  } = useTimelineStatusInteractions();
   const statusQueryKey = ['status', 'detail', routeStatusId] as const;
   const contextQueryKey = ['status', 'context', routeStatusId] as const;
   const {
@@ -411,100 +404,6 @@ const StatusDetailRoute = () => {
       },
     });
   };
-  const handleOpenReplyComposer = (statusItem: FanfouStatus) => {
-    const statusId = getStatusId(statusItem);
-    const userId = statusItem.user.id.trim();
-    const screenName = statusItem.user.screen_name.trim();
-    if (!userId || !screenName) {
-      showVariantToast(
-        'danger',
-        t('cannotReplyTitle'),
-        t('replyMissingTarget'),
-      );
-      return;
-    }
-    setComposeMode('reply');
-    setComposeReplyTarget({
-      statusId,
-      userId,
-      screenName,
-    });
-    setComposeRepostTarget(null);
-  };
-  const handleOpenRepostComposer = (statusItem: FanfouStatus) => {
-    const statusId = getStatusId(statusItem);
-    const screenName = statusItem.user.screen_name.trim();
-    const plainText = toPlainText(statusItem.text);
-    setComposeMode('repost');
-    setComposeRepostTarget({
-      statusId,
-      screenName,
-      plainText,
-    });
-    setComposeReplyTarget(null);
-  };
-  const handleCloseComposer = () => {
-    setComposeMode(null);
-    setComposeReplyTarget(null);
-    setComposeRepostTarget(null);
-  };
-  const handleSendComposer = ({
-    text,
-    photo,
-  }: ComposerModalSubmitPayload) => {
-    if (!composeMode) {
-      return;
-    }
-    const trimmedText = text.trim();
-    const hasPhoto = Boolean(photo?.base64);
-
-    // Validate — keep composer open on error
-    if (composeMode === 'reply') {
-      if (!composeReplyTarget) {
-        showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
-        return;
-      }
-      if (!trimmedText && !hasPhoto) {
-        showVariantToast('danger', t('cannotReplyTitle'), t('replyNeedsContent'));
-        return;
-      }
-    }
-    if (composeMode === 'repost' && !composeRepostTarget) {
-      showVariantToast('danger', t('cannotRepostTitle'), t('repostMissingTarget'));
-      return;
-    }
-
-    // Build send function before closing
-    let sendFn: () => Promise<unknown>;
-    let failedTitle: string;
-    if (composeMode === 'reply' && composeReplyTarget) {
-      const replyTarget = composeReplyTarget;
-      sendFn = () => statusUpdateMutation.mutateAsync({
-        status: photo?.base64 ? trimmedText || undefined : trimmedText,
-        photoBase64: photo?.base64,
-        params: {
-          in_reply_to_status_id: replyTarget.statusId,
-          in_reply_to_user_id: replyTarget.userId,
-        },
-      });
-      failedTitle = t('replyFailedTitle');
-    } else if (composeMode === 'repost' && composeRepostTarget) {
-      const repostTarget = composeRepostTarget;
-      sendFn = () => statusUpdateMutation.mutateAsync({
-        status: buildRepostStatus(trimmedText, repostTarget.screenName, repostTarget.plainText),
-        params: { repost_status_id: repostTarget.statusId },
-      });
-      failedTitle = t('repostFailedTitle');
-    } else {
-      return;
-    }
-
-    // Close composer immediately, send in background
-    setComposeMode(null);
-    setComposeReplyTarget(null);
-    setComposeRepostTarget(null);
-    executeComposerSend(sendFn, failedTitle);
-  };
   const renderStatusCard = (
     statusItem: FanfouStatus,
     isMainStatus: boolean,
@@ -544,36 +443,6 @@ const StatusDetailRoute = () => {
       />
     );
   };
-  const composerTitle =
-    composeMode === 'reply'
-      ? composeReplyTarget
-        ? t('composerReplyTo', {
-          name: composeReplyTarget.screenName,
-        })
-        : t('composerReply')
-      : composeRepostTarget?.screenName
-        ? t('composerRepostTo', {
-          name: composeRepostTarget.screenName,
-        })
-        : t('composerRepost');
-  const composerPlaceholder =
-    composeMode === 'reply'
-      ? t('composerReplyPlaceholder')
-      : t('composerCommentPlaceholder');
-  const composerSubmitLabel =
-    composeMode === 'reply'
-      ? t('composerSubmitReply')
-      : t('composerSubmitRepost');
-  const composerInitialText =
-    composeMode === 'reply' && composeReplyTarget
-      ? `@${composeReplyTarget.screenName} `
-      : '';
-  const composerResetKey =
-    composeMode === 'reply'
-      ? `reply:${composeReplyTarget?.statusId ?? ''}`
-      : composeMode === 'repost'
-        ? `repost:${composeRepostTarget?.statusId ?? ''}`
-        : 'closed';
   if (!routeStatusId) {
     return (
       <View className="flex-1 bg-background px-4 pt-8">
@@ -670,7 +539,7 @@ const StatusDetailRoute = () => {
         initialText={composerInitialText}
         resetKey={composerResetKey}
         enablePhoto={composeMode === 'reply'}
-        isSubmitting={statusUpdateMutation.isPending}
+        isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />

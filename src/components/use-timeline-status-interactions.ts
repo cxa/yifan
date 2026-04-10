@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { showVariantToast } from '@/utils/toast-alert';
 import { buildRepostStatus, executeComposerSend, toPlainText } from '@/utils/composer-send';
 import type { StatusUpdateMutationVariables } from '@/query/post-mutations';
@@ -8,6 +9,7 @@ import type { ComposerModalSubmitPayload } from '@/components/composer-modal';
 import type { FanfouStatus } from '@/types/fanfou';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
+
 type ComposerMode = 'reply' | 'repost' | null;
 type ReplyTarget = {
   statusId: string;
@@ -20,33 +22,29 @@ type RepostTarget = {
   plainText: string;
 };
 
-
 type UseTimelineStatusInteractionsParams = {
-  updateStatusById: (
+  updateStatusById?: (
     statusId: string,
     updater: (status: FanfouStatus) => FanfouStatus,
   ) => void;
 };
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback;
+
 const useTimelineStatusInteractions = ({
-  updateStatusById,
-}: UseTimelineStatusInteractionsParams) => {
+  updateStatusById = () => {},
+}: UseTimelineStatusInteractionsParams = {}) => {
+  const { t } = useTranslation();
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
   const [composeMode, setComposeMode] = useState<ComposerMode>(null);
-  const [composeReplyTarget, setComposeReplyTarget] =
-    useState<ReplyTarget | null>(null);
-  const [composeRepostTarget, setComposeRepostTarget] =
-    useState<RepostTarget | null>(null);
-  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [composeReplyTarget, setComposeReplyTarget] = useState<ReplyTarget | null>(null);
+  const [composeRepostTarget, setComposeRepostTarget] = useState<RepostTarget | null>(null);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState<Set<string>>(() => new Set());
   const statusUpdateMutation = useStatusUpdateMutation();
-  const handlePhotoPress = (photoUrl: string, originRect: PhotoViewerOriginRect | null) => {
+
+  const handlePhotoPress = (photoUrl: string, originRect?: PhotoViewerOriginRect | null) => {
     Image.prefetch(photoUrl).catch(() => undefined);
-    setPhotoViewerOriginRect(originRect);
+    setPhotoViewerOriginRect(originRect ?? null);
     setPhotoViewerUrl(photoUrl);
     setPhotoViewerVisible(true);
   };
@@ -66,58 +64,49 @@ const useTimelineStatusInteractions = ({
       return next;
     });
   };
+
   const handleOpenReplyComposer = (status: FanfouStatus) => {
     const userId = status.user.id;
     const screenName = status.user.screen_name || status.user.id;
-    setComposeReplyTarget({
-      statusId: status.id,
-      userId,
-      screenName,
-    });
+    setComposeReplyTarget({ statusId: status.id, userId, screenName });
     setComposeRepostTarget(null);
     setComposeMode('reply');
   };
+
   const handleOpenRepostComposer = (status: FanfouStatus) => {
     const screenName = status.user.screen_name || status.user.id;
     const plainText = toPlainText(status.text);
-    setComposeRepostTarget({
-      statusId: status.id,
-      screenName,
-      plainText,
-    });
+    setComposeRepostTarget({ statusId: status.id, screenName, plainText });
     setComposeReplyTarget(null);
     setComposeMode('repost');
   };
+
   const handleCloseComposer = () => {
     setComposeMode(null);
     setComposeReplyTarget(null);
     setComposeRepostTarget(null);
   };
-  const handleSendComposer = ({
-    text,
-    photo,
-  }: ComposerModalSubmitPayload) => {
+
+  const handleSendComposer = ({ text, photo }: ComposerModalSubmitPayload) => {
     if (!composeMode) return;
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
 
-    // Validate — keep composer open on error
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        showVariantToast('danger', '无法回复', '缺少回复目标。');
+        showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        showVariantToast('danger', '无法回复', '请输入文字或附上图片。');
+        showVariantToast('danger', t('cannotReplyTitle'), t('replyNeedsContent'));
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showVariantToast('danger', '无法转发', '缺少转发目标。');
+      showVariantToast('danger', t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
 
-    // Build payload before closing composer
     let sendFn: () => Promise<unknown>;
     let failedTitle: string;
     if (composeMode === 'reply' && composeReplyTarget) {
@@ -130,24 +119,31 @@ const useTimelineStatusInteractions = ({
         },
       };
       sendFn = () => statusUpdateMutation.mutateAsync(payload);
-      failedTitle = '回复失败';
+      failedTitle = t('replyFailedTitle');
     } else if (composeMode === 'repost' && composeRepostTarget) {
       const payload: StatusUpdateMutationVariables = {
-        status: buildRepostStatus(trimmedText, composeRepostTarget.screenName, composeRepostTarget.plainText),
+        status: buildRepostStatus(
+          trimmedText,
+          composeRepostTarget.screenName,
+          composeRepostTarget.plainText,
+        ),
         params: { repost_status_id: composeRepostTarget.statusId },
       };
       sendFn = () => statusUpdateMutation.mutateAsync(payload);
-      failedTitle = '转发失败';
+      failedTitle = t('repostFailedTitle');
     } else {
       return;
     }
 
-    // Close composer immediately, then send in background
+    const successTitle = composeMode === 'reply' ? t('replySent') : t('repostSent');
     setComposeMode(null);
     setComposeReplyTarget(null);
     setComposeRepostTarget(null);
-    executeComposerSend(sendFn, failedTitle);
+    executeComposerSend(sendFn, failedTitle, () =>
+      showVariantToast('success', successTitle, t('postPendingReviewMessage')),
+    );
   };
+
   const handleToggleBookmark = async (status: FanfouStatus) => {
     const statusId = status.id;
     if (pendingBookmarkIds.has(statusId)) {
@@ -155,53 +151,44 @@ const useTimelineStatusInteractions = ({
     }
     const nextFavorited = !status.favorited;
     setBookmarkPending(statusId, true);
-    updateStatusById(statusId, item => ({
-      ...item,
-      favorited: nextFavorited,
-    }));
+    updateStatusById(statusId, item => ({ ...item, favorited: nextFavorited }));
     try {
-      await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', {
-        id: statusId,
-      });
+      await post(nextFavorited ? '/favorites/create' : '/favorites/destroy', { id: statusId });
     } catch (requestError) {
-      updateStatusById(statusId, item => ({
-        ...item,
-        favorited: !nextFavorited,
-      }));
+      updateStatusById(statusId, item => ({ ...item, favorited: !nextFavorited }));
       showVariantToast(
         'danger',
-        'Bookmark failed',
-        getErrorMessage(requestError, 'Please try again.'),
+        t('bookmarkFailedTitle'),
+        requestError instanceof Error ? requestError.message : t('retryMessage'),
       );
     } finally {
       setBookmarkPending(statusId, false);
     }
   };
+
   const composerTitle =
     composeMode === 'reply'
       ? composeReplyTarget
-        ? `Reply @${composeReplyTarget.screenName}`
-        : 'Reply'
+        ? t('composerReplyTo', { name: composeReplyTarget.screenName })
+        : t('composerReply')
       : composeMode === 'repost'
       ? composeRepostTarget?.screenName
-        ? `Repost @${composeRepostTarget.screenName}`
-        : 'Repost'
-      : 'Compose';
+        ? t('composerRepostTo', { name: composeRepostTarget.screenName })
+        : t('composerRepost')
+      : t('composerWritePost');
   const composerPlaceholder =
-    composeMode === 'reply'
-      ? 'Write your reply...'
-      : 'Add a comment (optional)...';
-  const composerSubmitLabel = composeMode === 'reply' ? 'Reply' : 'Repost';
+    composeMode === 'reply' ? t('composerReplyPlaceholder') : t('composerCommentPlaceholder');
+  const composerSubmitLabel =
+    composeMode === 'reply' ? t('composerSubmitReply') : t('composerSubmitRepost');
   const composerInitialText =
-    composeMode === 'reply' && composeReplyTarget
-      ? `@${composeReplyTarget.screenName} `
-      : '';
+    composeMode === 'reply' && composeReplyTarget ? `@${composeReplyTarget.screenName} ` : '';
   const composerResetKey =
     composeMode === 'reply'
       ? `reply:${composeReplyTarget?.statusId ?? ''}`
       : composeMode === 'repost'
       ? `repost:${composeRepostTarget?.statusId ?? ''}`
       : 'closed';
+
   return {
     composeMode,
     composerTitle,

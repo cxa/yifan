@@ -73,6 +73,8 @@ type BaseTranslations = {
   sentTitle: string;
   replySent: string;
   repostSent: string;
+  mentionSent: string;
+  dmSent: string;
   postPendingReviewMessage: string;
   replyFailedTitle: string;
   repostFailedTitle: string;
@@ -364,6 +366,8 @@ const enUS: BaseTranslations = {
   sentTitle: 'Sent',
   replySent: 'Reply posted.',
   repostSent: 'Reposted.',
+  mentionSent: 'Mention posted.',
+  dmSent: 'Message sent.',
   postPendingReviewMessage:
     'Your post has been sent. Due to content review, it may take 10 minutes or longer to appear.',
   replyFailedTitle: 'Reply Failed',
@@ -654,6 +658,8 @@ const zhCN: BaseTranslations = {
   sentTitle: '已发送',
   replySent: '回复已发布。',
   repostSent: '已转发。',
+  mentionSent: '提及已发布。',
+  dmSent: '私信已发送。',
   postPendingReviewMessage:
     '你的饭否已发出。由于内容审查，可能需要 10 分钟或更久才会显示。',
   replyFailedTitle: '回复失败',

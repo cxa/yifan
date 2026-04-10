@@ -576,10 +576,18 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     }
 
     // Close composer immediately, send in background
+    const successTitle =
+      composeMode === 'reply' ? t('replySent') :
+      composeMode === 'repost' ? t('repostSent') :
+      composeMode === 'dm' ? t('dmSent') :
+      t('mentionSent');
+    const successBody = composeMode === 'dm' ? undefined : t('postPendingReviewMessage');
     setComposeMode(null);
     setComposeReplyTarget(null);
     setComposeRepostTarget(null);
-    executeComposerSend(sendFn, failedTitle);
+    executeComposerSend(sendFn, failedTitle, () =>
+      showVariantToast('success', successTitle, successBody),
+    );
   };
   const handleToggleBookmark = async (status: FanfouStatus) => {
     const statusId = getStatusId(status);

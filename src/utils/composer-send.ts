@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { hideToast, showProgressToast, showVariantToast } from '@/utils/toast-alert';
 
 const getErrorMessage = (error: unknown, fallback: string) =>
@@ -9,7 +10,7 @@ export const executeComposerSend = (
   onSuccess?: () => void,
 ): void => {
   const run = async () => {
-    const toastId = showProgressToast('发送中…');
+    const toastId = showProgressToast(i18n.t('composerSending'));
     try {
       await sendFn();
       hideToast(toastId);
@@ -19,8 +20,8 @@ export const executeComposerSend = (
       showVariantToast(
         'danger',
         failedTitle,
-        getErrorMessage(requestError, '请重试。'),
-        [{ text: '重试', onPress: () => run() }],
+        getErrorMessage(requestError, i18n.t('retryMessage')),
+        [{ text: i18n.t('editProfileRetry'), onPress: () => run() }],
         { placement: 'top' },
       );
     }
