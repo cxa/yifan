@@ -85,8 +85,8 @@ android {
         applicationId "im.cxa.fanatter"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 260410
-        versionName "2604.10"
+        versionCode 2604101
+        versionName "2604.10.1"
     }
     signingConfigs {
         debug {
