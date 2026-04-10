@@ -259,11 +259,9 @@ const OptionPanel = ({
   customPreview,
 }: OptionPanelProps) => {
   const borderColor = isSelected ? accentColor : unselectedBorder;
-  const labelBg    = previewIsDark ? LIST_BG_DARK  : LIST_BG_LIGHT;
-  const labelColor  = previewIsDark ? '#D4C4A8' : '#1A1208';
   return (
     <Pressable
-      className="flex-1"
+      className="flex-1 gap-2"
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected: isSelected }}
@@ -280,15 +278,10 @@ const OptionPanel = ({
             previewIsSharp={previewIsSharp}
           />
         )}
-        <View
-          className="py-[10px] items-center"
-          style={[{ backgroundColor: labelBg }]}
-        >
-          <Text className="text-[13px] font-semibold" style={[{ color: labelColor }]}>
-            {label}
-          </Text>
-        </View>
       </View>
+      <Text className="text-center text-[13px] font-semibold text-foreground">
+        {label}
+      </Text>
     </Pressable>
   );
 };
