@@ -135,26 +135,52 @@ const MiniTimeline = ({ previewIsDark, previewIsColorful, previewIsSharp }: Mini
 
 // ---------------------------------------------------------------------------
 // SystemSplitPreview — diagonal light/dark split for Follow System option
+//
+// Layout constants mirror MiniTimeline (MINI_PAD/MINI_GAP) and
+// MiniSkeletonCard (INNER_PAD, LINE_H, LINE_GAP, AVATAR_D) so the SVG cards
+// are geometrically consistent with the native previews.
 // ---------------------------------------------------------------------------
+// Shared layout constants — mirror MiniTimeline (MINI_PAD/MINI_GAP) and
+// MiniSkeletonCard (INNER_PAD, LINE_H, LINE_GAP, AVATAR_D).
+const MINI_PAD  = 12; // p-3 on MiniTimeline container
+const MINI_GAP  = 10; // marginBottom between cards
+const INNER_PAD = 16; // py-4 / px-4 card padding
+const LINE_H    = 7;  // h-[7px] skeleton line height
+const LINE_GAP  = 5;  // gap-[5px] between skeleton lines
+const AVATAR_D  = 32; // h-8 w-8 avatar diameter
+// Minimum card slot height (native: INNER_PAD*2 + AVATAR_D + MINI_GAP)
+// used to derive a dynamic card count matching MiniTimeline's natural overflow behaviour.
+const MIN_CARD_SLOT = INNER_PAD * 2 + AVATAR_D + MINI_GAP; // 74px
+
 const renderSvgCard = (
   x: number, y: number, w: number, h: number,
-  bg: string, bar: string,
+  bg: string, bar: string, lineWidths: readonly DimensionValue[],
 ) => {
-  const avR = Math.min(h * 0.28, 7);
-  const avCX = 10 + avR;
-  const avCY = h / 2;
-  const bX = avCX + avR + 5;
-  const bH = Math.max(3, Math.floor(h * 0.12));
-  const bMaxW = w - bX - 8;
+  const avR     = AVATAR_D / 2;
+  const avCX    = INNER_PAD + avR;
+  const avCY    = h / 2; // center vertically so proportions hold at any fill height
+  const lX      = INNER_PAD + AVATAR_D + 8; // gap-2 = 8px
+  const lMaxW   = w - lX - INNER_PAD;
+  const headerW = Math.min(56, lMaxW); // w-14
+  const linesH  = LINE_H + lineWidths.length * (LINE_H + LINE_GAP);
+  const lY      = avCY - linesH / 2; // vertically center lines alongside avatar
   return (
     <G transform={`translate(${x} ${y})`}>
-      <Rect width={w} height={h} rx={8} fill={bg} />
+      <Rect width={w} height={h} rx={24} fill={bg} />
       <Circle cx={avCX} cy={avCY} r={avR} fill={bar} />
-      <G transform={`translate(${bX} ${avCY - bH - 2})`}>
-        <Rect width={bMaxW * 0.5} height={bH} rx={2} fill={bar} />
-      </G>
-      <G transform={`translate(${bX} ${avCY + 2})`}>
-        <Rect width={bMaxW * 0.75} height={bH} rx={2} fill={bar} opacity={0.7} />
+      <G transform={`translate(${lX} ${lY})`}>
+        <Rect width={headerW} height={LINE_H} rx={LINE_H / 2} fill={bar} />
+        {lineWidths.map((lw, i) => {
+          const lwPx =
+            typeof lw === 'string' && lw.endsWith('%')
+              ? (parseFloat(lw) / 100) * lMaxW
+              : typeof lw === 'number' ? lw : lMaxW;
+          return (
+            <G key={i} transform={`translate(0 ${(LINE_H + LINE_GAP) * (i + 1)})`}>
+              <Rect width={lwPx} height={LINE_H} rx={LINE_H / 2} fill={bar} opacity={0.7 - i * 0.15} />
+            </G>
+          );
+        })}
       </G>
     </G>
   );
@@ -163,13 +189,24 @@ const renderSvgCard = (
 const SystemSplitPreview = () => {
   const [w, setW] = useState(0);
   const [h, setH] = useState(0);
+  const topX = w * 0.60;
+  const botX = w * 0.40;
+  // Mirror MiniTimeline: fill height with as many cards as naturally fit
+  const svgCount = h > 0 ? Math.max(2, Math.round((h - MINI_PAD * 2) / MIN_CARD_SLOT)) : 2;
+  const cardH    = h > 0 ? (h - MINI_PAD * 2 - MINI_GAP * (svgCount - 1)) / svgCount : 0;
 
-  const pad = 8;
-  const gap = 6;
-  const count = 3;
-  const cardH = h > 0 ? (h - pad * 2 - gap * (count - 1)) / count : 0;
-  const topX  = w * 0.60; // diagonal x at top
-  const botX  = w * 0.40; // diagonal x at bottom
+  const renderCards = (cardBgs: readonly string[], barBgs: readonly string[]) =>
+    Array.from({ length: svgCount }).map((_, i) => {
+      const ci = i % LINE_CONFIGS.length;
+      return (
+        <G key={i}>
+          {renderSvgCard(
+            MINI_PAD, MINI_PAD + i * (cardH + MINI_GAP), w - MINI_PAD * 2, cardH,
+            cardBgs[i % cardBgs.length], barBgs[i % barBgs.length], LINE_CONFIGS[ci],
+          )}
+        </G>
+      );
+    });
 
   return (
     <View
@@ -190,37 +227,14 @@ const SystemSplitPreview = () => {
               <Polygon points={`${topX},0 ${w},0 ${w},${h} ${botX},${h}`} />
             </ClipPath>
           </Defs>
-
-          {/* Backgrounds — dark side uses a slightly elevated tone for card contrast */}
           <Polygon points={`0,0 ${topX},0 ${botX},${h} 0,${h}`} fill={LIST_BG_LIGHT} />
           <Polygon points={`${topX},0 ${w},0 ${w},${h} ${botX},${h}`} fill="#1C1810" />
-
-          {/* Light-side cards */}
           <G clipPath="url(#ob-light)">
-            {Array.from({ length: count }).map((_, i) => {
-              const ci = i % CARD_BG_LIGHT.length;
-              return (
-                <G key={i}>
-                  {renderSvgCard(pad, pad + i * (cardH + gap), w - pad * 2, cardH,
-                    CARD_BG_LIGHT[ci], BAR_BG_LIGHT[ci])}
-                </G>
-              );
-            })}
+            {renderCards(CARD_BG_LIGHT, BAR_BG_LIGHT)}
           </G>
-
-          {/* Dark-side cards */}
           <G clipPath="url(#ob-dark)">
-            {Array.from({ length: count }).map((_, i) => {
-              const ci = i % CARD_BG_DARK.length;
-              return (
-                <G key={i}>
-                  {renderSvgCard(pad, pad + i * (cardH + gap), w - pad * 2, cardH,
-                    CARD_BG_DARK[ci], BAR_BG_DARK[ci])}
-                </G>
-              );
-            })}
+            {renderCards(CARD_BG_DARK, BAR_BG_DARK)}
           </G>
-
         </Svg>
       )}
     </View>
@@ -251,10 +265,8 @@ const OptionPanel = ({
   onPress,
   customPreview,
 }: OptionPanelProps) => {
-  // Unselected border matches the panel's own background → blends in, no visible line
   const panelBg   = previewIsDark ? LIST_BG_DARK  : LIST_BG_LIGHT;
   const labelColor = previewIsDark ? '#D4C4A8' : '#1A1208';
-  const borderColor = isSelected ? accentColor : panelBg;
   return (
     <Pressable
       className="flex-1"
@@ -263,10 +275,7 @@ const OptionPanel = ({
       accessibilityState={{ selected: isSelected }}
       accessibilityLabel={label}
     >
-      <View
-        className="flex-1 rounded-3xl overflow-hidden border-[2.5px]"
-        style={[{ borderColor }]}
-      >
+      <View className="flex-1 rounded-3xl overflow-hidden" style={[{ backgroundColor: panelBg }]}>
         {customPreview ?? (
           <MiniTimeline
             previewIsDark={previewIsDark}
@@ -282,6 +291,13 @@ const OptionPanel = ({
             {label}
           </Text>
         </View>
+        {/* Selection ring: overlay so it never bleeds onto SVG content */}
+        {isSelected && (
+          <View
+            className="absolute inset-0 rounded-3xl border-[2.5px] pointer-events-none"
+            style={[{ borderColor: accentColor }]}
+          />
+        )}
       </View>
     </Pressable>
   );
