@@ -1,6 +1,6 @@
 {
   "name": "yifan",
-  "version": "2603.31",
+  "version": "2604.10",
   "private": true,
   "workspaces": [
     "packages/*"
