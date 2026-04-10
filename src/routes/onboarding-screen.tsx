@@ -190,9 +190,9 @@ const SystemSplitPreview = () => {
             </ClipPath>
           </Defs>
 
-          {/* Backgrounds */}
+          {/* Backgrounds — dark side uses a slightly elevated tone for card contrast */}
           <Polygon points={`0,0 ${topX},0 ${botX},${h} 0,${h}`} fill={LIST_BG_LIGHT} />
-          <Polygon points={`${topX},0 ${w},0 ${w},${h} ${botX},${h}`} fill={LIST_BG_DARK} />
+          <Polygon points={`${topX},0 ${w},0 ${w},${h} ${botX},${h}`} fill="#1C1810" />
 
           {/* Light-side cards */}
           <G clipPath="url(#ob-light)">
@@ -242,7 +242,7 @@ type OptionPanelProps = {
   previewIsSharp: boolean;
   isSelected: boolean;
   accentColor: string;
-  appBg: string;
+  unselectedBorder: string;
   onPress: () => void;
   customPreview?: React.ReactNode;
 };
@@ -254,11 +254,11 @@ const OptionPanel = ({
   previewIsSharp,
   isSelected,
   accentColor,
-  appBg,
+  unselectedBorder,
   onPress,
   customPreview,
 }: OptionPanelProps) => {
-  const borderColor = isSelected ? accentColor : appBg;
+  const borderColor = isSelected ? accentColor : unselectedBorder;
   const labelBg    = previewIsDark ? LIST_BG_DARK  : LIST_BG_LIGHT;
   const labelColor  = previewIsDark ? '#D4C4A8' : '#1A1208';
   return (
@@ -322,7 +322,8 @@ const OnboardingScreen = () => {
   const uiStyle    = useAppUiStylePreference();
   const isDark     = useEffectiveIsDark();
   const isColorful = theme === APP_THEME_OPTION.COLORFUL;
-  const [accent, appBg] = useThemeColor(['accent', 'background']);
+  const [accent] = useThemeColor(['accent']);
+  const unselectedBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
 
   // Content: tab-bar-style horizontal slide + fade (native driver)
   const slideX   = useRef(new Animated.Value(0)).current;
@@ -474,7 +475,7 @@ const OnboardingScreen = () => {
               previewIsSharp={option.previewIsSharp}
               isSelected={selectedValue === option.value}
               accentColor={accent}
-              appBg={appBg}
+              unselectedBorder={unselectedBorder}
               onPress={() => handleSelect(option.value)}
               customPreview={'customPreview' in option ? option.customPreview : undefined}
             />
