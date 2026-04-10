@@ -12,9 +12,9 @@ type TimelineSkeletonCardProps = {
   message?: string;
 };
 
-const SHIMMER_DURATION = 1400;
-const SHIMMER_MIN_WIDTH = 120;
-const SHIMMER_RATIO = 0.6;
+const SHIMMER_DURATION = 1800;
+const SHIMMER_MIN_WIDTH = 80;
+const SHIMMER_RATIO = 0.4;
 
 // Pastel card backgrounds — same cycle as TimelineStatusCard
 const CARD_BG_LIGHT = ['#FDDBD5', '#FDF3C8', '#E8D5F5', '#D0E8F5', '#C8EDE8'] as const;
@@ -60,8 +60,8 @@ export const ShimmerBar = ({ className, style, barColor, isActive }: ShimmerBarP
   });
 
   const gradientColors = isDark
-    ? ['transparent', 'rgba(255,255,255,0.10)', 'transparent']
-    : ['transparent', 'rgba(255,255,255,0.65)', 'transparent'];
+    ? ['transparent', 'rgba(255,255,255,0.07)', 'transparent']
+    : ['transparent', 'rgba(255,255,255,0.40)', 'transparent'];
 
   const shimmerStyle = [
     styles.shimmer,
