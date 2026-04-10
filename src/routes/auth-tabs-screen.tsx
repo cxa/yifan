@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
+import { executeComposerSend } from '@/utils/composer-send';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   BottomTabBarProps,
@@ -331,19 +332,13 @@ const AuthIndexRoute = () => {
       return;
     }
     setComposeVisible(false);
-    showVariantToast('accent', t('composerSending'), '');
-    statusUpdateMutation.mutateAsync({
-      status: photo?.base64 ? trimmedText || undefined : trimmedText,
-      photoBase64: photo?.base64,
-    }).then(() => {
-      showVariantToast('success', t('sentTitle'), t('postPendingReviewMessage'));
-    }).catch((requestError: unknown) => {
-      showVariantToast(
-        'danger',
-        t('postFailedTitle'),
-        requestError instanceof Error ? requestError.message : t('retryMessage'),
-      );
-    });
+    executeComposerSend(
+      () => statusUpdateMutation.mutateAsync({
+        status: photo?.base64 ? trimmedText || undefined : trimmedText,
+        photoBase64: photo?.base64,
+      }),
+      t('postFailedTitle'),
+    );
   };
   const renderAuthTabBar = (props: BottomTabBarProps) => (
     <>

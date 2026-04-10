@@ -37,6 +37,7 @@ import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
+import { buildRepostStatus, executeComposerSend, toPlainText } from '@/utils/composer-send';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineSkeletonCard from '@/components/timeline-skeleton-card';
@@ -75,6 +76,7 @@ type ReplyTarget = {
 type RepostTarget = {
   statusId: string;
   screenName: string;
+  plainText: string;
 };
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
@@ -417,10 +419,12 @@ const AuthHomeRoute = () => {
   const handleOpenRepostComposer = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     const screenName = status.user.screen_name.trim();
+    const plainText = toPlainText(status.text);
     setComposeMode('repost');
     setComposeRepostTarget({
       statusId,
       screenName,
+      plainText,
     });
     setComposeReplyTarget(null);
   };
@@ -429,7 +433,7 @@ const AuthHomeRoute = () => {
     setComposeReplyTarget(null);
     setComposeRepostTarget(null);
   };
-  const handleSendComposer = async ({
+  const handleSendComposer = ({
     text,
     photo,
   }: ComposerModalSubmitPayload) => {
@@ -438,70 +442,53 @@ const AuthHomeRoute = () => {
     }
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
+
+    // Validate — keep composer open on error
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        showVariantToast(
-          'danger',
-          t('cannotReplyTitle'),
-          t('replyMissingTarget'),
-        );
+        showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        showVariantToast(
-          'danger',
-          t('cannotReplyTitle'),
-          t('replyNeedsContent'),
-        );
+        showVariantToast('danger', t('cannotReplyTitle'), t('replyNeedsContent'));
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showVariantToast(
-        'danger',
-        t('cannotRepostTitle'),
-        t('repostMissingTarget'),
-      );
+      showVariantToast('danger', t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
-    try {
-      if (composeMode === 'reply' && composeReplyTarget) {
-        await statusUpdateMutation.mutateAsync({
-          status: photo?.base64 ? trimmedText || undefined : trimmedText,
-          photoBase64: photo?.base64,
-          params: {
-            in_reply_to_status_id: composeReplyTarget.statusId,
-            in_reply_to_user_id: composeReplyTarget.userId,
-          },
-        });
-      }
-      if (composeMode === 'repost' && composeRepostTarget) {
-        await statusUpdateMutation.mutateAsync({
-          status: trimmedText || undefined,
-          params: {
-            repost_status_id: composeRepostTarget.statusId,
-          },
-        });
-      }
-      setComposeMode(null);
-      setComposeReplyTarget(null);
-      setComposeRepostTarget(null);
-      showVariantToast(
-        'success',
-        t('sentTitle'),
-        composeMode === 'reply' ? t('replySent') : t('repostSent'),
-      );
-    } catch (requestError) {
-      showVariantToast(
-        'danger',
-        composeMode === 'reply'
-          ? t('replyFailedTitle')
-          : t('repostFailedTitle'),
-        requestError instanceof Error
-          ? requestError.message
-          : t('retryMessage'),
-      );
+
+    // Build send function before closing
+    let sendFn: () => Promise<unknown>;
+    let failedTitle: string;
+    if (composeMode === 'reply' && composeReplyTarget) {
+      const replyTarget = composeReplyTarget;
+      sendFn = () => statusUpdateMutation.mutateAsync({
+        status: photo?.base64 ? trimmedText || undefined : trimmedText,
+        photoBase64: photo?.base64,
+        params: {
+          in_reply_to_status_id: replyTarget.statusId,
+          in_reply_to_user_id: replyTarget.userId,
+        },
+      });
+      failedTitle = t('replyFailedTitle');
+    } else if (composeMode === 'repost' && composeRepostTarget) {
+      const repostTarget = composeRepostTarget;
+      sendFn = () => statusUpdateMutation.mutateAsync({
+        status: buildRepostStatus(trimmedText, repostTarget.screenName, repostTarget.plainText),
+        params: { repost_status_id: repostTarget.statusId },
+      });
+      failedTitle = t('repostFailedTitle');
+    } else {
+      return;
     }
+
+    // Close composer immediately, send in background
+    setComposeMode(null);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
+    executeComposerSend(sendFn, failedTitle);
   };
   const handleToggleBookmark = async (status: FanfouStatus) => {
     const statusId = getStatusId(status);

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
+import { buildRepostStatus, executeComposerSend, toPlainText } from '@/utils/composer-send';
+import type { StatusUpdateMutationVariables } from '@/query/post-mutations';
 import { Image } from 'react-native';
 import { post } from '@/auth/fanfou-client';
 import type { ComposerModalSubmitPayload } from '@/components/composer-modal';
@@ -15,8 +17,10 @@ type ReplyTarget = {
 type RepostTarget = {
   statusId: string;
   screenName: string;
-  statusText: string;
+  plainText: string;
 };
+
+
 type UseTimelineStatusInteractionsParams = {
   updateStatusById: (
     statusId: string,
@@ -75,11 +79,11 @@ const useTimelineStatusInteractions = ({
   };
   const handleOpenRepostComposer = (status: FanfouStatus) => {
     const screenName = status.user.screen_name || status.user.id;
-    const statusText = status.text.replace(/<[^>]+>/g, '');
+    const plainText = toPlainText(status.text);
     setComposeRepostTarget({
       statusId: status.id,
       screenName,
-      statusText,
+      plainText,
     });
     setComposeReplyTarget(null);
     setComposeMode('repost');
@@ -89,69 +93,60 @@ const useTimelineStatusInteractions = ({
     setComposeReplyTarget(null);
     setComposeRepostTarget(null);
   };
-  const handleSendComposer = async ({
+  const handleSendComposer = ({
     text,
     photo,
   }: ComposerModalSubmitPayload) => {
-    if (!composeMode) {
-      return;
-    }
+    if (!composeMode) return;
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
+
+    // Validate — keep composer open on error
     if (composeMode === 'reply') {
       if (!composeReplyTarget) {
-        showVariantToast('danger', 'Cannot reply', 'Missing reply target.');
+        showVariantToast('danger', '无法回复', '缺少回复目标。');
         return;
       }
       if (!trimmedText && !hasPhoto) {
-        showVariantToast(
-          'danger',
-          'Cannot reply',
-          'Please enter text or attach a photo.',
-        );
+        showVariantToast('danger', '无法回复', '请输入文字或附上图片。');
         return;
       }
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showVariantToast('danger', 'Cannot repost', 'Missing repost target.');
+      showVariantToast('danger', '无法转发', '缺少转发目标。');
       return;
     }
-    try {
-      if (composeMode === 'reply' && composeReplyTarget) {
-        await statusUpdateMutation.mutateAsync({
-          status: photo?.base64 ? trimmedText || undefined : trimmedText,
-          photoBase64: photo?.base64,
-          params: {
-            in_reply_to_status_id: composeReplyTarget.statusId,
-            in_reply_to_user_id: composeReplyTarget.userId,
-          },
-        });
-      }
-      if (composeMode === 'repost' && composeRepostTarget) {
-        const repostSuffix = `转@${composeRepostTarget.screenName}: ${composeRepostTarget.statusText}`;
-        const repostStatus = trimmedText ? `${trimmedText} ${repostSuffix}` : repostSuffix;
-        await statusUpdateMutation.mutateAsync({
-          status: repostStatus,
-          params: {
-            repost_status_id: composeRepostTarget.statusId,
-          },
-        });
-      }
-      setComposeMode(null);
-      setComposeReplyTarget(null);
-      setComposeRepostTarget(null);
-      showVariantToast(
-        'success',
-        'Sent',
-        composeMode === 'reply' ? 'Reply posted.' : 'Reposted.',
-      );
-    } catch (requestError) {
-      showVariantToast(
-        'danger',
-        composeMode === 'reply' ? 'Reply failed' : 'Repost failed',
-        getErrorMessage(requestError, 'Please try again.'),
-      );
+
+    // Build payload before closing composer
+    let sendFn: () => Promise<unknown>;
+    let failedTitle: string;
+    if (composeMode === 'reply' && composeReplyTarget) {
+      const payload: StatusUpdateMutationVariables = {
+        status: photo?.base64 ? trimmedText || undefined : trimmedText,
+        photoBase64: photo?.base64,
+        params: {
+          in_reply_to_status_id: composeReplyTarget.statusId,
+          in_reply_to_user_id: composeReplyTarget.userId,
+        },
+      };
+      sendFn = () => statusUpdateMutation.mutateAsync(payload);
+      failedTitle = '回复失败';
+    } else if (composeMode === 'repost' && composeRepostTarget) {
+      const payload: StatusUpdateMutationVariables = {
+        status: buildRepostStatus(trimmedText, composeRepostTarget.screenName, composeRepostTarget.plainText),
+        params: { repost_status_id: composeRepostTarget.statusId },
+      };
+      sendFn = () => statusUpdateMutation.mutateAsync(payload);
+      failedTitle = '转发失败';
+    } else {
+      return;
     }
+
+    // Close composer immediately, then send in background
+    setComposeMode(null);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
+    executeComposerSend(sendFn, failedTitle);
   };
   const handleToggleBookmark = async (status: FanfouStatus) => {
     const statusId = status.id;

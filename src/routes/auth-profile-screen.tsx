@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
+import { buildRepostStatus, executeComposerSend, toPlainText } from '@/utils/composer-send';
 import {
   Alert,
   Image,
@@ -111,6 +112,7 @@ type ReplyTarget = {
 type RepostTarget = {
   statusId: string;
   screenName: string;
+  plainText: string;
 };
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -488,10 +490,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const handleOpenRepostComposer = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     const screenName = status.user.screen_name.trim();
+    const plainText = toPlainText(status.text);
     setComposeMode('repost');
     setComposeRepostTarget({
       statusId,
       screenName,
+      plainText,
     });
     setComposeReplyTarget(null);
   };
@@ -510,103 +514,72 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     setComposeReplyTarget(null);
     setComposeRepostTarget(null);
   };
-  const handleSendComposer = async ({
+  const handleSendComposer = ({
     text,
     photo,
   }: ComposerModalSubmitPayload) => {
-    if (!user || !composeMode) {
-      return;
-    }
+    if (!user || !composeMode) return;
     const trimmedText = text.trim();
     const hasPhoto = Boolean(photo?.base64);
+
+    // Validate — keep composer open on error
     if (composeMode === 'dm' && !trimmedText) {
-      showVariantToast(
-        'danger',
-        t('cannotSendTitle'),
-        t('profileNeedsContent'),
-      );
+      showVariantToast('danger', t('cannotSendTitle'), t('profileNeedsContent'));
       return;
     }
     if (composeMode === 'repost' && !composeRepostTarget) {
-      showVariantToast(
-        'danger',
-        t('cannotRepostTitle'),
-        t('repostMissingTarget'),
-      );
+      showVariantToast('danger', t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
     if (composeMode === 'reply' && !composeReplyTarget) {
-      showVariantToast(
-        'danger',
-        t('cannotReplyTitle'),
-        t('replyMissingTarget'),
-      );
+      showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
-    if (
-      (composeMode === 'mention' || composeMode === 'reply') &&
-      !trimmedText &&
-      !hasPhoto
-    ) {
+    if ((composeMode === 'mention' || composeMode === 'reply') && !trimmedText && !hasPhoto) {
       showVariantToast('danger', t('cannotSendTitle'), t('replyNeedsContent'));
       return;
     }
-    try {
-      if (composeMode === 'mention') {
-        await statusUpdateMutation.mutateAsync({
-          status: photo?.base64 ? trimmedText || undefined : trimmedText,
-          photoBase64: photo?.base64,
-          params: {
-            in_reply_to_user_id: user.id,
-          },
-        });
-      } else if (composeMode === 'reply' && composeReplyTarget) {
-        await statusUpdateMutation.mutateAsync({
-          status: photo?.base64 ? trimmedText || undefined : trimmedText,
-          photoBase64: photo?.base64,
-          params: {
-            in_reply_to_status_id: composeReplyTarget.statusId,
-            in_reply_to_user_id: composeReplyTarget.userId,
-          },
-        });
-      } else if (composeMode === 'repost' && composeRepostTarget) {
-        await statusUpdateMutation.mutateAsync({
-          status: trimmedText || undefined,
-          params: {
-            repost_status_id: composeRepostTarget.statusId,
-          },
-        });
-      } else {
-        await directMessageMutation.mutateAsync({
-          userId: user.id,
-          text: trimmedText,
-        });
-      }
-      setComposeMode(null);
-      setComposeReplyTarget(null);
-      setComposeRepostTarget(null);
-      showVariantToast(
-        'success',
-        t('sentTitle'),
-        composeMode === 'mention'
-          ? t('profileMentionSent')
-          : composeMode === 'dm'
-            ? t('profileMessageSent')
-            : composeMode === 'reply'
-              ? t('replySent')
-              : t('repostSent'),
-      );
-    } catch (requestError) {
-      showVariantToast(
-        'danger',
-        composeMode === 'repost'
-          ? t('repostFailedTitle')
-          : composeMode === 'reply'
-            ? t('replyFailedTitle')
-            : t('profileSendFailed'),
-        getErrorMessage(requestError, t('profileSendFailedMessage')),
-      );
+
+    // Build send function before closing
+    let sendFn: () => Promise<unknown>;
+    let failedTitle: string;
+    if (composeMode === 'mention') {
+      const userId = user.id;
+      sendFn = () => statusUpdateMutation.mutateAsync({
+        status: photo?.base64 ? trimmedText || undefined : trimmedText,
+        photoBase64: photo?.base64,
+        params: { in_reply_to_user_id: userId },
+      });
+      failedTitle = t('profileSendFailed');
+    } else if (composeMode === 'reply' && composeReplyTarget) {
+      const replyTarget = composeReplyTarget;
+      sendFn = () => statusUpdateMutation.mutateAsync({
+        status: photo?.base64 ? trimmedText || undefined : trimmedText,
+        photoBase64: photo?.base64,
+        params: {
+          in_reply_to_status_id: replyTarget.statusId,
+          in_reply_to_user_id: replyTarget.userId,
+        },
+      });
+      failedTitle = t('replyFailedTitle');
+    } else if (composeMode === 'repost' && composeRepostTarget) {
+      const repostTarget = composeRepostTarget;
+      sendFn = () => statusUpdateMutation.mutateAsync({
+        status: buildRepostStatus(trimmedText, repostTarget.screenName, repostTarget.plainText),
+        params: { repost_status_id: repostTarget.statusId },
+      });
+      failedTitle = t('repostFailedTitle');
+    } else {
+      const userId = user.id;
+      sendFn = () => directMessageMutation.mutateAsync({ userId, text: trimmedText });
+      failedTitle = t('profileSendFailed');
     }
+
+    // Close composer immediately, send in background
+    setComposeMode(null);
+    setComposeReplyTarget(null);
+    setComposeRepostTarget(null);
+    executeComposerSend(sendFn, failedTitle);
   };
   const handleToggleBookmark = async (status: FanfouStatus) => {
     const statusId = getStatusId(status);

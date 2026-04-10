@@ -23,12 +23,17 @@ type ToastShowOptions = {
 
 type ToastManagerLike = {
   show: (options: ToastShowOptions) => string;
+  hide: (ids?: string | string[] | 'all') => void;
 };
 
 let toastManager: ToastManagerLike | null = null;
 
 export const setToastManager = (manager: ToastManagerLike | null) => {
   toastManager = manager;
+};
+
+export const hideToast = (id?: string | string[] | 'all') => {
+  toastManager?.hide(id);
 };
 
 const pickActionButton = (buttons?: ToastButton[]) => {
@@ -52,8 +57,9 @@ export const showToastAlert = (
   options?: {
     cancelable?: boolean;
     variant?: ToastVariant;
+    placement?: 'top' | 'bottom';
   },
-) => {
+): string | undefined => {
   if (!toastManager) {
     return;
   }
@@ -63,16 +69,17 @@ export const showToastAlert = (
   const variant =
     options?.variant ??
     (actionButton?.style === 'destructive' ? 'danger' : 'default');
+  const placement = options?.placement;
   const fontClassName = getAppFontClassNameSnapshot();
 
-  toastManager.show({
+  return toastManager.show({
     duration: hasAction ? 'persistent' : undefined,
     component: toastProps => {
       const rootProps = toastProps as React.ComponentProps<typeof Toast>;
       const helpers = toastProps as ToastActionHelpers;
 
       return (
-        <Toast {...rootProps} variant={variant} className="flex-row gap-3">
+        <Toast {...rootProps} variant={variant} placement={placement} className="flex-row gap-3">
           <View className="flex-1">
             {title ? (
               <Toast.Title className={fontClassName}>{title}</Toast.Title>
@@ -99,6 +106,22 @@ export const showToastAlert = (
   });
 };
 
+export const showProgressToast = (title: string): string | undefined => {
+  if (!toastManager) return;
+  const fontClassName = getAppFontClassNameSnapshot();
+  return toastManager.show({
+    duration: 'persistent',
+    component: toastProps => {
+      const rootProps = toastProps as React.ComponentProps<typeof Toast>;
+      return (
+        <Toast {...rootProps} placement="top" className="flex-row gap-3 items-center">
+          <Toast.Title className={fontClassName}>{title}</Toast.Title>
+        </Toast>
+      );
+    },
+  });
+};
+
 export const showVariantToast = (
   variant: ToastVariant,
   title?: string,
@@ -106,9 +129,10 @@ export const showVariantToast = (
   buttons?: ToastButton[],
   options?: {
     cancelable?: boolean;
+    placement?: 'top' | 'bottom';
   },
-) => {
-  showToastAlert(title, message, buttons, {
+): string | undefined => {
+  return showToastAlert(title, message, buttons, {
     ...options,
     variant,
   });
