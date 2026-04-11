@@ -40,7 +40,7 @@ export const LOGIN_STACK_ROUTE = {
 } as const;
 
 export const AUTH_TAB_ROUTE = {
-  HOME: 'Home',
+  HOME: 'HomeTab',
   MENTIONS: 'Mentions',
   COMPOSE: 'Compose',
   MORE: 'More',

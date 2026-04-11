@@ -1,9 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   Animated,
-  Platform,
   Pressable,
-  UIManager,
   View,
   useWindowDimensions,
   type DimensionValue,
@@ -309,9 +307,6 @@ const OptionPanel = ({
 type Step = 1 | 2 | 3;
 const TOTAL_STEPS = 3;
 
-if (Platform.OS === 'android') {
-  UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
 
 const SLIDE_DIST   = 32;
 const SLIDE_OUT_MS = 130;

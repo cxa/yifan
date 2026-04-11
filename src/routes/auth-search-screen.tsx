@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
-  KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
+  TextInput,
+  useColorScheme,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react-native';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
 import { Text } from '@/components/app-text';
@@ -41,7 +43,6 @@ import type { FanfouStatus } from '@/types/fanfou';
 import { useAppFontFamily } from '@/settings/app-font-preference';
 
 const SEARCH_COUNT = 20;
-const HEADER_TITLE_FONT_SIZE = 17;
 
 const normalizeItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
@@ -61,8 +62,17 @@ const SearchRoute = () => {
     'accent', 'background', 'muted', 'foreground',
   ]);
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
-  const headerFontFamily = useAppFontFamily();
+  const fontFamily = useAppFontFamily();
+  const colorScheme = useColorScheme();
+  const inputBackground = colorScheme === 'dark'
+    ? 'rgba(118,118,128,0.24)'
+    : 'rgba(118,118,128,0.12)';
+
+  const inputRef = useRef<TextInput>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [inputText, setInputText] = useState('');
   const [query, setQuery] = useState('');
@@ -73,29 +83,6 @@ const SearchRoute = () => {
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
-
-  // Configure native search bar
-  useEffect(() => {
-    navigation.setOptions({
-      headerTintColor: foreground,
-      headerStyle: { backgroundColor: background },
-      headerTitleStyle: {
-        fontFamily: headerFontFamily,
-        fontSize: HEADER_TITLE_FONT_SIZE,
-        color: foreground,
-      },
-      headerSearchBarOptions: {
-        placeholder: t('searchPlaceholder'),
-        cancelButtonText: t('searchCancel'),
-        autoFocus: true,
-        barTintColor: background,
-        textColor: foreground,
-        tintColor: foreground,
-        onChangeText: (e: { nativeEvent: { text: string } }) => setInputText(e.nativeEvent.text),
-        onCancelButtonPress: () => navigation.goBack(),
-      },
-    });
-  }, [navigation, t, foreground, background, headerFontFamily]);
 
   // Debounce inputText → query
   useEffect(() => {
@@ -221,25 +208,46 @@ const SearchRoute = () => {
   const listContentContainerStyle = {
     flexGrow: 1,
     paddingBottom: timelineListSettings.contentContainerStyle.paddingBottom,
-    paddingTop: Platform.OS === 'android' ? headerHeight : 0,
     paddingHorizontal: Platform.OS === 'android' ? TIMELINE_HORIZONTAL_PADDING : 0,
   };
 
   const isEmpty = !isLoading && Boolean(query) && results.length === 0;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={headerHeight}
-    >
-      <NativeEdgeScrollShadow className="flex-1" color={background}>
+    <View style={[styles.flex, { backgroundColor: background }]}>
+      {/* Custom header */}
+      <View style={[styles.header, { paddingTop: insets.top, backgroundColor: background, borderBottomColor: inputBackground }]}>
+        <View style={styles.searchRow}>
+          <View style={[styles.inputContainer, { backgroundColor: inputBackground }]}>
+            <Search size={16} color={muted} strokeWidth={2} style={styles.searchIcon} />
+            <TextInput
+              ref={inputRef}
+              style={[styles.input, { color: foreground, fontFamily: fontFamily ?? undefined }]}
+              placeholder={t('searchPlaceholder')}
+              placeholderTextColor={muted}
+              value={inputText}
+              onChangeText={setInputText}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoCapitalize="none"
+              clearButtonMode="while-editing"
+            />
+          </View>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.cancelButton}>
+            <Text style={[styles.cancelText, { color: foreground, fontFamily: fontFamily ?? undefined }]}>
+              {t('searchCancel')}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Content */}
+      <NativeEdgeScrollShadow style={styles.flex} color={background}>
         <Animated.FlatList
-          className="flex-1 bg-background"
+          style={styles.flex}
           data={results}
           keyExtractor={item => getStatusId(item)}
           onScroll={scrollHandler}
-          contentInsetAdjustmentBehavior="automatic"
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
           scrollIndicatorInsets={timelineListSettings.scrollIndicatorInsets}
           contentContainerStyle={listContentContainerStyle}
@@ -311,7 +319,7 @@ const SearchRoute = () => {
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -319,6 +327,40 @@ export default SearchRoute;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  header: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 8,
+  },
+  inputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 9999,
+    height: 36,
+    paddingHorizontal: 10,
+    gap: 6,
+  },
+  searchIcon: {
+    flexShrink: 0,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 0,
+  },
+  cancelButton: {
+    paddingVertical: 6,
+  },
+  cancelText: {
+    fontSize: 16,
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
