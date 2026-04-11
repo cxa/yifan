@@ -58,7 +58,7 @@ import {
   AUTH_STATUS_ROUTE,
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
-import { Globe, Search } from 'lucide-react-native';
+import { Wind, Search } from 'lucide-react-native';
 
 import type { FanfouStatus } from '@/types/fanfou';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
@@ -548,7 +548,7 @@ const AuthHomeRoute = () => {
         style={[PUBLIC_TIMELINE_BUTTON_POSITION, HOME_TOP_BUTTONS_STYLE, topButtonsStyle]}
       >
         <Pressable onPress={handleOpenPublicTimeline} hitSlop={12}>
-          <Globe size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
+          <Wind size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
         </Pressable>
         <Pressable onPress={handleOpenSearch} hitSlop={12}>
           <Search size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
