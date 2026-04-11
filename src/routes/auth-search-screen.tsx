@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -240,7 +242,11 @@ const SearchRoute = () => {
         </View>
       </View>
 
-      {/* Content */}
+      {/* Content — KAV shrinks this area when keyboard appears so empty state centers correctly */}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <NativeEdgeScrollShadow style={styles.flex} color={background}>
         <Animated.FlatList
           style={styles.flex}
@@ -305,6 +311,7 @@ const SearchRoute = () => {
           originRect={photoViewerOriginRect}
         />
       </NativeEdgeScrollShadow>
+      </KeyboardAvoidingView>
 
       <ComposerModal
         visible={composeMode !== null}
