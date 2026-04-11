@@ -54,7 +54,7 @@ jobs:
             --platform android \
             --dev false \
             --entry-file index.js \
-            --bundle-output yifan.${{ steps.versions.outputs.version }}.android.jsbundle \
+            --bundle-output yifan-${{ steps.versions.outputs.version }}.android.jsbundle \
             --assets-dest /tmp/assets-android
 
       - name: Bundle JS — iOS
@@ -63,7 +63,7 @@ jobs:
             --platform ios \
             --dev false \
             --entry-file index.js \
-            --bundle-output yifan.${{ steps.versions.outputs.version }}.ios.jsbundle \
+            --bundle-output yifan-${{ steps.versions.outputs.version }}.ios.jsbundle \
             --assets-dest /tmp/assets-ios
 
       - name: Create manifest.json
