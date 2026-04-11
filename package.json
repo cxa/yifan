@@ -22,7 +22,7 @@
     "prestart": "npm run env:generate",
     "test": "jest",
     "pretest": "npm run env:generate",
-    "postinstall": "patch-package && node scripts/generate-env.js"
+    "postinstall": "patch-package && node scripts/generate-env.js && watchman watch-del . 2>/dev/null; watchman watch-project . 2>/dev/null; true"
   },
   "dependencies": {
     "@cxa/twx": "^0.1.1",
