@@ -1,6 +1,7 @@
 {
   "name": "yifan",
   "version": "2604.10.4",
+  "nativeVersion": "2604.10",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -49,6 +50,7 @@
     "react-native-linear-gradient": "^2.8.3",
     "react-native-localize": "^3.6.1",
     "react-native-reanimated": "~4.3.0",
+    "react-native-restart": "^0.0.27",
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "~4.24.0",
     "react-native-svg": "^15.12.1",

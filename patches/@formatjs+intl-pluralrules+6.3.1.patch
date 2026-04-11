@@ -1,0 +1,12 @@
+diff --git a/node_modules/@formatjs/intl-pluralrules/package.json b/node_modules/@formatjs/intl-pluralrules/package.json
+--- a/node_modules/@formatjs/intl-pluralrules/package.json
++++ b/node_modules/@formatjs/intl-pluralrules/package.json
+@@ -11,7 +11,7 @@
+     "./polyfill.js": "./polyfill.js",
+     "./polyfill-force.js": "./polyfill-force.js",
+     "./should-polyfill.js": "./should-polyfill.js",
+-    "./locale-data/*": "./locale-data/*",
++    "./locale-data/*": "./locale-data/*.js",
+     "./locale-data": "./locale-data"
+   },
+   "dependencies": {

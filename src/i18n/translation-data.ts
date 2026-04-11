@@ -288,8 +288,11 @@ type BaseTranslations = {
   // App update
   updateAvailableTitle: string;
   updateAvailableDescription: string;
+  updateOtaDescription: string;
   updateLater: string;
   updateInstall: string;
+  updateOtaApply: string;
+  updateOpenAppStore: string;
   updateDownloading: string;
   updateDownloadError: string;
 
@@ -595,8 +598,11 @@ const enUS: BaseTranslations = {
   // App update
   updateAvailableTitle: 'Update Available',
   updateAvailableDescription: 'Version {{version}} is ready. Update now for the latest fixes and features.',
+  updateOtaDescription: 'Version {{version}} is a lightweight update. It will download and restart the app automatically.',
   updateLater: 'Later',
   updateInstall: 'Download & Install',
+  updateOtaApply: 'Update & Restart',
+  updateOpenAppStore: 'Open App Store',
   updateDownloading: 'Downloading… {{percent}}%',
   updateDownloadError: 'Download failed. Please try again.',
 
@@ -897,8 +903,11 @@ const zhCN: BaseTranslations = {
   // App update
   updateAvailableTitle: '发现新版本',
   updateAvailableDescription: '版本 {{version}} 已发布，立即更新以获取最新修复和功能。',
+  updateOtaDescription: '版本 {{version}} 是轻量更新，下载后将自动重启应用。',
   updateLater: '稍后',
   updateInstall: '下载安装',
+  updateOtaApply: '更新并重启',
+  updateOpenAppStore: '前往 App Store',
   updateDownloading: '下载中… {{percent}}%',
   updateDownloadError: '下载失败，请重试。',
 

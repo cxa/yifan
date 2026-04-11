@@ -2,6 +2,8 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+def pkg = new groovy.json.JsonSlurper().parseText(new File(rootProject.projectDir, "../package.json").text)
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -81,12 +83,16 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "im.cxa.fanatter"
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "im.cxa.fanatter"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 26041004
         versionName "2604.10.4"
+        buildConfigField "String", "NATIVE_VERSION", "\"${pkg.nativeVersion}\""
     }
     signingConfigs {
         debug {

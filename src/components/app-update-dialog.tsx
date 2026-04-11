@@ -3,7 +3,14 @@ import { Platform, Pressable, View } from 'react-native';
 import { Dialog } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/app-text';
-import { checkForUpdate, downloadAndInstall, setUpdateFoundListener, type UpdateInfo } from '@/services/app-updater';
+import {
+  checkForUpdate,
+  downloadAndApplyOTA,
+  downloadAndInstall,
+  openAppStore,
+  setUpdateFoundListener,
+  type UpdateInfo,
+} from '@/services/app-updater';
 
 const AppUpdateDialog = () => {
   const { t } = useTranslation();
@@ -15,29 +22,55 @@ const AppUpdateDialog = () => {
   const checked = useRef(false);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    // Auto-check on launch (once)
+    // Auto-check on launch (once, both platforms)
     if (!checked.current) {
       checked.current = true;
       checkForUpdate()
-        .then(info => { if (info) { setUpdateInfo(info); setIsOpen(true); } })
+        .then(info => {
+          if (info) {
+            setUpdateInfo(info);
+            setIsOpen(true);
+          }
+        })
         .catch(() => {});
     }
     // Manual trigger from settings "Check for Updates"
-    setUpdateFoundListener(info => { setUpdateInfo(info); setIsOpen(true); });
+    setUpdateFoundListener(info => {
+      setUpdateInfo(info);
+      setIsOpen(true);
+    });
     return () => setUpdateFoundListener(null);
   }, []);
 
-  const handleInstall = () => {
+  const handleNativeInstall = () => {
     if (!updateInfo || isDownloading) return;
+
+    if (Platform.OS === 'ios') {
+      openAppStore().catch(() => {});
+      setIsOpen(false);
+      return;
+    }
+
+    if (!updateInfo.apkUrl) return;
     setIsDownloading(true);
     setHasError(false);
     setPercent(0);
-    downloadAndInstall(updateInfo.downloadUrl, setPercent)
-      .catch(() => {
-        setHasError(true);
-        setIsDownloading(false);
-      });
+    downloadAndInstall(updateInfo.apkUrl, setPercent).catch(() => {
+      setHasError(true);
+      setIsDownloading(false);
+    });
+  };
+
+  const handleOtaApply = () => {
+    if (!updateInfo?.bundleUrl || isDownloading) return;
+    setIsDownloading(true);
+    setHasError(false);
+    setPercent(0);
+    // downloadAndApplyOTA restarts the app on success — no need to reset state
+    downloadAndApplyOTA(updateInfo.bundleUrl, setPercent).catch(() => {
+      setHasError(true);
+      setIsDownloading(false);
+    });
   };
 
   const handleDismiss = () => {
@@ -47,15 +80,28 @@ const AppUpdateDialog = () => {
 
   if (!updateInfo) return null;
 
+  const isOta = updateInfo.updateType === 'js';
+  const isIosNative = updateInfo.updateType === 'native' && Platform.OS === 'ios';
+
+  const primaryLabel = isOta
+    ? t('updateOtaApply')
+    : isIosNative
+      ? t('updateOpenAppStore')
+      : t('updateInstall');
+
+  const primaryAction = isOta ? handleOtaApply : handleNativeInstall;
+
+  const description = isOta
+    ? t('updateOtaDescription', { version: updateInfo.version })
+    : t('updateAvailableDescription', { version: updateInfo.version });
+
   return (
     <Dialog isOpen={isOpen} onOpenChange={open => { if (!open) handleDismiss(); }}>
       <Dialog.Portal>
         <Dialog.Overlay />
         <Dialog.Content className="w-[92%] max-w-[360px] self-center gap-4 p-6">
           <Dialog.Title>{t('updateAvailableTitle')}</Dialog.Title>
-          <Dialog.Description>
-            {t('updateAvailableDescription', { version: updateInfo.version })}
-          </Dialog.Description>
+          <Dialog.Description>{description}</Dialog.Description>
 
           {isDownloading && (
             <View className="gap-2">
@@ -79,24 +125,27 @@ const AppUpdateDialog = () => {
 
           <View className="gap-3 pt-1">
             <Pressable
-              onPress={isDownloading ? undefined : handleInstall}
+              onPress={isDownloading ? undefined : primaryAction}
               disabled={isDownloading}
               className="w-full items-center rounded-full bg-accent py-3"
               style={isDownloading ? [{ opacity: 0.5 }] : undefined}
             >
               <Text className="text-[15px] font-bold text-accent-foreground">
-                {t('updateInstall')}
+                {primaryLabel}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={handleDismiss}
-              disabled={isDownloading}
-              className="w-full items-center rounded-full border border-muted py-3"
-            >
-              <Text className="text-[15px] font-semibold text-muted">
-                {t('updateLater')}
-              </Text>
-            </Pressable>
+            {/* iOS native update: no dismiss — user should update */}
+            {!isIosNative && (
+              <Pressable
+                onPress={handleDismiss}
+                disabled={isDownloading}
+                className="w-full items-center rounded-full border border-muted py-3"
+              >
+                <Text className="text-[15px] font-semibold text-muted">
+                  {t('updateLater')}
+                </Text>
+              </Pressable>
+            )}
           </View>
         </Dialog.Content>
       </Dialog.Portal>

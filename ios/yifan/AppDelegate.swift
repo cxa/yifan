@@ -83,8 +83,32 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
     #if DEBUG
       RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
     #else
-      Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+      resolveProductionBundleURL()
     #endif
+  }
+
+  private func resolveProductionBundleURL() -> URL? {
+    let fm = FileManager.default
+    guard let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first else {
+      return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    }
+    let otaDir = docs.appendingPathComponent("ota")
+    let otaBundle = otaDir.appendingPathComponent("main.jsbundle")
+    let nativeVersionFile = otaDir.appendingPathComponent("native-version.txt")
+
+    if fm.fileExists(atPath: otaBundle.path),
+       let storedVersion = try? String(contentsOf: nativeVersionFile, encoding: .utf8)
+         .trimmingCharacters(in: .whitespacesAndNewlines),
+       let currentNativeVersion = Bundle.main.infoDictionary?["NativeVersion"] as? String,
+       storedVersion == currentNativeVersion {
+      return otaBundle
+    }
+
+    // OTA bundle absent or stale (native was updated) — clean up and use packaged bundle
+    if fm.fileExists(atPath: otaDir.path) {
+      try? fm.removeItem(at: otaDir)
+    }
+    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
   }
 }
 
