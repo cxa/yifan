@@ -36,6 +36,7 @@ import AuthPhotosRoute from '@/routes/auth-photos-screen';
 import AuthProfileRoute from '@/routes/auth-profile-screen';
 import AuthStatusRoute from '@/routes/auth-status-screen';
 import AuthTagRoute from '@/routes/auth-tag-timeline-screen';
+import AuthPublicTimelineRoute from '@/routes/auth-public-timeline-screen';
 import AuthUserListRoute from '@/routes/auth-user-list-screen';
 import LoginRoute from '@/routes/login-screen';
 import OnboardingRoute from '@/routes/onboarding-screen';
@@ -59,6 +60,7 @@ const AUTH_NATIVE_HEADER_ROUTES = new Set<keyof AuthStackParamList>([
   AUTH_STACK_ROUTE.PROFILE,
   AUTH_STACK_ROUTE.EDIT_PROFILE,
   AUTH_STACK_ROUTE.STATUS,
+  AUTH_STACK_ROUTE.PUBLIC_TIMELINE,
 ]);
 const TAG_NATIVE_HEADER_ROUTES = new Set<keyof AuthTagStackParamList>([
   AUTH_TAG_TIMELINE_ROUTE.DETAIL,
@@ -213,6 +215,10 @@ const AuthStackNavigator = () => {
         <AuthStack.Screen
           name={AUTH_STACK_ROUTE.TAG_TIMELINE}
           component={TagStackNavigator}
+        />
+        <AuthStack.Screen
+          name={AUTH_STACK_ROUTE.PUBLIC_TIMELINE}
+          component={AuthPublicTimelineRoute}
         />
       </AuthStack.Navigator>
     </AuthLayout>

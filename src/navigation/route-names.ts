@@ -15,6 +15,7 @@ export const AUTH_STACK_ROUTE = {
   EDIT_PROFILE: 'EditProfile',
   STATUS: 'Status',
   TAG_TIMELINE: 'TagTimeline',
+  PUBLIC_TIMELINE: 'PublicTimeline',
 } as const;
 
 export const AUTH_MESSAGES_ROUTE = {

@@ -2,6 +2,7 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   FlatList,
   Image,
+  Pressable,
   RefreshControl,
   useWindowDimensions,
   View,
@@ -57,6 +58,7 @@ import {
   AUTH_STATUS_ROUTE,
   AUTH_TAG_TIMELINE_ROUTE,
 } from '@/navigation/route-names';
+import { Shuffle } from 'lucide-react-native';
 
 import type { FanfouStatus } from '@/types/fanfou';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
@@ -69,6 +71,7 @@ const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
 const TIMELINE_SCROLL_SHADOW_SIZE = 100;
+const PUBLIC_TIMELINE_BUTTON_POSITION = { position: 'absolute', right: 16 } as const;
 const TimelineItemSeparator = () => (
   <View style={getTimelineItemSeparatorStyle()} />
 );
@@ -261,6 +264,12 @@ const AuthHomeRoute = () => {
     Image.prefetch(photoUrl).catch(() => undefined);
     openPhotoViewer(photoUrl, originRect);
   };
+  const handleOpenPublicTimeline = () => {
+    const parentNavigation =
+      navigation.getParent<NavigationProp<AuthStackParamList>>();
+    if (!parentNavigation) return;
+    parentNavigation.navigate(AUTH_STACK_ROUTE.PUBLIC_TIMELINE);
+  };
   const {
     data: initialItems = [],
     isLoading,
@@ -416,7 +425,7 @@ const AuthHomeRoute = () => {
     marginBottom: TIMELINE_SPACING,
   };
   return (
-    <>
+    <View className="flex-1">
       <NativeEdgeScrollShadow
         className="flex-1"
         size={TIMELINE_SCROLL_SHADOW_SIZE}
@@ -517,7 +526,14 @@ const AuthHomeRoute = () => {
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />
-    </>
+      <Pressable
+        onPress={handleOpenPublicTimeline}
+        style={[PUBLIC_TIMELINE_BUTTON_POSITION, { top: insets.top + 8 }]}
+        hitSlop={12}
+      >
+        <Shuffle size={18} color={muted} strokeWidth={1.5} />
+      </Pressable>
+    </View>
   );
 };
 export default AuthHomeRoute;

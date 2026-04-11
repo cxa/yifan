@@ -130,6 +130,11 @@ type BaseTranslations = {
   statusMissingId: string;
   conversationLoading: string;
 
+  // Public timeline screen
+  publicTimelineTitle: string;
+  publicTimelineEmpty: string;
+  publicTimelineLoadFailed: string;
+
   // Tag timeline screen
   tagTimelineTitle: string;
   tagTimelineFallbackTitle: string;
@@ -424,6 +429,11 @@ const enUS: BaseTranslations = {
   statusMissingId: 'Missing post ID.',
   conversationLoading: 'Loading conversation…',
 
+  // Public timeline screen
+  publicTimelineTitle: 'Just Browsing',
+  publicTimelineEmpty: 'No posts found.',
+  publicTimelineLoadFailed: 'Failed to load public timeline.',
+
   // Tag timeline screen
   tagTimelineTitle: '#{{tag}}#',
   tagTimelineFallbackTitle: 'Tag Timeline',
@@ -715,6 +725,11 @@ const zhCN: BaseTranslations = {
   conversationLoadFailed: '加载对话失败。',
   statusMissingId: '缺少动态 ID。',
   conversationLoading: '加载对话中…',
+
+  // Public timeline screen
+  publicTimelineTitle: '随便看看',
+  publicTimelineEmpty: '暂无内容。',
+  publicTimelineLoadFailed: '加载公开时间线失败。',
 
   // Tag timeline screen
   tagTimelineTitle: '#{{tag}}#',
