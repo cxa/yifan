@@ -248,7 +248,7 @@ const SearchRoute = () => {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <NativeEdgeScrollShadow style={styles.flex} color={background} visibility="bottom">
+      <NativeEdgeScrollShadow style={styles.flex} color={background} size={100}>
         <Animated.FlatList
           style={styles.flex}
           data={results}
