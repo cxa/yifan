@@ -4,7 +4,6 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
@@ -39,6 +38,7 @@ import {
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 import { useAppFontFamily } from '@/settings/app-font-preference';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 
 const SEARCH_COUNT = 20;
 
@@ -61,8 +61,8 @@ const SearchRoute = () => {
   ]);
   const insets = useSafeAreaInsets();
   const fontFamily = useAppFontFamily();
-  const colorScheme = useColorScheme();
-  const inputBackground = colorScheme === 'dark'
+  const isDark = useEffectiveIsDark();
+  const inputBackground = isDark
     ? 'rgba(118,118,128,0.24)'
     : 'rgba(118,118,128,0.12)';
 
@@ -229,7 +229,7 @@ const SearchRoute = () => {
               autoCorrect={false}
               autoCapitalize="none"
               clearButtonMode="while-editing"
-              keyboardAppearance={colorScheme === 'dark' ? 'dark' : 'light'}
+              keyboardAppearance={isDark ? 'dark' : 'light'}
             />
           </View>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.cancelButton}>
