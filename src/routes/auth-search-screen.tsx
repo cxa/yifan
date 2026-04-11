@@ -218,9 +218,6 @@ const SearchRoute = () => {
     <View className="flex-1 bg-background">
       {/* Search bar */}
       <View style={[styles.searchBar, { top: searchBarTop, height: searchBarHeight }]}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Text className="text-[16px] text-accent">{t('searchCancel')}</Text>
-        </Pressable>
         <View style={[styles.inputRow, { backgroundColor: `${muted}22` }]}>
           <Search size={14} color={muted} strokeWidth={2} />
           <TextInput
@@ -241,6 +238,9 @@ const SearchRoute = () => {
             </Pressable>
           )}
         </View>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Text className="text-[16px] text-accent">{t('searchCancel')}</Text>
+        </Pressable>
       </View>
 
       {/* Results */}
