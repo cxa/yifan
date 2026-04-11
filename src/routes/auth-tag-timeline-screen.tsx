@@ -8,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
-import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
   COMPACT_PULL_THRESHOLD,
   NeobrutalRefreshIndicator,
@@ -46,6 +45,7 @@ import { isHydratingTimeline } from '@/components/timeline-hydration';
 import {
   TIMELINE_INITIAL_PAGE_SIZE,
   TIMELINE_PAGE_SIZE,
+  TIMELINE_SPACING,
   TIMELINE_TOP_CONTENT_GAP,
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
@@ -292,13 +292,12 @@ const TagTimelineRoute = () => {
       colors={['transparent']}
     />
   );
-  const headerHeight = useHeaderHeight();
   const timelineListSettings = useTimelineListSettings(insets, {
     hasBottomTabBar: false,
   });
   const listContentContainerStyle = {
     ...timelineListSettings.contentContainerStyle,
-    paddingTop: Platform.OS === 'android' ? headerHeight : 0,
+    paddingTop: Platform.OS === 'android' ? TIMELINE_SPACING : 0,
   };
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
