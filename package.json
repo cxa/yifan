@@ -9,7 +9,7 @@
     "bump-version": "node scripts/bump-version.js",
     "android": "react-native run-android",
     "env:generate": "node scripts/generate-env.js",
-    "ios": "react-native run-ios --simulator YIFAN & react-native run-ios --simulator YIFAN_PAD",
+    "ios": "react-native run-ios --simulator YIFAN && react-native run-ios --simulator YIFAN_PAD",
     "simulator:ensure": "xcrun simctl list devices | grep -q 'YIFAN (' || xcrun simctl create YIFAN com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro $(xcrun simctl list runtimes | grep -oE 'com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]+' | tail -1)",
     "simulator:ensure-pad": "xcrun simctl list devices | grep -q 'YIFAN_PAD (' || xcrun simctl create YIFAN_PAD com.apple.CoreSimulator.SimDeviceType.iPad-A16 $(xcrun simctl list runtimes | grep -oE 'com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]+' | tail -1)",
     "lint": "eslint .",
@@ -38,7 +38,7 @@
     "heroui-native": "^1.0.1",
     "i18next": "^26.0.4",
     "lucide-react-native": "^1.8.0",
-    "react": "^19.2.5",
+    "react": "19.2.3",
     "react-i18next": "^17.0.2",
     "react-native": "0.85.0",
     "react-native-blob-util": "^0.24.7",
@@ -81,7 +81,7 @@
     "jest": "^30.3.0",
     "patch-package": "^8.0.0",
     "prettier": "^3.8.2",
-    "react-test-renderer": "^19.2.5",
+    "react-test-renderer": "19.2.3",
     "typescript": "^6.0.2"
   },
   "engines": {
