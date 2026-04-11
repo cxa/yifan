@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Image,
+  Platform,
   RefreshControl,
   useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
+import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
   COMPACT_PULL_THRESHOLD,
   NeobrutalRefreshIndicator,
@@ -290,12 +292,13 @@ const TagTimelineRoute = () => {
       colors={['transparent']}
     />
   );
+  const headerHeight = useHeaderHeight();
   const timelineListSettings = useTimelineListSettings(insets, {
     hasBottomTabBar: false,
   });
   const listContentContainerStyle = {
     ...timelineListSettings.contentContainerStyle,
-    paddingTop: 0,
+    paddingTop: Platform.OS === 'android' ? headerHeight : 0,
   };
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,

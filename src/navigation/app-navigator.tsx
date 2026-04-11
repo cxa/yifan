@@ -79,6 +79,7 @@ const buildNativeHeaderOptions = (
     headerShown: true,
     headerLargeTitle: false,
     headerTransparent: true,
+    headerStyle: { backgroundColor: 'transparent' },
     headerTintColor: foreground,
     headerBackButtonDisplayMode: 'minimal',
     headerShadowVisible: false,
