@@ -5,7 +5,7 @@ export const ROOT_STACK_ROUTE = {
 } as const;
 
 export const AUTH_STACK_ROUTE = {
-  TABS: 'AuthTabs',
+  TABS: 'Home',
   MY_TIMELINE: 'MyTimeline',
   MESSAGES: 'Messages',
   FAVORITES: 'Favorites',
