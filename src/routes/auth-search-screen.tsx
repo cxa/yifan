@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
-  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -28,7 +27,6 @@ import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import {
-  TIMELINE_HORIZONTAL_PADDING,
   TIMELINE_PAGE_SIZE,
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
@@ -206,9 +204,9 @@ const SearchRoute = () => {
   const timelineListSettings = useTimelineListSettings(insets, { hasBottomTabBar: false });
 
   const listContentContainerStyle = {
+    ...timelineListSettings.contentContainerStyle,
+    paddingTop: 0,
     flexGrow: 1,
-    paddingBottom: timelineListSettings.contentContainerStyle.paddingBottom,
-    paddingHorizontal: Platform.OS === 'android' ? TIMELINE_HORIZONTAL_PADDING : 0,
   };
 
   const isEmpty = !isLoading && Boolean(query) && results.length === 0;

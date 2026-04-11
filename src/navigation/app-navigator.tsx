@@ -224,7 +224,7 @@ const AuthStackNavigator = () => {
         <AuthStack.Screen
           name={AUTH_STACK_ROUTE.SEARCH}
           component={AuthSearchRoute}
-          options={{ headerShown: false, presentation: 'modal' }}
+          options={{ headerShown: false, presentation: 'fullScreenModal' }}
         />
       </AuthStack.Navigator>
     </AuthLayout>
