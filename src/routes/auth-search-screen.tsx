@@ -1,21 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
-import { Text, TextInput } from '@/components/app-text';
+import { Text } from '@/components/app-text';
 import ComposerModal from '@/components/composer-modal';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
@@ -26,6 +26,7 @@ import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import {
+  TIMELINE_HORIZONTAL_PADDING,
   TIMELINE_PAGE_SIZE,
   useTimelineListSettings,
 } from '@/components/timeline-list-settings';
@@ -37,16 +38,15 @@ import {
 } from '@/navigation/route-names';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
-import { X, Search } from 'lucide-react-native';
+import { useAppFontFamily } from '@/settings/app-font-preference';
 
 const SEARCH_COUNT = 20;
+const HEADER_TITLE_FONT_SIZE = 17;
+
 const normalizeItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
-const mergeItems = (
-  existing: FanfouStatus[],
-  incoming: FanfouStatus[],
-) => {
+const mergeItems = (existing: FanfouStatus[], incoming: FanfouStatus[]) => {
   const seen = new Set(existing.map(getStatusId));
   return [...existing, ...incoming.filter(item => !seen.has(getStatusId(item)))];
 };
@@ -61,7 +61,8 @@ const SearchRoute = () => {
     'accent', 'background', 'muted', 'foreground',
   ]);
   const insets = useSafeAreaInsets();
-  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const headerHeight = useHeaderHeight();
+  const headerFontFamily = useAppFontFamily();
 
   const [inputText, setInputText] = useState('');
   const [query, setQuery] = useState('');
@@ -73,6 +74,26 @@ const SearchRoute = () => {
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
 
+  // Configure native search bar
+  useEffect(() => {
+    navigation.setOptions({
+      headerTintColor: foreground,
+      headerStyle: { backgroundColor: background },
+      headerTitleStyle: {
+        fontFamily: headerFontFamily,
+        fontSize: HEADER_TITLE_FONT_SIZE,
+        color: foreground,
+      },
+      headerSearchBarOptions: {
+        placeholder: t('searchPlaceholder'),
+        cancelButtonText: t('searchCancel'),
+        autoFocus: true,
+        onChangeText: (e: { nativeEvent: { text: string } }) => setInputText(e.nativeEvent.text),
+        onCancelButtonPress: () => navigation.goBack(),
+      },
+    });
+  }, [navigation, t, foreground, background, headerFontFamily]);
+
   // Debounce inputText → query
   useEffect(() => {
     const trimmed = inputText.trim();
@@ -83,12 +104,6 @@ const SearchRoute = () => {
     }, 350);
     return () => clearTimeout(timer);
   }, [inputText]);
-
-  // Auto-focus on mount
-  useEffect(() => {
-    const timer = setTimeout(() => inputRef.current?.focus(), 100);
-    return () => clearTimeout(timer);
-  }, []);
 
   const updateStatusById = (statusId: string, updater: (s: FanfouStatus) => FanfouStatus) => {
     setResults(previous => previous.map(item => item.id === statusId ? updater(item) : item));
@@ -197,60 +212,31 @@ const SearchRoute = () => {
     setPhotoViewerOriginRect(null);
   };
 
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: () => {},
-  });
-
-  const { height: windowHeight } = useWindowDimensions();
+  const scrollHandler = useAnimatedScrollHandler({ onScroll: () => {} });
   const timelineListSettings = useTimelineListSettings(insets, { hasBottomTabBar: false });
 
-  const searchBarHeight = 44;
-  const searchBarTop = insets.top + (Platform.OS === 'ios' ? 8 : 4);
-  const listPaddingTop = searchBarTop + searchBarHeight + 8;
-
   const listContentContainerStyle = {
-    ...timelineListSettings.contentContainerStyle,
-    paddingTop: listPaddingTop,
+    flexGrow: 1,
+    paddingBottom: timelineListSettings.contentContainerStyle.paddingBottom,
+    paddingTop: Platform.OS === 'android' ? headerHeight : 0,
+    paddingHorizontal: Platform.OS === 'android' ? TIMELINE_HORIZONTAL_PADDING : 0,
   };
 
-  const isEmpty = !isLoading && query && results.length === 0;
+  const isEmpty = !isLoading && Boolean(query) && results.length === 0;
 
   return (
-    <View className="flex-1 bg-background">
-      {/* Search bar — starts at top:0 so background covers safe area too */}
-      <View style={[styles.searchBar, { height: searchBarTop + searchBarHeight, paddingTop: searchBarTop, backgroundColor: background }]}>
-        <View style={[styles.inputRow, { backgroundColor: `${muted}22` }]}>
-          <Search size={14} color={muted} strokeWidth={2} />
-          <TextInput
-            ref={inputRef}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder={t('searchPlaceholder')}
-            placeholderTextColor={muted}
-            returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
-            className="flex-1 text-[15px] text-foreground"
-            style={{ color: foreground }}
-          />
-          {inputText.length > 0 && (
-            <Pressable onPress={() => setInputText('')} hitSlop={8}>
-              <X size={14} color={muted} strokeWidth={2} />
-            </Pressable>
-          )}
-        </View>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Text className="text-[16px] text-accent">{t('searchCancel')}</Text>
-        </Pressable>
-      </View>
-
-      {/* Results */}
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
+    >
       <NativeEdgeScrollShadow className="flex-1" color={background}>
         <Animated.FlatList
           className="flex-1 bg-background"
           data={results}
           keyExtractor={item => getStatusId(item)}
           onScroll={scrollHandler}
+          contentInsetAdjustmentBehavior="automatic"
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
           scrollIndicatorInsets={timelineListSettings.scrollIndicatorInsets}
           contentContainerStyle={listContentContainerStyle}
@@ -268,7 +254,7 @@ const SearchRoute = () => {
             ) : null
           }
           ListEmptyComponent={
-            <View style={[styles.emptyContainer, { height: windowHeight - listPaddingTop }]}>
+            <View style={styles.emptyContainer}>
               {isLoading && query ? (
                 <NeobrutalActivityIndicator size="small" />
               ) : isEmpty ? (
@@ -322,35 +308,17 @@ const SearchRoute = () => {
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
 export default SearchRoute;
 
 const styles = StyleSheet.create({
-  searchBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 12,
-    zIndex: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  flex: { flex: 1 },
   emptyContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  inputRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 11,
-    paddingHorizontal: 10,
-    gap: 6,
-    height: 36,
   },
 });

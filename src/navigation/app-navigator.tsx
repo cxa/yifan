@@ -224,7 +224,7 @@ const AuthStackNavigator = () => {
         <AuthStack.Screen
           name={AUTH_STACK_ROUTE.SEARCH}
           component={AuthSearchRoute}
-          options={{ headerShown: false, animation: 'fade' }}
+          options={{ headerShown: true, animation: 'fade' }}
         />
       </AuthStack.Navigator>
     </AuthLayout>
