@@ -172,13 +172,7 @@ const AuthHomeRoute = () => {
       [HOME_TITLE_HEIGHT - HOME_ICON_SIZE, 0],
       Extrapolation.CLAMP,
     );
-    const opacity = interpolate(
-      scrollY.value,
-      [0, 70],
-      [1, 0],
-      Extrapolation.CLAMP,
-    );
-    return { top: insets.top + offset, opacity };
+    return { top: insets.top + offset };
   });
   const titleContainerStyle = useAnimatedStyle(() => {
     const height = interpolate(
