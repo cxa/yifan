@@ -53,9 +53,11 @@ const versionCode = versionToCode(version);
 
 console.log(`Bumping to ${version} (versionCode ${versionCode})`);
 
-// package.json
+// package.json — update version and nativeVersion
 updateFile(path.join(ROOT, 'package.json'), c =>
-  c.replace(/"version": "[^"]+"/, `"version": "${version}"`),
+  c
+    .replace(/"version": "[^"]+"/, `"version": "${version}"`)
+    .replace(/"nativeVersion": "[^"]+"/, `"nativeVersion": "${version}"`),
 );
 
 // android/app/build.gradle
