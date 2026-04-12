@@ -17,9 +17,6 @@ function run(cmd, opts) {
   return execSync(cmd, { cwd: ROOT, encoding: 'utf8', stdio: 'inherit', ...opts });
 }
 
-function runCapture(cmd) {
-  return execSync(cmd, { cwd: ROOT, encoding: 'utf8' }).trim();
-}
 
 function ask(question) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stderr });

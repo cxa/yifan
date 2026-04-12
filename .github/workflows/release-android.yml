@@ -97,11 +97,51 @@ jobs:
         id: changelog
         run: |
           node scripts/generate-changelog.js 2>/dev/null
-          CHANGELOG=$(cat .changelog/en.txt)
-          # Use GitHub Actions delimiter for multiline output
-          echo "body<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          RAW=$(cat .changelog/en.txt)
+          echo "raw<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          echo "$RAW" >> $GITHUB_OUTPUT
           echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+
+      - name: Summarize release notes
+        id: notes
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          VERSION="${{ steps.versions.outputs.version }}"
+          RAW_CHANGELOG="${{ steps.changelog.outputs.raw }}"
+
+          # If no API key or empty changelog, use raw changelog
+          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$RAW_CHANGELOG" ]; then
+            echo "body<<NOTES_EOF" >> $GITHUB_OUTPUT
+            echo "$RAW_CHANGELOG" >> $GITHUB_OUTPUT
+            echo "NOTES_EOF" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          PROMPT="You are writing release notes for 一饭 (Yifan), a Fanfou client app for iOS and Android. Given the raw changelog below, write concise, user-friendly release notes in English. Use bullet points. Focus on what users gain, not implementation details. Keep it under 10 lines. Do not include a title or version number.
+
+          Raw changelog:
+          $RAW_CHANGELOG"
+
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$(jq -n --arg prompt "$PROMPT" '{
+              model: "claude-haiku-4-5-20251001",
+              max_tokens: 512,
+              messages: [{role: "user", content: $prompt}]
+            }')")
+
+          NOTES=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+
+          if [ -z "$NOTES" ]; then
+            NOTES="$RAW_CHANGELOG"
+          fi
+
+          echo "body<<NOTES_EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "NOTES_EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         env:
@@ -110,7 +150,7 @@ jobs:
           VERSION="${{ steps.versions.outputs.version }}"
           gh release create "v${VERSION}" \
             --title "${VERSION}" \
-            --notes "${{ steps.changelog.outputs.body }}" \
+            --notes "${{ steps.notes.outputs.body }}" \
             manifest.json \
             "yifan-${VERSION}.apk" \
             "yifan-${VERSION}.android.jsbundle" \
