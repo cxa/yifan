@@ -35,7 +35,7 @@ async function resolveAndroidShareURL(url: string): Promise<void> {
     const filePath = parsed.searchParams.get('file');
     if (!filePath) return;
     const base64 = await RNBlobUtil.fs.readFile(filePath, 'base64');
-    const uri = `file://${filePath}`;
+    const uri = `data:image/jpeg;base64,${base64}`;
     // Clean up cache file after reading
     RNBlobUtil.fs.unlink(filePath).catch(() => {});
     setShareIntentPhoto({ uri, base64 });
