@@ -93,7 +93,7 @@ jobs:
           mv android/app/build/outputs/apk/release/app-release.apk \
              yifan-${{ steps.versions.outputs.version }}.apk
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -104,10 +104,16 @@ jobs:
           else
             NOTES_FLAG="--generate-notes"
           fi
-          gh release create "v${VERSION}" \
-            --title "${VERSION}" \
-            $NOTES_FLAG \
-            manifest.json \
-            "yifan-${VERSION}.apk" \
-            "yifan-${VERSION}.android.jsbundle" \
-            "yifan-${VERSION}.ios.jsbundle"
+          ASSETS=(manifest.json "yifan-${VERSION}.apk" "yifan-${VERSION}.android.jsbundle" "yifan-${VERSION}.ios.jsbundle")
+          if gh release view "v${VERSION}" &>/dev/null; then
+            # Release exists — delete old assets then upload fresh ones
+            for asset in "${ASSETS[@]}"; do
+              gh release delete-asset "v${VERSION}" "$(basename "$asset")" --yes 2>/dev/null || true
+            done
+            gh release upload "v${VERSION}" "${ASSETS[@]}" --clobber
+          else
+            gh release create "v${VERSION}" \
+              --title "${VERSION}" \
+              $NOTES_FLAG \
+              "${ASSETS[@]}"
+          fi
