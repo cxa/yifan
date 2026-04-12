@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -48,17 +49,47 @@ function updateFile(filePath, replacer) {
   fs.writeFileSync(filePath, updated, 'utf8');
 }
 
+function hasNativeChanges() {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const nativeVersion = pkg.nativeVersion;
+  const tag = `v${nativeVersion}`;
+  try {
+    // Check if the tag exists
+    execSync(`git rev-parse --verify ${tag}`, { cwd: ROOT, stdio: 'pipe' });
+  } catch {
+    // Tag doesn't exist — assume native changes needed
+    return true;
+  }
+  try {
+    const diff = execSync(
+      `git diff --name-only ${tag}..HEAD -- ios/ android/ *.podspec`,
+      { cwd: ROOT, encoding: 'utf8' },
+    ).trim();
+    return diff.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 const version = getNextVersion();
 const versionCode = versionToCode(version);
+const bumpNative = hasNativeChanges();
 
 console.log(`Bumping to ${version} (versionCode ${versionCode})`);
+if (bumpNative) {
+  console.log(`Native changes detected since v${JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).nativeVersion} — updating nativeVersion`);
+} else {
+  console.log('No native changes — nativeVersion unchanged (JS-only / OTA release)');
+}
 
-// package.json — update version and nativeVersion
-updateFile(path.join(ROOT, 'package.json'), c =>
-  c
-    .replace(/"version": "[^"]+"/, `"version": "${version}"`)
-    .replace(/"nativeVersion": "[^"]+"/, `"nativeVersion": "${version}"`),
-);
+// package.json
+updateFile(path.join(ROOT, 'package.json'), c => {
+  let updated = c.replace(/"version": "[^"]+"/, `"version": "${version}"`);
+  if (bumpNative) {
+    updated = updated.replace(/"nativeVersion": "[^"]+"/, `"nativeVersion": "${version}"`);
+  }
+  return updated;
+});
 
 // android/app/build.gradle
 updateFile(path.join(ROOT, 'android/app/build.gradle'), c =>
