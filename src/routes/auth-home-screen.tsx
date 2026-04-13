@@ -136,6 +136,7 @@ const AuthHomeRoute = () => {
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    composerQuotedStatus,
     isComposerSubmitting,
     pendingBookmarkIds,
     handleOpenReplyComposer,
@@ -539,6 +540,7 @@ const AuthHomeRoute = () => {
         submitLabel={composerSubmitLabel}
         initialText={composerInitialText}
         resetKey={composerResetKey}
+        quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}

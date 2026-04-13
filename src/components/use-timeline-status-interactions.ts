@@ -20,6 +20,7 @@ type RepostTarget = {
   statusId: string;
   screenName: string;
   plainText: string;
+  photoUrl: string | null;
 };
 
 type UseTimelineStatusInteractionsParams = {
@@ -76,7 +77,8 @@ const useTimelineStatusInteractions = ({
   const handleOpenRepostComposer = (status: FanfouStatus) => {
     const screenName = status.user.screen_name || status.user.id;
     const plainText = toPlainText(status.text);
-    setComposeRepostTarget({ statusId: status.id, screenName, plainText });
+    const photoUrl = status.photo?.thumburl ?? null;
+    setComposeRepostTarget({ statusId: status.id, screenName, plainText, photoUrl });
     setComposeReplyTarget(null);
     setComposeMode('repost');
   };
@@ -189,6 +191,11 @@ const useTimelineStatusInteractions = ({
       ? `repost:${composeRepostTarget?.statusId ?? ''}`
       : 'closed';
 
+  const composerQuotedStatus =
+    composeMode === 'repost' && composeRepostTarget
+      ? { screenName: composeRepostTarget.screenName, plainText: composeRepostTarget.plainText, photoUrl: composeRepostTarget.photoUrl }
+      : null;
+
   return {
     composeMode,
     composerTitle,
@@ -196,6 +203,7 @@ const useTimelineStatusInteractions = ({
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    composerQuotedStatus,
     isComposerSubmitting: statusUpdateMutation.isPending,
     pendingBookmarkIds,
     photoViewerUrl,

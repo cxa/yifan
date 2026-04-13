@@ -118,6 +118,7 @@ const MentionsRoute = () => {
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    composerQuotedStatus,
     isComposerSubmitting,
     pendingBookmarkIds,
     handleOpenReplyComposer,
@@ -431,6 +432,7 @@ const MentionsRoute = () => {
         submitLabel={composerSubmitLabel}
         initialText={composerInitialText}
         resetKey={composerResetKey}
+        quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}

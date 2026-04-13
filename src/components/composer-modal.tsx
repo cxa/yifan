@@ -25,6 +25,12 @@ export type ComposerModalSubmitPayload = {
   photo: PickedImage | null;
 };
 
+export type ComposerQuotedStatus = {
+  screenName: string;
+  plainText: string;
+  photoUrl: string | null;
+};
+
 type ComposerModalProps = {
   visible: boolean;
   title: string;
@@ -32,6 +38,7 @@ type ComposerModalProps = {
   submitLabel: string;
   initialText?: string;
   initialPhoto?: PickedImage | null;
+  quotedStatus?: ComposerQuotedStatus | null;
   resetKey?: string | null;
   enablePhoto?: boolean;
   isSubmitting?: boolean;
@@ -46,6 +53,7 @@ const ComposerModal = ({
   submitLabel,
   initialText = '',
   initialPhoto = null,
+  quotedStatus = null,
   resetKey = null,
   enablePhoto = false,
   isSubmitting: controlledIsSubmitting,
@@ -64,6 +72,7 @@ const ComposerModal = ({
   const [photo, setPhoto] = useState<PickedImage | null>(null);
   const [isPhotoPicking, setIsPhotoPicking] = useState(false);
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+  const [quotedPhotoFailed, setQuotedPhotoFailed] = useState(false);
   const isSubmitting = controlledIsSubmitting ?? internalIsSubmitting;
   const canDismiss = !isSubmitting && !isPhotoPicking;
   const photoUri = photo?.uri ?? null;
@@ -76,6 +85,7 @@ const ComposerModal = ({
     setPhoto(initialPhoto ?? null);
     setIsPhotoPicking(false);
     setInternalIsSubmitting(false);
+    setQuotedPhotoFailed(false);
   }, [initialText, initialPhoto, resetKey, visible]);
 
   const handlePickPhoto = async () => {
@@ -170,6 +180,36 @@ const ComposerModal = ({
             keyboardDismissMode="interactive"
             contentContainerStyle={styles.scrollContent}
           >
+            {/* Quoted status preview */}
+            {quotedStatus ? (
+              <View
+                className="mb-2 rounded-2xl bg-surface-secondary px-4 py-3"
+                style={[styles.quotedStatus, { borderLeftColor: border }]}
+                accessibilityLabel={t('composerQuotedStatusA11y', { name: quotedStatus.screenName })}
+                accessibilityRole="summary"
+              >
+                <Text className="text-[13px] font-semibold text-muted" numberOfLines={1}>
+                  @{quotedStatus.screenName}
+                </Text>
+                {quotedStatus.plainText || (quotedStatus.photoUrl && !quotedPhotoFailed) ? (
+                  <View className="mt-1 flex-row">
+                    {quotedStatus.plainText ? (
+                      <Text className="flex-1 text-[14px] leading-snug text-foreground" numberOfLines={4}>
+                        {quotedStatus.plainText}
+                      </Text>
+                    ) : null}
+                    {quotedStatus.photoUrl && !quotedPhotoFailed ? (
+                      <Image
+                        source={{ uri: quotedStatus.photoUrl }}
+                        className={`h-14 w-14 rounded-xl bg-surface-secondary${quotedStatus.plainText ? ' ml-3' : ''}`}
+                        resizeMode="cover"
+                        onError={() => setQuotedPhotoFailed(true)}
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
             <TextInput
               value={value}
               onChangeText={setValue}
@@ -232,6 +272,9 @@ const ComposerModal = ({
 };
 
 const styles = StyleSheet.create({
+  quotedStatus: {
+    borderLeftWidth: 3,
+  },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 16,

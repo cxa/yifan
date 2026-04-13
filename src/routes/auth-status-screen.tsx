@@ -173,6 +173,7 @@ const StatusDetailRoute = () => {
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    composerQuotedStatus,
     isComposerSubmitting,
     handleOpenReplyComposer,
     handleOpenRepostComposer,
@@ -538,6 +539,7 @@ const StatusDetailRoute = () => {
         submitLabel={composerSubmitLabel}
         initialText={composerInitialText}
         resetKey={composerResetKey}
+        quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}

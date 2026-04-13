@@ -127,6 +127,7 @@ const FavoritesRoute = () => {
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    composerQuotedStatus,
     isComposerSubmitting,
     pendingBookmarkIds,
     photoViewerUrl,
@@ -337,6 +338,7 @@ const FavoritesRoute = () => {
         submitLabel={composerSubmitLabel}
         initialText={composerInitialText}
         resetKey={composerResetKey}
+        quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}

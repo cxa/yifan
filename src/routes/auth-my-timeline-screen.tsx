@@ -130,6 +130,7 @@ const MyTimelineRouteContent = ({
     composerSubmitLabel,
     composerInitialText,
     composerResetKey,
+    composerQuotedStatus,
     isComposerSubmitting,
     pendingBookmarkIds,
     photoViewerUrl,
@@ -330,6 +331,7 @@ const MyTimelineRouteContent = ({
         submitLabel={composerSubmitLabel}
         initialText={composerInitialText}
         resetKey={composerResetKey}
+        quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}

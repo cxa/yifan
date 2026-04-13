@@ -53,6 +53,14 @@ const applyAppearance = (value: AppAppearanceOption) => {
   Appearance.setColorScheme(
     value === APP_APPEARANCE_OPTION.AUTO ? 'unspecified' : value,
   );
+  // The Appearance change listener may not fire synchronously (or at all on
+  // iOS) after setColorScheme, leaving systemColorScheme stale when switching
+  // back to auto.  Read the effective value now — but only trust non-null
+  // results, since getColorScheme() can briefly return null after 'unspecified'.
+  const effective = Appearance.getColorScheme();
+  if (effective != null) {
+    systemColorScheme = effective;
+  }
 };
 
 const parseAppAppearancePreference = (

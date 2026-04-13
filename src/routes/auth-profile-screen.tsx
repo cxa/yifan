@@ -113,6 +113,7 @@ type RepostTarget = {
   statusId: string;
   screenName: string;
   plainText: string;
+  photoUrl: string | null;
 };
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -491,11 +492,13 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     const statusId = getStatusId(status);
     const screenName = status.user.screen_name.trim();
     const plainText = toPlainText(status.text);
+    const photoUrl = status.photo?.thumburl ?? null;
     setComposeMode('repost');
     setComposeRepostTarget({
       statusId,
       screenName,
       plainText,
+      photoUrl,
     });
     setComposeReplyTarget(null);
   };
@@ -858,6 +861,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
           : composeMode === 'repost'
             ? `repost:${composeRepostTarget?.statusId ?? ''}`
             : 'closed';
+  const composerQuotedStatus =
+    composeMode === 'repost' && composeRepostTarget
+      ? { screenName: composeRepostTarget.screenName, plainText: composeRepostTarget.plainText, photoUrl: composeRepostTarget.photoUrl }
+      : null;
   const isHydratingRecentStatuses = isHydratingTimeline({
     isLoading: isRecentStatusesLoading,
     renderedItems: recentStatusItems,
@@ -1151,6 +1158,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         submitLabel={composerSubmitLabel}
         initialText={composerInitialText}
         resetKey={composerResetKey}
+        quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'mention' || composeMode === 'reply'}
         isSubmitting={
           statusUpdateMutation.isPending || directMessageMutation.isPending

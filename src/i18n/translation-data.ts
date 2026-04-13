@@ -67,6 +67,7 @@ type BaseTranslations = {
   composerChangePhoto: string;
   composerRemovePhoto: string;
   composerRemovePhotoA11y: string;
+  composerQuotedStatusA11y: string;
   composerPhotoError: string;
 
   // Post/send results
@@ -374,6 +375,7 @@ const enUS: BaseTranslations = {
   composerChangePhoto: 'Change Photo',
   composerRemovePhoto: 'Remove',
   composerRemovePhotoA11y: 'Remove photo',
+  composerQuotedStatusA11y: 'Quoted post by {{name}}',
   composerPhotoError: 'Cannot attach photo',
 
   // Post/send results
@@ -680,6 +682,7 @@ const zhCN: BaseTranslations = {
   composerChangePhoto: '更换图片',
   composerRemovePhoto: '移除',
   composerRemovePhotoA11y: '移除图片',
+  composerQuotedStatusA11y: '引用 {{name}} 的消息',
   composerPhotoError: '无法附上图片',
 
   // Post/send results
