@@ -134,7 +134,6 @@ type BaseTranslations = {
 
   // Search screen
   searchPlaceholder: string;
-  searchCancel: string;
   searchHint: string;
   searchEmpty: string;
 
@@ -446,7 +445,6 @@ const enUS: BaseTranslations = {
 
   // Search screen
   searchPlaceholder: 'Search posts…',
-  searchCancel: 'Cancel',
   searchHint: 'Type to search posts.',
   searchEmpty: 'No results found.',
 
@@ -757,7 +755,6 @@ const zhCN: BaseTranslations = {
 
   // Search screen
   searchPlaceholder: '搜索消息…',
-  searchCancel: '取消',
   searchHint: '输入关键词搜索消息。',
   searchEmpty: '没有找到相关内容。',
 

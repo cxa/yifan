@@ -73,6 +73,7 @@ const AUTH_NATIVE_HEADER_ROUTES = new Set<keyof AuthStackParamList>([
   AUTH_STACK_ROUTE.EDIT_PROFILE,
   AUTH_STACK_ROUTE.STATUS,
   AUTH_STACK_ROUTE.PUBLIC_TIMELINE,
+  AUTH_STACK_ROUTE.SEARCH,
 ]);
 const TAG_NATIVE_HEADER_ROUTES = new Set<keyof AuthTagStackParamList>([
   AUTH_TAG_TIMELINE_ROUTE.DETAIL,
@@ -304,7 +305,6 @@ const AuthStackNavigator = () => {
         <AuthStack.Screen
           name={AUTH_STACK_ROUTE.SEARCH}
           component={AuthSearchRoute}
-          options={{ headerShown: false, presentation: 'fullScreenModal' }}
         />
       </AuthStack.Navigator>
       <ShareIntentComposer />

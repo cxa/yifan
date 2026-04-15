@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -58,7 +58,7 @@ const SearchRoute = () => {
   const auth = useAuthSession();
   const authUserId = auth.accessToken?.userId ?? null;
   const queryClient = useQueryClient();
-  const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [accent, background, muted, foreground] = useThemeColor([
     'accent', 'background', 'muted', 'foreground',
   ]);
@@ -75,6 +75,36 @@ const SearchRoute = () => {
   }, []);
 
   const [inputText, setInputText] = useState('');
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTransparent: false,
+      headerStyle: { backgroundColor: background },
+      headerTintColor: foreground,
+      headerBackButtonDisplayMode: 'minimal',
+      headerShadowVisible: false,
+      // eslint-disable-next-line react/no-unstable-nested-components
+      headerTitle: () => (
+        <View style={[styles.inputContainer, { backgroundColor: inputBackground }]}>
+          <Search size={16} color={muted} strokeWidth={2} style={styles.searchIcon} />
+          <TextInput
+            ref={inputRef}
+            style={[styles.input, { color: foreground }]}
+            placeholder={t('searchPlaceholder')}
+            placeholderTextColor={muted}
+            value={inputText}
+            onChangeText={setInputText}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+            keyboardAppearance={isDark ? 'dark' : 'light'}
+          />
+        </View>
+      ),
+    });
+  }, [background, foreground, inputBackground, inputText, isDark, muted, navigation, t]);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FanfouStatus[]>([]);
   useUserFilterEffect(setResults);
@@ -167,19 +197,19 @@ const SearchRoute = () => {
   };
 
   const handleMentionPress = (userId: string) => {
-    navigation.navigate(AUTH_STACK_ROUTE.PROFILE, {
+    navigation.push(AUTH_STACK_ROUTE.PROFILE, {
       screen: AUTH_PROFILE_ROUTE.DETAIL,
       params: { userId },
     });
   };
   const handleProfilePress = (userId: string) => {
-    navigation.navigate(AUTH_STACK_ROUTE.PROFILE, {
+    navigation.push(AUTH_STACK_ROUTE.PROFILE, {
       screen: AUTH_PROFILE_ROUTE.DETAIL,
       params: { userId },
     });
   };
   const handleStatusPress = (statusId: string, shadowType: DropShadowBoxType) => {
-    navigation.navigate(AUTH_STACK_ROUTE.STATUS, {
+    navigation.push(AUTH_STACK_ROUTE.STATUS, {
       screen: AUTH_STATUS_ROUTE.DETAIL,
       params: { statusId, shadowType },
     });
@@ -187,7 +217,7 @@ const SearchRoute = () => {
   const handleTagPress = (tag: string) => {
     const normalized = tag.trim().replace(/^#+/, '').replace(/#+$/, '').trim();
     if (!normalized) return;
-    navigation.navigate(AUTH_STACK_ROUTE.TAG_TIMELINE, {
+    navigation.push(AUTH_STACK_ROUTE.TAG_TIMELINE, {
       screen: AUTH_TAG_TIMELINE_ROUTE.DETAIL,
       params: { tag: normalized },
     });
@@ -217,33 +247,6 @@ const SearchRoute = () => {
 
   return (
     <View style={[styles.flex, { backgroundColor: background }]}>
-      {/* Custom header */}
-      <View style={[styles.header, { paddingTop: insets.top, backgroundColor: background, borderBottomColor: inputBackground }]}>
-        <View style={styles.searchRow}>
-          <View style={[styles.inputContainer, { backgroundColor: inputBackground }]}>
-            <Search size={16} color={muted} strokeWidth={2} style={styles.searchIcon} />
-            <TextInput
-              ref={inputRef}
-              style={[styles.input, { color: foreground }]}
-              placeholder={t('searchPlaceholder')}
-              placeholderTextColor={muted}
-              value={inputText}
-              onChangeText={setInputText}
-              returnKeyType="search"
-              autoCorrect={false}
-              autoCapitalize="none"
-              clearButtonMode="while-editing"
-              keyboardAppearance={isDark ? 'dark' : 'light'}
-            />
-          </View>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.cancelButton}>
-            <Text style={[styles.cancelText, { color: foreground }]}>
-              {t('searchCancel')}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
       {/* Content — KAV shrinks this area when keyboard appears so empty state centers correctly */}
       <KeyboardAvoidingView
         style={styles.flex}
@@ -258,7 +261,7 @@ const SearchRoute = () => {
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
           scrollIndicatorInsets={timelineListSettings.scrollIndicatorInsets}
           contentContainerStyle={listContentContainerStyle}
-          contentInsetAdjustmentBehavior="never"
+          contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           ListFooterComponent={
@@ -337,19 +340,7 @@ export default SearchRoute;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  header: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: 8,
-  },
   inputContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 9999,
@@ -362,12 +353,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
-  },
-  cancelButton: {
-    paddingVertical: 6,
-  },
-  cancelText: {
     fontSize: 16,
   },
   emptyContainer: {
