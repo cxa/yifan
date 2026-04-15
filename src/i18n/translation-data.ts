@@ -285,6 +285,8 @@ type BaseTranslations = {
   editProfilePendingReviewMessage: string;
 
   // Photo viewer
+  photoViewerShare: string;
+  photoViewerShareA11y: string;
   photoViewerClose: string;
   photoViewerCloseA11y: string;
 
@@ -599,6 +601,8 @@ const enUS: BaseTranslations = {
     'Profile update submitted. Due to content review, changes may take 10 minutes or longer to appear.',
 
   // Photo viewer
+  photoViewerShare: 'Share',
+  photoViewerShareA11y: 'Share photo',
   photoViewerClose: 'Close',
   photoViewerCloseA11y: 'Close photo viewer',
 
@@ -907,6 +911,8 @@ const zhCN: BaseTranslations = {
     '资料已提交。由于内容审查，修改可能需要 10 分钟或更久才会显示。',
 
   // Photo viewer
+  photoViewerShare: '分享',
+  photoViewerShareA11y: '分享图片',
   photoViewerClose: '关闭',
   photoViewerCloseA11y: '关闭图片查看器',
 

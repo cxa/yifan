@@ -3,10 +3,14 @@ import {
   BackHandler,
   Image,
   Modal,
+  Platform,
+  Share,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
+import ReactNativeBlobUtil from 'react-native-blob-util';
+import { Ellipsis } from 'lucide-react-native';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -530,10 +534,43 @@ const PhotoViewerModal = ({
       );
       backdropOpacity.value = withTiming(1, OPEN_TIMING);
     });
+  const handleShare = async () => {
+    if (!photoUrl) {
+      return;
+    }
+    try {
+      const ext = photoUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
+      const tempPath = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/share_photo.${ext}`;
+      await ReactNativeBlobUtil.config({ path: tempPath }).fetch('GET', photoUrl);
+      const fileUri = Platform.OS === 'android'
+        ? `file://${tempPath}`
+        : tempPath;
+      await Share.share(
+        Platform.OS === 'android'
+          ? { message: fileUri }
+          : { url: fileUri },
+      );
+      ReactNativeBlobUtil.fs.unlink(tempPath).catch(() => undefined);
+    } catch {
+      // User cancelled or download failed — ignore
+    }
+  };
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(500)
+    .onEnd((_event, success) => {
+      if (success && !isDismissing.value) {
+        scheduleOnRN(handleShare);
+      }
+    });
   const closeTapGesture = Gesture.Tap()
     .maxDuration(500)
     .onEnd(startCloseTransition);
-  const gesture = Gesture.Simultaneous(pinchGesture, panGesture, doubleTapGesture);
+  const shareTapGesture = Gesture.Tap()
+    .maxDuration(500)
+    .onEnd(() => {
+      scheduleOnRN(handleShare);
+    });
+  const gesture = Gesture.Simultaneous(pinchGesture, panGesture, doubleTapGesture, longPressGesture);
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
   }));
@@ -615,9 +652,19 @@ const PhotoViewerModal = ({
         </View>
       ) : null}
       <Animated.View
-        className="absolute right-4"
+        className="absolute right-4 flex-row items-center gap-2"
         style={[{ top: Math.max(insets.top + 8, 16) }, closeControlStyle]}
       >
+        <GestureDetector gesture={shareTapGesture}>
+          <View
+            className="items-center justify-center rounded-full border border-border/50 bg-background/70"
+            style={styles.actionButton}
+            accessibilityRole="button"
+            accessibilityLabel={t('photoViewerShareA11y')}
+          >
+            <Ellipsis size={18} color={accentForeground} strokeWidth={2} />
+          </View>
+        </GestureDetector>
         <GestureDetector gesture={closeTapGesture}>
           <View
             className="rounded-3xl border border-border/50 bg-background/70 px-3 py-2"
@@ -656,6 +703,11 @@ const PhotoViewerModal = ({
   );
 };
 const styles = StyleSheet.create({
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderCurve: 'continuous',
+  },
   closeButton: {
     borderCurve: 'continuous',
   },
