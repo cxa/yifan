@@ -293,6 +293,7 @@ const AuthHomeRoute = () => {
   const {
     data: initialItems = [],
     dataUpdatedAt,
+    isPending,
     isLoading,
     error,
     refetch,
@@ -494,7 +495,7 @@ const AuthHomeRoute = () => {
           }
           ListEmptyComponent={
             <Animated.View style={timelineListSettings.animatedItemStyle}>
-              {isLoading || isHydratingTimelineItems ? (
+              {isPending || isLoading || isHydratingTimelineItems ? (
                 <TimelineSkeletonList
                   keyPrefix="timeline-skeleton"
                   availableHeight={skeletonAvailableHeight}
