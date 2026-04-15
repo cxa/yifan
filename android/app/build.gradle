@@ -146,6 +146,9 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation project(':react-native-localize')
 
+    // Animated GIF support (Fresco)
+    implementation("com.facebook.fresco:animated-gif:3.6.0")
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

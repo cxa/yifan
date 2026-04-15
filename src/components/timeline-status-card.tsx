@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
 import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
@@ -134,6 +135,7 @@ const TimelineStatusCard = ({
   const fontFamily = useAppFontFamily();
   const photoRef = useRef<View>(null);
   const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
+  const [photoLoaded, setPhotoLoaded] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [footerWidth, setFooterWidth] = React.useState(0);
@@ -342,8 +344,10 @@ const TimelineStatusCard = ({
                       if (width > 0 && height > 0) {
                         setPhotoAspectRatio(width / height);
                       }
+                      setPhotoLoaded(true);
                     }}
                   />
+                  <ImageShimmerPlaceholder visible={!photoLoaded} />
                 </View>
               </Pressable>
             ) : null}
