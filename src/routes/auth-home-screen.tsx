@@ -28,6 +28,7 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
@@ -119,6 +120,8 @@ const AuthHomeRoute = () => {
     TIMELINE_TOP_CONTENT_GAP -
     getTabBarOccludedHeight(insets.bottom);
   const scrollY = useSharedValue(0);
+  const prevScrollY = useSharedValue(0);
+  const buttonTranslateY = useSharedValue(0);
   const isAtTop = useSharedValue(true);
   const [isAtTopState, setIsAtTopState] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -158,12 +161,26 @@ const AuthHomeRoute = () => {
   };
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
-      scrollY.value = event.contentOffset.y;
-      updatePullScrollY(event.contentOffset.y);
-      const atTop = event.contentOffset.y <= TIMELINE_SCROLL_TOP_THRESHOLD;
+      const y = event.contentOffset.y;
+      scrollY.value = y;
+      updatePullScrollY(y);
+      const atTop = y <= TIMELINE_SCROLL_TOP_THRESHOLD;
       if (atTop !== isAtTop.value) {
         isAtTop.value = atTop;
         scheduleOnRN(updateIsAtTop, atTop);
+      }
+      // Hide/show buttons based on scroll direction (after title area)
+      const delta = y - prevScrollY.value;
+      prevScrollY.value = y;
+      if (y <= HOME_TITLE_HEIGHT) {
+        // In title area — always visible, position follows title
+        buttonTranslateY.value = withTiming(0, { duration: 200 });
+      } else if (delta > 2) {
+        // Scrolling up — hide
+        buttonTranslateY.value = withTiming(-(HOME_TITLE_HEIGHT + insets.top + HOME_ICON_SIZE), { duration: 250 });
+      } else if (delta < -2) {
+        // Scrolling down — show
+        buttonTranslateY.value = withTiming(0, { duration: 250 });
       }
     },
   });
@@ -174,7 +191,10 @@ const AuthHomeRoute = () => {
       [HOME_TITLE_HEIGHT - HOME_ICON_SIZE, 0],
       Extrapolation.CLAMP,
     );
-    return { top: insets.top + offset };
+    return {
+      top: insets.top + offset,
+      transform: [{ translateY: buttonTranslateY.value }],
+    };
   });
   const titleContainerStyle = useAnimatedStyle(() => {
     const height = interpolate(
