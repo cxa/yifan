@@ -70,9 +70,10 @@ const SearchRoute = () => {
 
   const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   useEffect(() => {
-    const timer = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(timer);
-  }, []);
+    return navigation.addListener('transitionEnd', () => {
+      inputRef.current?.focus();
+    });
+  }, [navigation]);
 
   const [inputText, setInputText] = useState('');
 
@@ -92,7 +93,6 @@ const SearchRoute = () => {
             style={[styles.input, { color: foreground }]}
             placeholder={t('searchPlaceholder')}
             placeholderTextColor={muted}
-            value={inputText}
             onChangeText={setInputText}
             returnKeyType="search"
             autoCorrect={false}
@@ -103,7 +103,7 @@ const SearchRoute = () => {
         </View>
       ),
     });
-  }, [background, foreground, inputBackground, inputText, isDark, muted, navigation, t]);
+  }, [background, foreground, inputBackground, isDark, muted, navigation, t]);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FanfouStatus[]>([]);
