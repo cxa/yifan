@@ -1,4 +1,1 @@
-• 实况照片支持以 GIF 或静态图发送
-• 发布内容增加 140 字限制，超出部分红色高亮
-• 选图后自动聚焦文本框
-• 图片预览按原始比例完整展示
+• prevent composer header from overlapping Android status bar
