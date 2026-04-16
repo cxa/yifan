@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TextInput as RNTextInput,
   View,
@@ -157,7 +158,7 @@ const ComposerModal = ({
       statusBarTranslucent
       onRequestClose={() => canDismiss && onCancel()}
     >
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top || (Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0) }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"
