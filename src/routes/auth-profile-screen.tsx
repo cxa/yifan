@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
-import { buildRepostStatus, executeComposerSend, toPlainText, validateComposerContent } from '@/utils/composer-send';
+import { MAX_STATUS_LENGTH, buildRepostStatus, executeComposerSend, toPlainText, validateComposerContent } from '@/utils/composer-send';
 import {
   Alert,
   Image,
@@ -553,8 +553,19 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
       return;
     }
-    const trimmedText = validateComposerContent(text, hasPhoto, t('cannotSendTitle'));
-    if (trimmedText === null) return;
+    // Repost allows empty text — the quoted block is the content.
+    let trimmedText: string;
+    if (composeMode === 'repost') {
+      if (text.length > MAX_STATUS_LENGTH) {
+        showVariantToast('danger', t('cannotRepostTitle'), t('composerTextTooLong'));
+        return;
+      }
+      trimmedText = text.trim();
+    } else {
+      const validated = validateComposerContent(text, hasPhoto, t('cannotSendTitle'));
+      if (validated === null) return;
+      trimmedText = validated;
+    }
 
     // Build send function before closing
     let sendFn: () => Promise<unknown>;
@@ -1188,6 +1199,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
         resetKey={composerResetKey}
         quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'mention' || composeMode === 'reply'}
+        allowEmptyText={composeMode === 'repost'}
         isSubmitting={
           statusUpdateMutation.isPending || directMessageMutation.isPending
         }

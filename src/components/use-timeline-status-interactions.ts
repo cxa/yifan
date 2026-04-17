@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showVariantToast } from '@/utils/toast-alert';
-import { buildRepostStatus, executeComposerSend, toPlainText, validateComposerContent } from '@/utils/composer-send';
+import { MAX_STATUS_LENGTH, buildRepostStatus, executeComposerSend, toPlainText, validateComposerContent } from '@/utils/composer-send';
 import type { StatusUpdateMutationVariables } from '@/query/post-mutations';
 import { Image } from 'react-native';
 import { post } from '@/auth/fanfou-client';
@@ -101,9 +101,21 @@ const useTimelineStatusInteractions = ({
       showVariantToast('danger', t('cannotRepostTitle'), t('repostMissingTarget'));
       return;
     }
-    const failTitle = composeMode === 'reply' ? t('cannotReplyTitle') : t('cannotRepostTitle');
-    const trimmedText = validateComposerContent(text, hasPhoto, failTitle);
-    if (trimmedText === null) return;
+    // Repost may be sent with empty text — the quoted block is the content.
+    // Reply still requires text or photo; validateComposerContent handles it.
+    let trimmedText: string;
+    if (composeMode === 'repost') {
+      if (text.length > MAX_STATUS_LENGTH) {
+        showVariantToast('danger', t('cannotRepostTitle'), t('composerTextTooLong'));
+        return;
+      }
+      trimmedText = text.trim();
+    } else {
+      const failTitle = t('cannotReplyTitle');
+      const validated = validateComposerContent(text, hasPhoto, failTitle);
+      if (validated === null) return;
+      trimmedText = validated;
+    }
 
     let sendFn: () => Promise<unknown>;
     let failedTitle: string;

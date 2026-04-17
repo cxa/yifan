@@ -93,10 +93,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
   return (
     <ThemeTransitionContext.Provider value={{ prepareSnapshot, requestTransition }}>
       <GestureHandlerRootView className={`flex-1 bg-background ${isDark ? 'dark' : ''}`}>
-        <KeyboardProvider
-          statusBarTranslucent
-          navigationBarTranslucent
-        >
+        <KeyboardProvider>
           <SafeAreaProvider initialMetrics={initialWindowMetrics}>
             <HeroUINativeProvider
               config={{ devInfo: { stylingPrinciples: false } }}

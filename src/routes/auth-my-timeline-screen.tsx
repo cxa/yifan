@@ -334,6 +334,7 @@ const MyTimelineRouteContent = ({
         resetKey={composerResetKey}
         quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
+        allowEmptyText={composeMode === 'repost'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}

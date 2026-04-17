@@ -1,7 +1,6 @@
 package im.cxa.fanatter
 
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -106,28 +104,21 @@ class MainActivity : ReactActivity() {
       isAppReady = true
     }, SPLASH_TIMEOUT_MS)
 
-    // Draw behind both system bars (edge-to-edge).
-    WindowCompat.setDecorFitsSystemWindows(window, false)
-
-    // API < 35: set color directly. Ignored on API 35+ but kept for older devices.
-    @Suppress("DEPRECATION")
-    window.statusBarColor = Color.TRANSPARENT
-    @Suppress("DEPRECATION")
-    window.navigationBarColor = Color.TRANSPARENT
-
-    // API 29+: disable the contrast-enforcement scrim the system adds behind
-    // gesture navigation bars on some OEMs.
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      window.isNavigationBarContrastEnforced = false
-    }
-
+    // Edge-to-edge is enabled via edgeToEdgeEnabled=true in gradle.properties;
+    // ReactActivityDelegate calls WindowCompat.setDecorFitsSystemWindows(false)
+    // and makes the system bars transparent automatically.
     super.onCreate(savedInstanceState)
     showLaunchOverlay()
     keepSplashUntilFirstReactDraw()
 
-    // API 35+ (Android 15): window.navigationBarColor is fully ignored.
-    // WindowInsetsControllerCompat is the only way to influence bar appearance.
-    // This must be called after super.onCreate() so the decorView is attached.
+    // Must run AFTER super.onCreate(): ReactActivityDelegate's edge-to-edge
+    // setup re-enables isNavigationBarContrastEnforced on API 29+, so setting
+    // it earlier would be overwritten and the gesture-bar scrim would remain.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      window.isNavigationBarContrastEnforced = false
+    }
+
+    // Override ReactActivityDelegate's default — we want dark nav bar icons.
     WindowInsetsControllerCompat(window, window.decorView).also { controller ->
       controller.isAppearanceLightNavigationBars = false
     }

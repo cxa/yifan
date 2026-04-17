@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
 import { ImagePlus, X } from 'lucide-react-native';
 import {
+  AppState,
   Image,
   Modal,
   Platform,
@@ -14,12 +15,13 @@ import {
 } from 'react-native';
 import {
   KeyboardStickyView,
-  useKeyboardState,
+  useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller';
-import {
-  SafeAreaInsetsContext,
-  SafeAreaProvider,
-} from 'react-native-safe-area-context';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import { Text, TextInput } from '@/components/app-text';
@@ -50,6 +52,7 @@ type ComposerModalProps = {
   quotedStatus?: ComposerQuotedStatus | null;
   resetKey?: string | null;
   enablePhoto?: boolean;
+  allowEmptyText?: boolean;
   isSubmitting?: boolean;
   onCancel: () => void;
   onSubmit: (payload: ComposerModalSubmitPayload) => Promise<void> | void;
@@ -65,6 +68,7 @@ const ComposerModal = ({
   quotedStatus = null,
   resetKey = null,
   enablePhoto = false,
+  allowEmptyText = false,
   isSubmitting: controlledIsSubmitting,
   onCancel,
   onSubmit,
@@ -86,7 +90,28 @@ const ComposerModal = ({
   const [sendAsGif, setSendAsGif] = useState(true);
   const isSubmitting = controlledIsSubmitting ?? internalIsSubmitting;
   const canDismiss = !isSubmitting && !isPhotoPicking;
-  const isKeyboardVisible = useKeyboardState(state => state.isVisible);
+  const { height: keyboardHeight, progress: keyboardProgress } =
+    useReanimatedKeyboardAnimation();
+  const insets = useSafeAreaInsets();
+  // paddingBottom smoothly interpolates so the toolbar's height doesn't
+  // step-change at the moment the keyboard passes the "visible" threshold.
+  // During Android photo picking the host Activity pauses, so keyboardProgress
+  // can freeze mid-animation — force progress to 0 so the bar sits at the
+  // safe-area bottom regardless of the stale shared value.
+  const toolbarPaddingStyle = useAnimatedStyle(() => ({
+    paddingBottom: interpolate(
+      isPhotoPicking ? 0 : keyboardProgress.value,
+      [0, 1],
+      [Math.max(insets.bottom, 12), 12],
+    ),
+  }));
+  // Scroll area doesn't resize when the keyboard opens (Modal is edge-to-edge,
+  // no adjustResize effect reaches it). Adding an animated bottom spacer to the
+  // ScrollView content makes the scrollable range grow by the keyboard height,
+  // so tall attachments like a GIF preview can be scrolled into view.
+  const scrollBottomSpacerStyle = useAnimatedStyle(() => ({
+    height: Math.abs(keyboardHeight.value),
+  }));
   const isLivePhotoGif = photo?.mimeType === 'image/gif' && Boolean(photo?.stillImage);
   const effectivePhoto = isLivePhotoGif && !sendAsGif && photo?.stillImage
     ? { ...photo, ...photo.stillImage }
@@ -97,7 +122,8 @@ const ComposerModal = ({
     effectivePhoto?.livePhotoStaticFallback === true && !isGifPhoto;
   const charCount = value.length;
   const isOverLimit = charCount > MAX_STATUS_LENGTH;
-  const canSubmit = !isSubmitting && !isPhotoPicking && value.trim().length > 0 && !isOverLimit;
+  const hasText = value.trim().length > 0;
+  const canSubmit = !isSubmitting && !isPhotoPicking && (allowEmptyText || hasText) && !isOverLimit;
 
   useEffect(() => {
     if (!visible) {
@@ -113,10 +139,11 @@ const ComposerModal = ({
   }, [initialText, initialPhoto, resetKey, visible]);
 
   const handleModalShow = () => {
-    if (Platform.OS !== 'android') {
-      return;
-    }
-    setTimeout(() => inputRef.current?.focus(), 300);
+    // Focus AFTER the Modal's slide-in animation completes on both platforms.
+    // Using autoFocus instead would race the Modal animation with the keyboard
+    // animation, making the sticky accessory bar overshoot then snap back.
+    // A small delay lets onShow's "visible" state settle before IME opens.
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const handlePickPhoto = async () => {
@@ -128,6 +155,29 @@ const ComposerModal = ({
       const pickedPhoto = await pickImageFromLibrary();
       if (pickedPhoto) {
         setPhoto(pickedPhoto);
+      }
+      if (Platform.OS === 'android') {
+        // After the photo picker closes on Android the EditText often still
+        // holds view focus, so a plain focus() is a no-op and the soft IME
+        // stays hidden. Force a blur→focus cycle on the next frame to
+        // re-open the keyboard. Runs whether or not a photo was picked.
+        const reopenKeyboard = () => {
+          requestAnimationFrame(() => {
+            inputRef.current?.blur();
+            requestAnimationFrame(() => inputRef.current?.focus());
+          });
+        };
+        if (AppState.currentState === 'active') {
+          reopenKeyboard();
+        } else {
+          const sub = AppState.addEventListener('change', state => {
+            if (state === 'active') {
+              sub.remove();
+              reopenKeyboard();
+            }
+          });
+        }
+      } else {
         inputRef.current?.focus();
       }
     } catch (error) {
@@ -164,6 +214,55 @@ const ComposerModal = ({
     }
   };
 
+  const renderToolbar = () => (
+    <Animated.View
+      className="flex-row items-center gap-2 bg-background px-4 py-3"
+      style={[styles.toolbar, { borderTopColor: border }, toolbarPaddingStyle]}
+    >
+      {enablePhoto ? (
+        <>
+          <Pressable
+            onPress={canDismiss && !isPhotoPicking ? handlePickPhoto : undefined}
+            className={`items-center justify-center rounded-full p-1 ${isPhotoPicking ? 'opacity-60' : ''}`}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={photoUri ? t('composerChangePhoto') : t('composerAttachPhoto')}
+          >
+            <ImagePlus size={22} color={foreground} />
+          </Pressable>
+          {photoUri ? (
+            <Pressable
+              onPress={canDismiss ? handleRemovePhoto : undefined}
+              className="rounded-full bg-surface-secondary px-4 py-2"
+              accessibilityRole="button"
+              accessibilityLabel={t('composerRemovePhotoA11y')}
+            >
+              <Text className="text-[13px] text-foreground">
+                {t('composerRemovePhoto')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {isLivePhotoGif ? (
+            <View className="flex-row items-center gap-2">
+              <Switch
+                isSelected={sendAsGif}
+                onSelectedChange={setSendAsGif}
+              />
+              <Text className="text-[13px] font-semibold text-foreground">GIF</Text>
+            </View>
+          ) : null}
+        </>
+      ) : null}
+      <Text
+        className={`ml-auto text-[13px] font-semibold ${isOverLimit ? 'text-danger' : 'text-muted'}`}
+        style={styles.charCount}
+        numberOfLines={1}
+      >
+        {charCount}/{MAX_STATUS_LENGTH}
+      </Text>
+    </Animated.View>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -173,17 +272,9 @@ const ComposerModal = ({
       onShow={handleModalShow}
       onRequestClose={() => canDismiss && onCancel()}
     >
-      <SafeAreaProvider>
-        <SafeAreaInsetsContext.Consumer>
-          {(insets) => {
-            const topPad = insets?.top ?? StatusBar.currentHeight ?? 0;
-            const bottomInset = insets?.bottom ?? 0;
-            const toolbarBottomPad = isKeyboardVisible ? 12 : Math.max(bottomInset, 12);
-            return (
-              <>
       <View
         className="flex-1 bg-background"
-        style={{ paddingTop: topPad }}
+        style={{ paddingTop: insets.top || StatusBar.currentHeight || 0 }}
       >
           {/* Header */}
           <View className="flex-row items-center gap-2 px-4 py-3">
@@ -276,7 +367,6 @@ const ComposerModal = ({
                 placeholderTextColor={placeholderColor}
                 multiline
                 textAlignVertical="top"
-                autoFocus={Platform.OS === 'ios'}
                 className="min-h-[160px] py-2 text-[17px] leading-relaxed text-foreground"
                 style={[
                   styles.textInputTransparentBg,
@@ -314,68 +404,30 @@ const ComposerModal = ({
                 ) : null}
               </View>
             ) : null}
+            <Animated.View style={scrollBottomSpacerStyle} />
           </ScrollView>
       </View>
 
-      {/* Bottom toolbar — sticks to keyboard top when visible. Modal is
-          edge-to-edge (navigationBarTranslucent), so IME height alone is the
-          correct translateY; no offset needed. */}
-      <KeyboardStickyView className="bg-background">
-        <View
-          className="flex-row items-center gap-2 px-4 py-3"
-          style={[
-            styles.toolbar,
-            { borderTopColor: border, paddingBottom: toolbarBottomPad },
-          ]}
-        >
-          {enablePhoto ? (
-            <>
-              <Pressable
-                onPress={canDismiss && !isPhotoPicking ? handlePickPhoto : undefined}
-                className={`items-center justify-center rounded-full p-1 ${isPhotoPicking ? 'opacity-60' : ''}`}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel={photoUri ? t('composerChangePhoto') : t('composerAttachPhoto')}
-              >
-                <ImagePlus size={22} color={foreground} />
-              </Pressable>
-              {photoUri ? (
-                <Pressable
-                  onPress={canDismiss ? handleRemovePhoto : undefined}
-                  className="rounded-full bg-surface-secondary px-4 py-2"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('composerRemovePhotoA11y')}
-                >
-                  <Text className="text-[13px] text-foreground">
-                    {t('composerRemovePhoto')}
-                  </Text>
-                </Pressable>
-              ) : null}
-              {isLivePhotoGif ? (
-                <View className="flex-row items-center gap-2">
-                  <Switch
-                    isSelected={sendAsGif}
-                    onSelectedChange={setSendAsGif}
-                  />
-                  <Text className="text-[13px] font-semibold text-foreground">GIF</Text>
-                </View>
-              ) : null}
-            </>
+      {Platform.OS === 'android' && isPhotoPicking ? (
+        // Android: while the photo picker Activity is foreground, the
+        // composer Activity pauses and KeyboardStickyView's shared values
+        // freeze — leaving the toolbar stranded mid-screen. Detach it into
+        // a plain View pinned at the bottom so it doesn't bounce when the
+        // keyboard animation resumes after the picker closes.
+        <View className="bg-background">{renderToolbar()}</View>
+      ) : (
+        <KeyboardStickyView className="bg-background">
+          {renderToolbar()}
+          {/* iOS keyboard has rounded corners at its top-left/right — tiny
+              arcs of Modal bg show through the notches. A short bg-background
+              strip anchored to the toolbar's bottom bleeds into the keyboard's
+              corner curve area and fills the notches (keyboard's opaque
+              center simply covers the overlap). */}
+          {Platform.OS === 'ios' ? (
+            <View style={styles.keyboardCornerFiller} className="bg-background" />
           ) : null}
-          <Text
-            className={`ml-auto text-[13px] font-semibold ${isOverLimit ? 'text-danger' : 'text-muted'}`}
-            style={styles.charCount}
-            numberOfLines={1}
-          >
-            {charCount}/{MAX_STATUS_LENGTH}
-          </Text>
-        </View>
-      </KeyboardStickyView>
-              </>
-            );
-          }}
-        </SafeAreaInsetsContext.Consumer>
-      </SafeAreaProvider>
+        </KeyboardStickyView>
+      )}
     </Modal>
   );
 };
@@ -406,6 +458,13 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  keyboardCornerFiller: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '100%',
+    height: 16,
   },
   charCount: {
     width: 72,

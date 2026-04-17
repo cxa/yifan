@@ -328,6 +328,7 @@ const SearchRoute = () => {
         resetKey={composerResetKey}
         quotedStatus={composerQuotedStatus}
         enablePhoto={composeMode === 'reply'}
+        allowEmptyText={composeMode === 'repost'}
         isSubmitting={isComposerSubmitting}
         onCancel={handleCloseComposer}
         onSubmit={handleSendComposer}
@@ -344,8 +345,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 9999,
-    minHeight: 36,
     paddingHorizontal: 10,
+    paddingVertical: 8,
     gap: 6,
   },
   searchIcon: {
@@ -354,6 +355,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
+    paddingVertical: 0,
+    includeFontPadding: false,
   },
   emptyContainer: {
     flex: 1,
