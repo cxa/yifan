@@ -940,7 +940,7 @@ const MoreRouteContent = ({
                           {t('moreFontStyle')}
                         </Text>
                         <Text className="text-[13px] text-muted">{fontSelectValue?.label}</Text>
-                        <ChevronDown size={13} color={muted} />
+                        <ChevronDown size={16} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -973,7 +973,7 @@ const MoreRouteContent = ({
                           {t('moreFontSize')}
                         </Text>
                         <Text className="text-[13px] text-muted">{fontSizeSelectValue?.label}</Text>
-                        <ChevronDown size={13} color={muted} />
+                        <ChevronDown size={16} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1000,7 +1000,7 @@ const MoreRouteContent = ({
                           {t('moreLanguage')}
                         </Text>
                         <Text className="text-[13px] text-muted">{languageSelectValue.label}</Text>
-                        <ChevronDown size={13} color={muted} />
+                        <ChevronDown size={16} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1031,7 +1031,7 @@ const MoreRouteContent = ({
                           {t('moreAppearance')}
                         </Text>
                         <Text className="text-[13px] text-muted">{appearanceSelectValue.label}</Text>
-                        <ChevronDown size={13} color={muted} />
+                        <ChevronDown size={16} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1062,7 +1062,7 @@ const MoreRouteContent = ({
                           {t('moreTheme')}
                         </Text>
                         <Text className="text-[13px] text-muted">{themeSelectValue.label}</Text>
-                        <ChevronDown size={13} color={muted} />
+                        <ChevronDown size={16} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1093,7 +1093,7 @@ const MoreRouteContent = ({
                           {t('moreStyle')}
                         </Text>
                         <Text className="text-[13px] text-muted">{uiStyleSelectValue.label}</Text>
-                        <ChevronDown size={13} color={muted} />
+                        <ChevronDown size={16} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />

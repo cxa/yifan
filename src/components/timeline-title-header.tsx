@@ -28,7 +28,7 @@ const TimelineTitleHeader = ({
       style={titleContainerStyle}
     >
       <AnimatedText
-        className="text-[34px] font-bold text-foreground leading-[40px]"
+        className="text-[34px] font-extrabold text-foreground leading-[40px]"
         style={titleTextStyle}
       >
         {title}

@@ -12,3 +12,10 @@
     --font-huiwen: HuiwenHKHei-Regular;
     --font-huiwen-mincho: Huiwen-MinchoGBK-Regular;
 }
+
+/* Shared card elevation. Use `shadow-card dark:shadow-none` on any surface
+   that should float above the background in light mode — the warm shadow
+   melts into the dark background and only wastes GPU, so we omit it there. */
+@utility shadow-card {
+    box-shadow: 0 2px 6px rgba(26, 18, 8, 0.08);
+}

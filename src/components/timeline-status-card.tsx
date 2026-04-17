@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
 import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { FanfouStatus } from '@/types/fanfou';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
 import { Text } from '@/components/app-text';
-import { CARD_BG_LIGHT, CARD_BG_DARK, CARD_SHADOW_COLOR, type DropShadowBoxType } from '@/components/drop-shadow-box';
+import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
 import { useAppFontFamily } from '@/settings/app-font-preference';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
@@ -203,7 +203,7 @@ const TimelineStatusCard = ({
       <Pressable
         onPress={() => onPressStatus(statusId, shadowType)}
         unstable_pressDelay={100}
-        className="rounded-3xl p-4 active:opacity-75"
+        className="rounded-3xl p-4 shadow-card active:opacity-75 dark:shadow-none"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
         <View className={showAvatar ? 'flex-row gap-3' : undefined}>
@@ -239,7 +239,7 @@ const TimelineStatusCard = ({
                   className="min-w-0 shrink"
                 >
                   <Text
-                    className="text-[17px] font-bold text-foreground"
+                    className="text-[17px] font-extrabold text-foreground"
                     style={textColor ? { color: textColor } : undefined}
                     numberOfLines={1}
                   >
@@ -395,7 +395,7 @@ const TimelineStatusCard = ({
                 </View>
               ) : null}
               <View
-                className="flex-row items-center gap-4"
+                className="flex-row items-center gap-3"
                 onLayout={event => {
                   updateMeasuredWidth(
                     setActionsWidth,
@@ -405,31 +405,34 @@ const TimelineStatusCard = ({
               >
                 <Pressable
                   onPress={() => onReply(status)}
-                  className="p-1"
+                  className="p-1.5"
+                  hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Reply"
                 >
-                  <MessageCircle size={16} color={effectiveMuted} />
+                  <MessageCircle size={18} color={effectiveMuted} />
                 </Pressable>
                 <Pressable
                   onPress={() => onRepost(status)}
-                  className="p-1"
+                  className="p-1.5"
+                  hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Repost"
                 >
-                  <Repeat2 size={16} color={effectiveMuted} />
+                  <Repeat2 size={18} color={effectiveMuted} />
                 </Pressable>
                 <Pressable
                   onPress={() => onToggleBookmark(status)}
                   disabled={isBookmarkPending}
-                  className={`p-1 ${isBookmarkPending ? 'opacity-50' : ''}`}
+                  className={`p-1.5 ${isBookmarkPending ? 'opacity-50' : ''}`}
+                  hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel={
                     status.favorited ? 'Remove bookmark' : 'Bookmark'
                   }
                 >
                   <FavoriteHeartIcon
-                    size={16}
+                    size={18}
                     isFavorited={status.favorited}
                     activeColor={accent}
                     inactiveColor={effectiveMuted}
@@ -441,11 +444,12 @@ const TimelineStatusCard = ({
                       event.stopPropagation();
                       handleDeletePress();
                     }}
-                    className="p-1"
+                    className="p-1.5"
+                    hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={t('statusDeleteTitle')}
                   >
-                    <Trash2 size={16} color={danger} />
+                    <Trash2 size={18} color={danger} />
                   </Pressable>
                 ) : null}
               </View>
@@ -525,17 +529,6 @@ const TimelineStatusCard = ({
 const styles = StyleSheet.create({
   card: {
     borderCurve: 'continuous',
-    ...Platform.select({
-      ios: {
-        shadowColor: CARD_SHADOW_COLOR,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      default: {
-        elevation: 2,
-      },
-    }),
   },
   photoPlaceholder: {
     height: 220,

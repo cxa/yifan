@@ -224,7 +224,7 @@ const AuthTabBar = ({
             <Animated.Text
               entering={FadeInRight.duration(200)}
               exiting={FadeOutRight.duration(200)}
-              className="ml-2 font-bold text-base"
+              className="ml-2 font-extrabold text-base"
               style={{
                 color: textColor,
                 fontFamily: resolvedFontFamily,
@@ -412,6 +412,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: HEADER_TITLE_FONT_SIZE,
-    fontWeight: '600',
+    fontWeight: '800',
   },
 });

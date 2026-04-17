@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 export type DropShadowBoxType =
@@ -10,33 +10,42 @@ export type DropShadowBoxType =
   | 'accent'
   | 'sky';
 
-/** Rotate through warm pastel card backgrounds for visual variety in lists */
+/** Rotate through pastel card backgrounds for visual variety in lists.
+ * Order alternates warm/cool to give scrolling a temperature rhythm:
+ * warm → cool → warm → cool → cool, with the final cool pair (mint/lilac)
+ * sitting across the color wheel from each other so they still read distinct. */
 export const CARD_PASTEL_CYCLE: DropShadowBoxType[] = [
-  'accent',   // #FDDBD5 soft pink
-  'warning',  // #FDF3C8 warm yellow
-  'danger',   // #E8D5F5 lavender
-  'sky',      // #D0E8F5 sky blue
-  'success',  // #C8EDE8 mint
+  'accent',   // coral  — warm
+  'sky',      // sky    — cool
+  'warning',  // apricot — warm
+  'success',  // mint   — cool
+  'danger',   // lilac  — cool, complementary to mint
 ];
 
 /** Light-mode pastel card background colors indexed by shadow type */
+// Each hue has its own personality — widen the hue spread (coral / apricot /
+// lilac / crisp sky / spring mint) and push saturation so they stop reading
+// as "five slightly different warm pastels" and start reading as five
+// distinct flavors. Slight lightness variance adds rhythm when scrolling.
 export const CARD_BG_LIGHT: Record<DropShadowBoxType, string> = {
   default: '#F7EFE0',
-  accent:  '#FDDBD5',
-  warning: '#FDF3C8',
-  danger:  '#E8D5F5',
-  sky:     '#D0E8F5',
-  success: '#C8EDE8',
+  accent:  '#FFD6CA', // coral — softer than pure salmon to stop it burning on white
+  warning: '#FFECBA', // apricot — warm but dialed back from the full orange push
+  danger:  '#E3CAEF', // lilac — clearer purple than the old gray-lavender
+  sky:     '#BCDDEC', // crisper sky, quieter than the saturated blue
+  success: '#B5E0CA', // mint — fresher than before, not neon
 };
 
 /** Dark-mode card background colors indexed by shadow type */
+// Match the light palette hue-for-hue at dark-friendly lightness — each card
+// should still read as coral / apricot / lilac / sky / mint, just muted.
 export const CARD_BG_DARK: Record<DropShadowBoxType, string> = {
   default: '#2A2520',
-  accent:  '#3D2820',
-  warning: '#352E18',
-  danger:  '#2D1E38',
-  sky:     '#1A2E3D',
-  success: '#1A3530',
+  accent:  '#5A2E23',
+  warning: '#4A3618',
+  danger:  '#3D2048',
+  sky:     '#1A3E5A',
+  success: '#1A4538',
 };
 
 type DropShadowBoxProps = {
@@ -60,25 +69,11 @@ const BORDER_CLASS_BY_TYPE: Record<DropShadowBoxType, string> = {
 export const getDropShadowBorderClass = (type: DropShadowBoxType) =>
   BORDER_CLASS_BY_TYPE[type];
 
-export const CARD_SHADOW_COLOR = '#1A1208';
-
-const CARD_SHADOW: ViewStyle = Platform.select({
-  ios: {
-    shadowColor: CARD_SHADOW_COLOR,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  default: {
-    elevation: 2,
-  },
-});
-
 const DropShadowBox = ({
   children,
   containerClassName,
 }: DropShadowBoxProps) => (
-  <View className={containerClassName} style={CARD_SHADOW}>
+  <View className={`shadow-card dark:shadow-none ${containerClassName ?? ''}`}>
     {children}
   </View>
 );

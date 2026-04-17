@@ -101,6 +101,7 @@ const buildNativeHeaderOptions = (
     headerTitleStyle: {
       fontFamily: headerFontFamily,
       fontSize: HEADER_TITLE_FONT_SIZE,
+      fontWeight: '800',
       color: foreground,
     },
   } satisfies NativeStackNavigationOptions;
