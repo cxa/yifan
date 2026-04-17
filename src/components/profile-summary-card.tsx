@@ -69,7 +69,7 @@ const ProfileSummaryCard = ({
             <>
               {displayName ? (
                 <Text
-                  className="text-[22px] leading-[28px] text-foreground"
+                  className="text-[22px] leading-[28px] font-extrabold text-foreground"
                   style={primaryTextStyle}
                 >
                   {displayName}

@@ -25,22 +25,8 @@ type ProfileStatRowProps = {
 
 const getStatValue = (value: ProfileStatItem['value']) => value ?? '--';
 
-const ProfileStatSkeletonCell = ({
-  panelStyle,
-  shadowStyle,
-}: {
-  panelStyle?: StyleProp<ViewStyle>;
-  shadowStyle?: StyleProp<ViewStyle>;
-}) => (
-  <DropShadowBox containerClassName="flex-1" shadowStyle={shadowStyle}>
-    <Surface className="bg-surface-secondary p-4" style={panelStyle}>
-      <ShimmerBar className="h-8 w-12 bg-surface-tertiary" isActive />
-      <ShimmerBar
-        className="mt-1 h-5 w-16 bg-surface-tertiary"
-        isActive={false}
-      />
-    </Surface>
-  </DropShadowBox>
+const StatDivider = () => (
+  <View className="w-px bg-foreground/10 my-3" />
 );
 
 const ProfileStatRow = ({
@@ -55,35 +41,45 @@ const ProfileStatRow = ({
   if (skeleton) {
     const count = itemCount ?? 3;
     return (
-      <View className="flex-row gap-4">
-        {Array.from({ length: count }).map((_, i) => (
-          <ProfileStatSkeletonCell
-            key={i}
-            panelStyle={panelStyle}
-            shadowStyle={shadowStyle}
-          />
-        ))}
-      </View>
+      <DropShadowBox shadowStyle={shadowStyle}>
+        <Surface
+          className="bg-surface-secondary overflow-hidden flex-row"
+          style={panelStyle}
+        >
+          {Array.from({ length: count }).map((_, i) => (
+            <React.Fragment key={i}>
+              {i > 0 ? <StatDivider /> : null}
+              <View className="flex-1 p-4">
+                <ShimmerBar className="h-8 w-12 bg-surface-tertiary" isActive />
+                <ShimmerBar
+                  className="mt-1 h-5 w-16 bg-surface-tertiary"
+                  isActive={false}
+                />
+              </View>
+            </React.Fragment>
+          ))}
+        </Surface>
+      </DropShadowBox>
     );
   }
 
   return (
-    <View className="flex-row gap-4">
-      {stats.map(stat => (
-        <DropShadowBox
-          key={stat.label}
-          containerClassName="flex-1"
-          shadowStyle={shadowStyle}
-        >
-          <Pressable
-            onPress={stat.onPress}
-            disabled={!stat.onPress}
-            accessibilityRole={stat.onPress ? 'button' : undefined}
-            className={stat.onPress ? 'active:opacity-75' : ''}
-          >
-            <Surface className="bg-surface-secondary p-4" style={panelStyle}>
+    <DropShadowBox shadowStyle={shadowStyle}>
+      <Surface
+        className="bg-surface-secondary overflow-hidden flex-row"
+        style={panelStyle}
+      >
+        {stats.map((stat, i) => (
+          <React.Fragment key={stat.label}>
+            {i > 0 ? <StatDivider /> : null}
+            <Pressable
+              onPress={stat.onPress}
+              disabled={!stat.onPress}
+              accessibilityRole={stat.onPress ? 'button' : undefined}
+              className={`flex-1 p-4 ${stat.onPress ? 'active:opacity-75' : ''}`}
+            >
               <Text
-                className="tabular-nums text-2xl text-foreground"
+                className="tabular-nums text-2xl font-extrabold text-foreground"
                 numberOfLines={1}
                 minimumFontScale={0.7}
                 allowFontScaling
@@ -100,11 +96,11 @@ const ProfileStatRow = ({
               >
                 {stat.label}
               </Text>
-            </Surface>
-          </Pressable>
-        </DropShadowBox>
-      ))}
-    </View>
+            </Pressable>
+          </React.Fragment>
+        ))}
+      </Surface>
+    </DropShadowBox>
   );
 };
 
