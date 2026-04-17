@@ -9,6 +9,7 @@ import Animated, {
 import { Appearance, Image, StyleSheet } from 'react-native';
 import { captureScreen, releaseCapture } from 'react-native-view-shot';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { HeroUINativeProvider } from 'heroui-native';
 import ToastManagerSync from '@/components/toast-manager-sync';
@@ -91,28 +92,33 @@ const RootLayout = ({ children }: RootLayoutProps) => {
 
   return (
     <ThemeTransitionContext.Provider value={{ prepareSnapshot, requestTransition }}>
-      <GestureHandlerRootView className={`flex-1 ${isDark ? 'dark' : ''}`}>
-        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <HeroUINativeProvider
-            config={{ devInfo: { stylingPrinciples: false } }}
-          >
-            <ToastManagerSync />
-            <AppUpdateDialog />
-            <QueryProvider>{children}</QueryProvider>
-          </HeroUINativeProvider>
-          {snapshotUri && (
-            <Animated.View
-              pointerEvents="none"
-              style={[StyleSheet.absoluteFill, snapshotStyle]}
+      <GestureHandlerRootView className={`flex-1 bg-background ${isDark ? 'dark' : ''}`}>
+        <KeyboardProvider
+          statusBarTranslucent
+          navigationBarTranslucent
+        >
+          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            <HeroUINativeProvider
+              config={{ devInfo: { stylingPrinciples: false } }}
             >
-              <Image
-                source={{ uri: snapshotUri }}
-                style={StyleSheet.absoluteFill}
-                resizeMode="cover"
-              />
-            </Animated.View>
-          )}
-        </SafeAreaProvider>
+              <ToastManagerSync />
+              <AppUpdateDialog />
+              <QueryProvider>{children}</QueryProvider>
+            </HeroUINativeProvider>
+            {snapshotUri && (
+              <Animated.View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFill, snapshotStyle]}
+              >
+                <Image
+                  source={{ uri: snapshotUri }}
+                  style={StyleSheet.absoluteFill}
+                  resizeMode="cover"
+                />
+              </Animated.View>
+            )}
+          </SafeAreaProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </ThemeTransitionContext.Provider>
   );

@@ -3,7 +3,6 @@ import { showVariantToast } from '@/utils/toast-alert';
 import { ImagePlus, X } from 'lucide-react-native';
 import {
   Image,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -13,7 +12,14 @@ import {
   TextInput as RNTextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  KeyboardStickyView,
+  useKeyboardState,
+} from 'react-native-keyboard-controller';
+import {
+  SafeAreaInsetsContext,
+  SafeAreaProvider,
+} from 'react-native-safe-area-context';
 import { Switch, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import { Text, TextInput } from '@/components/app-text';
@@ -64,7 +70,6 @@ const ComposerModal = ({
   onSubmit,
 }: ComposerModalProps) => {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const [placeholderColor, foreground, muted, border] = useThemeColor([
     'muted',
     'foreground',
@@ -81,6 +86,7 @@ const ComposerModal = ({
   const [sendAsGif, setSendAsGif] = useState(true);
   const isSubmitting = controlledIsSubmitting ?? internalIsSubmitting;
   const canDismiss = !isSubmitting && !isPhotoPicking;
+  const isKeyboardVisible = useKeyboardState(state => state.isVisible);
   const isLivePhotoGif = photo?.mimeType === 'image/gif' && Boolean(photo?.stillImage);
   const effectivePhoto = isLivePhotoGif && !sendAsGif && photo?.stillImage
     ? { ...photo, ...photo.stillImage }
@@ -105,6 +111,13 @@ const ComposerModal = ({
     setInternalIsSubmitting(false);
     setQuotedPhotoFailed(false);
   }, [initialText, initialPhoto, resetKey, visible]);
+
+  const handleModalShow = () => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+    setTimeout(() => inputRef.current?.focus(), 300);
+  };
 
   const handlePickPhoto = async () => {
     if (!enablePhoto || !canDismiss) {
@@ -156,13 +169,22 @@ const ComposerModal = ({
       visible={visible}
       animationType="slide"
       statusBarTranslucent
+      navigationBarTranslucent
+      onShow={handleModalShow}
       onRequestClose={() => canDismiss && onCancel()}
     >
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top || (Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0) }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
-        >
+      <SafeAreaProvider>
+        <SafeAreaInsetsContext.Consumer>
+          {(insets) => {
+            const topPad = insets?.top ?? StatusBar.currentHeight ?? 0;
+            const bottomInset = insets?.bottom ?? 0;
+            const toolbarBottomPad = isKeyboardVisible ? 12 : Math.max(bottomInset, 12);
+            return (
+              <>
+      <View
+        className="flex-1 bg-background"
+        style={{ paddingTop: topPad }}
+      >
           {/* Header */}
           <View className="flex-row items-center gap-2 px-4 py-3">
             <Pressable
@@ -254,7 +276,7 @@ const ComposerModal = ({
                 placeholderTextColor={placeholderColor}
                 multiline
                 textAlignVertical="top"
-                autoFocus
+                autoFocus={Platform.OS === 'ios'}
                 className="min-h-[160px] py-2 text-[17px] leading-relaxed text-foreground"
                 style={[
                   styles.textInputTransparentBg,
@@ -293,58 +315,67 @@ const ComposerModal = ({
               </View>
             ) : null}
           </ScrollView>
-
-          {/* Bottom toolbar */}
-          <View
-            className="flex-row items-center gap-2 px-4 py-3"
-            style={[
-              styles.toolbar,
-              { borderTopColor: border, paddingBottom: Math.max(insets.bottom, 12) },
-            ]}
-          >
-            {enablePhoto ? (
-              <>
-                <Pressable
-                  onPress={canDismiss && !isPhotoPicking ? handlePickPhoto : undefined}
-                  className={`size-10 items-center justify-center rounded-full bg-surface-secondary ${isPhotoPicking ? 'opacity-60' : ''}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={photoUri ? t('composerChangePhoto') : t('composerAttachPhoto')}
-                >
-                  <ImagePlus size={20} color={foreground} />
-                </Pressable>
-                {photoUri ? (
-                  <Pressable
-                    onPress={canDismiss ? handleRemovePhoto : undefined}
-                    className="rounded-full bg-surface-secondary px-4 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('composerRemovePhotoA11y')}
-                  >
-                    <Text className="text-[13px] text-foreground">
-                      {t('composerRemovePhoto')}
-                    </Text>
-                  </Pressable>
-                ) : null}
-                {isLivePhotoGif ? (
-                  <View className="flex-row items-center gap-2">
-                    <Switch
-                      isSelected={sendAsGif}
-                      onSelectedChange={setSendAsGif}
-                    />
-                    <Text className="text-[13px] font-semibold text-foreground">GIF</Text>
-                  </View>
-                ) : null}
-              </>
-            ) : null}
-            <Text
-              className={`ml-auto text-[13px] font-semibold ${isOverLimit ? 'text-danger' : 'text-muted'}`}
-              style={styles.charCount}
-              numberOfLines={1}
-            >
-              {charCount}/{MAX_STATUS_LENGTH}
-            </Text>
-          </View>
-        </KeyboardAvoidingView>
       </View>
+
+      {/* Bottom toolbar — sticks to keyboard top when visible. Modal is
+          edge-to-edge (navigationBarTranslucent), so IME height alone is the
+          correct translateY; no offset needed. */}
+      <KeyboardStickyView className="bg-background">
+        <View
+          className="flex-row items-center gap-2 px-4 py-3"
+          style={[
+            styles.toolbar,
+            { borderTopColor: border, paddingBottom: toolbarBottomPad },
+          ]}
+        >
+          {enablePhoto ? (
+            <>
+              <Pressable
+                onPress={canDismiss && !isPhotoPicking ? handlePickPhoto : undefined}
+                className={`items-center justify-center rounded-full p-1 ${isPhotoPicking ? 'opacity-60' : ''}`}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={photoUri ? t('composerChangePhoto') : t('composerAttachPhoto')}
+              >
+                <ImagePlus size={22} color={foreground} />
+              </Pressable>
+              {photoUri ? (
+                <Pressable
+                  onPress={canDismiss ? handleRemovePhoto : undefined}
+                  className="rounded-full bg-surface-secondary px-4 py-2"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('composerRemovePhotoA11y')}
+                >
+                  <Text className="text-[13px] text-foreground">
+                    {t('composerRemovePhoto')}
+                  </Text>
+                </Pressable>
+              ) : null}
+              {isLivePhotoGif ? (
+                <View className="flex-row items-center gap-2">
+                  <Switch
+                    isSelected={sendAsGif}
+                    onSelectedChange={setSendAsGif}
+                  />
+                  <Text className="text-[13px] font-semibold text-foreground">GIF</Text>
+                </View>
+              ) : null}
+            </>
+          ) : null}
+          <Text
+            className={`ml-auto text-[13px] font-semibold ${isOverLimit ? 'text-danger' : 'text-muted'}`}
+            style={styles.charCount}
+            numberOfLines={1}
+          >
+            {charCount}/{MAX_STATUS_LENGTH}
+          </Text>
+        </View>
+      </KeyboardStickyView>
+              </>
+            );
+          }}
+        </SafeAreaInsetsContext.Consumer>
+      </SafeAreaProvider>
     </Modal>
   );
 };
