@@ -1,1 +1,2 @@
-• prevent composer header from overlapping Android status bar
+• Android: 发新消息时，图片和字数工具栏现在紧贴键盘顶部，不再被键盘挡住
+• 「更多」页底部显示 App 版本号
