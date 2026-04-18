@@ -23,11 +23,20 @@ import {
 } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Dialog, PressableFeedback, Select, Separator, Surface, Switch, useThemeColor } from 'heroui-native';
+import { Button, Dialog, PressableFeedback, Select, Surface, Switch, useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Leaf } from 'lucide-react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import {
+  ALargeSmall,
+  ChevronRight,
+  Languages,
+  Leaf,
+  Mail,
+  Palette,
+  Shapes,
+  SunMoon,
+  Type,
+} from 'lucide-react-native';
 import { checkForUpdate, notifyUpdateFound } from '@/services/app-updater';
 import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
@@ -174,98 +183,6 @@ const resolveTopContentPadding = ({
     extraPadding = IOS_TOP_CONTENT_LARGER_SAFE_AREA_PADDING;
   }
   return safeAreaTop + extraPadding + IOS_TOP_CONTENT_OFFSET;
-};
-const POSTAGE_STAMP_PATH =
-  'M14 1' +
-  'v1.4 a.75.75 0 0 0 0 1.5 v1.4 a.75.75 0 0 0 0 1.5 v1.4 a.75.75 0 0 0 0 1.5 v1.4 a.75.75 0 0 0 0 1.5 v1.4' +
-  'h-1.4 a.75.75 0 0 0-1.5 0 h-1.4 a.75.75 0 0 0-1.5 0 h-1.4 a.75.75 0 0 0-1.5 0 h-1.4 a.75.75 0 0 0-1.5 0 h-1.4' +
-  'v-1.4 a.75.75 0 0 0 0-1.5 v-1.4 a.75.75 0 0 0 0-1.5 v-1.4 a.75.75 0 0 0 0-1.5 v-1.4 a.75.75 0 0 0 0-1.5 v-1.4' +
-  'h1.4 a.75.75 0 0 0 1.5 0 h1.4 a.75.75 0 0 0 1.5 0 h1.4 a.75.75 0 0 0 1.5 0 h1.4 a.75.75 0 0 0 1.5 0 h1.4z';
-
-// Wavy cancellation lines clustered in bottom-right, clipped within stamp bounds (x≤12.8)
-const STAMP_WAVE_LINES: {
-  d: string;
-  opacity: number;
-}[] = [
-    {
-      d: 'M7.5 9.5 C9 8.7 10.5 10.5 12 9.7 C12.5 9.4 12.8 9.5 12.8 9.5',
-      opacity: 0.25,
-    },
-    {
-      d: 'M6.5 11.1 C8 10.3 9.5 12.1 11 11.3 C12 10.8 12.8 11.1 12.8 11.1',
-      opacity: 0.5,
-    },
-    {
-      d: 'M6 12.7 C7.5 11.9 9 13.7 10.5 12.9 C11.5 12.4 12.8 12.7 12.8 12.7',
-      opacity: 0.3,
-    },
-  ];
-
-// Sun mode: left hill taller (peak y=6.5), right hill shorter (peak y=9.5)
-const STAMP_HILL_SUN_PATH = 'M3 12.5 Q6 6.5 9.5 12.5';
-const STAMP_HILL2_SUN_PATH = 'M9.5 12.5 Q12 9.5 13 12.5';
-
-// Moon mode: left hill taller (peak y=6.5), right hill shorter (peak y=9.5)
-const STAMP_HILL_MOON_PATH = 'M3 12.5 Q6 6.5 9.5 12.5';
-const STAMP_HILL2_MOON_PATH = 'M9.5 12.5 Q12 9.5 13 12.5';
-
-// Moon crescent aligned left, centered higher around (4.5, 3.8)
-const STAMP_MOON_PATH = 'M6 2.8 A2.2 2.2 0 1 1 3.2 5.8 A1.5 1.5 0 0 0 6 2.8';
-const PostageStampIcon = ({ color, size }: { color: string; size: number }) => {
-  const isDark = useEffectiveIsDark();
-  return (
-    <Svg width={size} height={size} viewBox="0 0 15 15">
-      <Path
-        d={POSTAGE_STAMP_PATH}
-        fill="none"
-        stroke={color}
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d={isDark ? STAMP_HILL_MOON_PATH : STAMP_HILL_SUN_PATH}
-        fill="none"
-        stroke={color}
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d={isDark ? STAMP_HILL2_MOON_PATH : STAMP_HILL2_SUN_PATH}
-        fill="none"
-        stroke={color}
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {isDark ? (
-        <Path d={STAMP_MOON_PATH} fill={color} stroke="none" />
-      ) : (
-        <>
-          <Circle cx="10.5" cy="5.3" r="1.3" fill={color} />
-          <Path
-            d="M10.5 2.9 L10.5 2.3 M12.4 3.8 L12.8 3.3 M13.3 5.3 L13.9 5.3 M12.4 6.8 L12.8 7.3 M10.5 7.7 L10.5 8.3 M8.6 6.8 L8.2 7.3 M7.7 5.3 L7.1 5.3 M8.6 3.8 L8.2 3.3"
-            fill="none"
-            stroke={color}
-            strokeWidth="0.5"
-            strokeLinecap="round"
-          />
-        </>
-      )}
-      {STAMP_WAVE_LINES.map(({ d, opacity }, i) => (
-        <Path
-          key={i}
-          d={d}
-          fill="none"
-          stroke="#E63946"
-          strokeWidth="0.6"
-          strokeLinecap="round"
-          opacity={opacity}
-        />
-      ))}
-    </Svg>
-  );
 };
 const PROFILE_GROUP_GAP = SECTION_GAP;
 const HEADER_TITLE_REVEAL_RATIO = 0.25;
@@ -515,6 +432,23 @@ const MoreRouteContent = ({
     </View>
   );
   const showLoadingState = !user && (isLoading || isFetching);
+  const isPlainTheme = appThemePreference !== APP_THEME_OPTION.COLORFUL;
+  const renderSettingIcon = (
+    IconComponent: React.ComponentType<{ size: number; color: string; strokeWidth: number }>,
+    bgColor: string,
+  ) =>
+    isPlainTheme ? (
+      <View className="size-7 items-center justify-center">
+        <IconComponent size={18} color={muted} strokeWidth={2} />
+      </View>
+    ) : (
+      <View
+        className="size-7 rounded-md items-center justify-center"
+        style={{ backgroundColor: bgColor }}
+      >
+        <IconComponent size={16} color="#FFFFFF" strokeWidth={2.2} />
+      </View>
+    );
   const readableInsets = useReadableContentInsets();
   const contentContainerStyle = {
     flexGrow: 1,
@@ -944,34 +878,26 @@ const MoreRouteContent = ({
                 className="rounded-3xl overflow-hidden"
               >
                 <Surface
-                  className="bg-surface-secondary overflow-hidden"
+                  className="bg-surface-secondary overflow-hidden p-0"
                   style={panelStyle.messages}
                 >
                   <PressableFeedback.Highlight />
-                  <View className="flex-row items-center gap-3 px-4">
-                    <PostageStampIcon color={entryIconColor} size={32} />
-                    <View className="flex-1">
-                      <Text
-                        className="text-[15px] font-semibold text-foreground"
-                        style={profileThemeStyles.primaryTextStyle}
-                      >
-                        {t('morePrivateMessages')}
-                      </Text>
-                      <Text
-                        className="mt-0.5 text-[12px] text-muted"
-                        style={profileThemeStyles.mutedTextStyle}
-                      >
-                        {t('morePrivateMessagesHelper')}
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={entryIconColor} />
+                  <View className="flex-row items-center gap-3 px-4 py-3.5">
+                    {renderSettingIcon(Mail, '#30C759')}
+                    <Text
+                      className="flex-1 text-[15px] font-normal text-foreground"
+                      style={profileThemeStyles.primaryTextStyle}
+                    >
+                      {t('morePrivateMessages')}
+                    </Text>
+                    <ChevronRight size={14} color={entryIconColor} />
                   </View>
                 </Surface>
               </PressableFeedback>
 
               {/* Settings */}
               <Surface
-                className="bg-surface-secondary overflow-hidden"
+                className="bg-surface-secondary overflow-hidden p-0"
                 style={panelStyle.settings}
               >
                     <Select
@@ -982,14 +908,15 @@ const MoreRouteContent = ({
                       }
                     >
                       <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                        {renderSettingIcon(Type, '#3478F7')}
                         <Text
-                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          className="flex-1 text-[15px] font-normal text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                         >
                           {t('moreFontStyle')}
                         </Text>
-                        <Text className="text-[13px] text-muted">{fontSelectValue?.label}</Text>
-                        <ChevronDown size={16} color={muted} />
+                        <Text className="text-[13px] text-foreground/55">{fontSelectValue?.label}</Text>
+                        <ChevronRight size={14} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1006,7 +933,7 @@ const MoreRouteContent = ({
                         </Select.Content>
                       </Select.Portal>
                     </Select>
-                    <Separator />
+                    <View className="h-px bg-foreground/10 ml-[60px]" />
                     <Select
                       value={fontSizeSelectValue}
                       onValueChange={opt =>
@@ -1015,14 +942,15 @@ const MoreRouteContent = ({
                       }
                     >
                       <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                        {renderSettingIcon(ALargeSmall, '#AF52DE')}
                         <Text
-                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          className="flex-1 text-[15px] font-normal text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                         >
                           {t('moreFontSize')}
                         </Text>
-                        <Text className="text-[13px] text-muted">{fontSizeSelectValue?.label}</Text>
-                        <ChevronDown size={16} color={muted} />
+                        <Text className="text-[13px] text-foreground/55">{fontSizeSelectValue?.label}</Text>
+                        <ChevronRight size={14} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1033,7 +961,7 @@ const MoreRouteContent = ({
                         </Select.Content>
                       </Select.Portal>
                     </Select>
-                    <Separator />
+                    <View className="h-px bg-foreground/10 ml-[60px]" />
                     <Select
                       value={languageSelectValue}
                       onValueChange={opt =>
@@ -1042,14 +970,15 @@ const MoreRouteContent = ({
                       }
                     >
                       <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                        {renderSettingIcon(Languages, '#34C759')}
                         <Text
-                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          className="flex-1 text-[15px] font-normal text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                         >
                           {t('moreLanguage')}
                         </Text>
-                        <Text className="text-[13px] text-muted">{languageSelectValue.label}</Text>
-                        <ChevronDown size={16} color={muted} />
+                        <Text className="text-[13px] text-foreground/55">{languageSelectValue.label}</Text>
+                        <ChevronRight size={14} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1064,7 +993,7 @@ const MoreRouteContent = ({
                         </Select.Content>
                       </Select.Portal>
                     </Select>
-                    <Separator />
+                    <View className="h-px bg-foreground/10 ml-[60px]" />
                     <Select
                       value={appearanceSelectValue}
                       onValueChange={opt =>
@@ -1073,14 +1002,15 @@ const MoreRouteContent = ({
                       }
                     >
                       <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70" onPress={prepareSnapshot}>
+                        {renderSettingIcon(SunMoon, '#FF9F0A')}
                         <Text
-                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          className="flex-1 text-[15px] font-normal text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                         >
                           {t('moreAppearance')}
                         </Text>
-                        <Text className="text-[13px] text-muted">{appearanceSelectValue.label}</Text>
-                        <ChevronDown size={16} color={muted} />
+                        <Text className="text-[13px] text-foreground/55">{appearanceSelectValue.label}</Text>
+                        <ChevronRight size={14} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1095,7 +1025,7 @@ const MoreRouteContent = ({
                         </Select.Content>
                       </Select.Portal>
                     </Select>
-                    <Separator />
+                    <View className="h-px bg-foreground/10 ml-[60px]" />
                     <Select
                       value={themeSelectValue}
                       onValueChange={opt =>
@@ -1104,14 +1034,15 @@ const MoreRouteContent = ({
                       }
                     >
                       <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                        {renderSettingIcon(Palette, '#FF375F')}
                         <Text
-                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          className="flex-1 text-[15px] font-normal text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                         >
                           {t('moreTheme')}
                         </Text>
-                        <Text className="text-[13px] text-muted">{themeSelectValue.label}</Text>
-                        <ChevronDown size={16} color={muted} />
+                        <Text className="text-[13px] text-foreground/55">{themeSelectValue.label}</Text>
+                        <ChevronRight size={14} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1126,7 +1057,7 @@ const MoreRouteContent = ({
                         </Select.Content>
                       </Select.Portal>
                     </Select>
-                    <Separator />
+                    <View className="h-px bg-foreground/10 ml-[60px]" />
                     <Select
                       value={uiStyleSelectValue}
                       onValueChange={opt =>
@@ -1135,14 +1066,15 @@ const MoreRouteContent = ({
                       }
                     >
                       <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                        {renderSettingIcon(Shapes, '#5AC8FA')}
                         <Text
-                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          className="flex-1 text-[15px] font-normal text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                         >
                           {t('moreStyle')}
                         </Text>
-                        <Text className="text-[13px] text-muted">{uiStyleSelectValue.label}</Text>
-                        <ChevronDown size={16} color={muted} />
+                        <Text className="text-[13px] text-foreground/55">{uiStyleSelectValue.label}</Text>
+                        <ChevronRight size={14} color={muted} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -1165,7 +1097,7 @@ const MoreRouteContent = ({
             <View className="mt-6">
               <Surface className="bg-surface-secondary px-4 py-3.5">
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-[15px] font-semibold text-foreground">
+                    <Text className="text-[15px] font-normal text-foreground">
                       {t('moreFollowProfile')}
                     </Text>
                     <Switch
@@ -1173,7 +1105,7 @@ const MoreRouteContent = ({
                       onSelectedChange={handleToggleFollowProfile}
                     />
                   </View>
-                  <Text className="mt-3 text-[12px] text-muted">
+                  <Text className="mt-2 text-[12px] text-muted">
                     {t('moreFollowProfileHint')}
                   </Text>
               </Surface>

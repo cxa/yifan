@@ -182,6 +182,8 @@ type BaseTranslations = {
   profileActionMore: string;
   profileActionFollow: string;
   profileActionUnfollow: string;
+  profileUnfollowConfirmTitle: string;
+  profileUnfollowConfirmMessage: string;
   profileActionBlock: string;
   profileActionBlocked: string;
   profileActionUnblock: string;
@@ -502,6 +504,9 @@ const enUS: BaseTranslations = {
   profileActionMore: 'More…',
   profileActionFollow: 'Follow',
   profileActionUnfollow: 'Unfollow',
+  profileUnfollowConfirmTitle: 'Unfollow {{name}}?',
+  profileUnfollowConfirmMessage:
+    "You won't see their updates on your timeline anymore.",
   profileActionBlock: 'Block',
   profileActionBlocked: 'Blocked',
   profileActionUnblock: 'Unblock',
@@ -550,7 +555,7 @@ const enUS: BaseTranslations = {
   messageNeedsContent: 'Please enter a message.',
 
   // More screen
-  morePrivateMessages: 'Messages',
+  morePrivateMessages: 'Private Messages',
   morePrivateMessagesHelper: 'Inbox & Outbox',
   moreCheckUpdate: 'Check for Updates',
   moreCheckUpdateChecking: 'Checking…',
@@ -817,6 +822,8 @@ const zhCN: BaseTranslations = {
   profileActionMore: '更多…',
   profileActionFollow: '关注',
   profileActionUnfollow: '取消关注',
+  profileUnfollowConfirmTitle: '取消关注 {{name}}？',
+  profileUnfollowConfirmMessage: '你的时间线将不再看到 TA 的动态。',
   profileActionBlock: '屏蔽',
   profileActionBlocked: '已屏蔽',
   profileActionUnblock: '取消屏蔽',

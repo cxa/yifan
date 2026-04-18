@@ -381,10 +381,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   };
   const { isPullRefreshing, handlePullRefresh } =
     usePullRefreshState(handleRefresh);
-  const handleFollowToggle = async () => {
-    if (!user || isFollowSubmitting || isBlocked) {
-      return;
-    }
+  const runFollowToggle = async () => {
+    if (!user) return;
     setIsFollowSubmitting(true);
     const nextFollowing = !isFollowing;
     try {
@@ -422,6 +420,30 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     } finally {
       setIsFollowSubmitting(false);
     }
+  };
+  const handleFollowToggle = () => {
+    if (!user || isFollowSubmitting || isBlocked) {
+      return;
+    }
+    if (!isFollowing) {
+      runFollowToggle();
+      return;
+    }
+    const name = user.screen_name ?? user.name ?? '';
+    Alert.alert(
+      t('profileUnfollowConfirmTitle', { name }),
+      t('profileUnfollowConfirmMessage'),
+      [
+        { text: t('profileReportConfirmCancel'), style: 'cancel' },
+        {
+          text: t('profileActionUnfollow'),
+          style: 'destructive',
+          onPress: () => {
+            runFollowToggle();
+          },
+        },
+      ],
+    );
   };
   const handleBlockToggle = async () => {
     if (!user || isBlockSubmitting) {
@@ -1105,7 +1127,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   <Pressable
                     onPress={handleFollowToggle}
                     disabled={isFollowSubmitting}
-                    className="rounded-full bg-accent py-3 shadow-pop"
+                    className={`rounded-full py-3 shadow-pop ${
+                      isFollowing ? 'bg-danger' : 'bg-accent'
+                    }`}
                     accessibilityRole="button"
                     accessibilityLabel={
                       isFollowing
@@ -1114,7 +1138,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     }
                   >
                     <Text
-                      className="text-sm font-extrabold text-center text-accent-foreground tracking-wide"
+                      className={`text-sm font-extrabold text-center tracking-wide ${
+                        isFollowing ? 'text-white' : 'text-accent-foreground'
+                      }`}
                       numberOfLines={1}
                     >
                       {isFollowSubmitting
