@@ -46,7 +46,6 @@ import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import DropShadowBox, {
-  CARD_BG_DARK,
   CARD_BG_LIGHT,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
@@ -55,7 +54,10 @@ import NativeEdgeScrollShadow, {
 } from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
+import ProfileDescriptionPaper from '@/components/profile-description-paper';
+import ProfileHeroRow from '@/components/profile-hero-row';
 import ProfilePageBackdrop from '@/components/profile-page-backdrop';
+import ProfilePolaroidAvatar from '@/components/profile-polaroid-avatar';
 import ProfileStatsRow from '@/components/profile-stats-row';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { AtSign, Ban, Check, Clock, Mail, MoreHorizontal, Palette } from 'lucide-react-native';
@@ -107,7 +109,6 @@ import {
   setAppProfileThemePreference,
 } from '@/settings/app-profile-theme-preference';
 const PROFILE_CARD_GAP = 16;
-const NO_FONT_PADDING = { includeFontPadding: false } as const;
 const STYLES_V12 = {
   avatarRotate: { transform: [{ rotate: '-3deg' }] },
   nameRotate: { transform: [{ rotate: '1deg' }] },
@@ -731,14 +732,23 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       : palette;
   })();
   const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
-  const onImageTextStyle = hasBackgroundImage
-    ? ({
-        color: '#FFFFFF',
-        textShadowColor: 'rgba(0, 0, 0, 0.85)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 6,
-      } as const)
-    : null;
+  // Single 1px drop shadow with (almost) no blur — reads as a crisp offset
+  // outline rather than a glow. Colour is the opposite of the user's text
+  // colour so the characters pop regardless of what's behind them.
+  // NB: Android's setShadowLayer needs a positive radius to render at all, so
+  // use a tiny non-zero value on both platforms — visually still crisp.
+  const themeTextHaloStyle = (() => {
+    const baseColor = profileThemePalette.textColor;
+    if (!baseColor) return null;
+    const baseIsDark = isColorDark(baseColor);
+    return {
+      textShadowColor: baseIsDark
+        ? 'rgba(255, 255, 255, 0.95)'
+        : 'rgba(0, 0, 0, 0.9)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: Platform.OS === 'android' ? 1 : 0.1,
+    } as const;
+  })();
   const preferredHeaderTintColor =
     profileThemePalette.linkColor ?? profileThemePalette.textColor;
   const headerTintColor = hasBackgroundImage
@@ -831,45 +841,15 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const avatarUrl = user.profile_image_url_large;
   const hasAvatar = avatarUrl.trim().length > 0;
   const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
-  const polaroidCaption = (
-    <Text
-      className="mt-1 w-24 text-[10px] leading-[12px] text-center text-foreground/70"
-      style={[NO_FONT_PADDING, profileThemeStyles.mutedTextStyle]}
-      numberOfLines={1}
-      ellipsizeMode="tail"
-      adjustsFontSizeToFit
-      minimumFontScale={0.75}
-    >
-      {handleName}
-    </Text>
-  );
-  const profileAvatar = hasAvatar ? (
-    <Pressable
-      onPress={() => handlePhotoPress(avatarUrl)}
-      accessibilityRole="button"
+  const profileAvatar = (
+    <ProfilePolaroidAvatar
+      avatarUrl={avatarUrl}
+      handleName={handleName}
+      fallbackInitial={displayName.slice(0, 1).toUpperCase()}
+      onPress={hasAvatar ? () => handlePhotoPress(avatarUrl) : undefined}
       accessibilityLabel={t('profileOpenAvatar')}
-    >
-      <View className="bg-white dark:bg-surface-secondary rounded-sm p-2 border border-foreground/10 shadow-card">
-        <View className="size-24 overflow-hidden bg-surface-tertiary">
-          <Image
-            source={{
-              uri: avatarUrl,
-            }}
-            className="h-full w-full"
-          />
-        </View>
-        {polaroidCaption}
-      </View>
-    </Pressable>
-  ) : (
-    <View className="bg-white dark:bg-surface-secondary rounded-sm p-2 border border-foreground/10 shadow-card">
-      <View className="size-24 items-center justify-center bg-surface-tertiary">
-        <Text className="text-[40px] font-black text-foreground">
-          {displayName.slice(0, 1).toUpperCase()}
-        </Text>
-      </View>
-      {polaroidCaption}
-    </View>
+      mutedTextStyle={profileThemeStyles.mutedTextStyle}
+    />
   );
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
@@ -975,50 +955,17 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               />
             }
           >
-            <View className="flex-row items-end gap-3 pt-1">
-              <View style={STYLES_V12.avatarRotate}>{profileAvatar}</View>
-              <View className="flex-1 mb-2 pl-1" style={STYLES_V12.nameRotate}>
-                <Text
-                  className="text-[28px] font-black text-foreground"
-                  style={[profileThemeStyles.primaryTextStyle, onImageTextStyle]}
-                  dynamicTypeRamp="title1"
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.75}
-                  allowFontScaling={false}
-                >
-                  {displayName}
-                </Text>
-                {normalizedLocation ? (
-                  <Text
-                    className="text-[12px] text-muted mt-1"
-                    style={[profileThemeStyles.mutedTextStyle, onImageTextStyle]}
-                    numberOfLines={1}
-                  >
-                    {normalizedLocation}
-                  </Text>
-                ) : null}
-                {joinedLine ? (
-                  <Text
-                    className="text-[11px] text-muted mt-0.5"
-                    style={[profileThemeStyles.mutedTextStyle, onImageTextStyle]}
-                    numberOfLines={1}
-                  >
-                    {joinedLine}
-                  </Text>
-                ) : null}
-                {profileUrl ? (
-                  <Text
-                    className="text-[12px] font-semibold text-accent mt-1"
-                    style={[profileThemeStyles.linkTextStyle, onImageTextStyle]}
-                    numberOfLines={1}
-                  >
-                    {profileUrl}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
+            <ProfileHeroRow
+              avatar={profileAvatar}
+              displayName={displayName}
+              location={normalizedLocation}
+              joinedLine={joinedLine}
+              profileUrl={profileUrl}
+              primaryTextStyle={profileThemeStyles.primaryTextStyle}
+              mutedTextStyle={profileThemeStyles.mutedTextStyle}
+              linkTextStyle={profileThemeStyles.linkTextStyle}
+              textHaloStyle={themeTextHaloStyle}
+            />
 
             {!isBlocked ? (
               <ProfileStatsRow
@@ -1058,24 +1005,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             ) : null}
 
             {description ? (
-              <View
-                className="self-start rounded-sm px-4 py-3 shadow-card"
-                style={[
-                  {
-                    backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)
-                      .default,
-                  },
-                  STYLES_V12.journalRotate,
-                  profileThemeStyles.panelStyle,
-                ]}
-              >
-                <Text
-                  className="text-[15px] leading-[24px] text-foreground"
-                  style={profileThemeStyles.primaryTextStyle}
-                >
-                  {description}
-                </Text>
-              </View>
+              <ProfileDescriptionPaper
+                description={description}
+                primaryTextStyle={profileThemeStyles.primaryTextStyle}
+              />
             ) : null}
 
             {!isSelf && !isBlocked ? (

@@ -2,7 +2,6 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { showVariantToast } from '@/utils/toast-alert';
 import { useThemeTransition } from '@/context/theme-transition';
 import {
-  Image,
   NativeModules,
   Platform,
   StatusBar,
@@ -14,7 +13,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useHeaderHeight } from '@react-navigation/elements';
-import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
 import {
   useIsFocused,
   useNavigation,
@@ -47,7 +45,10 @@ import {
   CARD_BG_LIGHT,
   CARD_PASTEL_CYCLE,
 } from '@/components/drop-shadow-box';
+import ProfileDescriptionPaper from '@/components/profile-description-paper';
+import ProfileHeroRow from '@/components/profile-hero-row';
 import ProfilePageBackdrop from '@/components/profile-page-backdrop';
+import ProfilePolaroidAvatar from '@/components/profile-polaroid-avatar';
 import ProfileStatsRow from '@/components/profile-stats-row';
 import {
   AUTH_MESSAGES_ROUTE,
@@ -127,16 +128,6 @@ const APP_VERSION: string = (require('../../package.json') as { version: string 
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
 const SECTION_GAP = 20;
-const AVATAR_SIZE = 96;
-const POLAROID_CAPTION_STYLE = {
-  width: AVATAR_SIZE,
-  includeFontPadding: false,
-} as const;
-const STYLES_V12 = {
-  avatarRotate: { transform: [{ rotate: '-3deg' }] },
-  nameRotate: { transform: [{ rotate: '1deg' }] },
-  journalRotate: { transform: [{ rotate: '0.5deg' }] },
-};
 const IOS_TOP_CONTENT_OFFSET = 0.1;
 const IOS_TOP_CONTENT_EQUAL_STATUS_BAR_PADDING = 4;
 const IOS_TOP_CONTENT_LARGER_SAFE_AREA_PADDING = 0;
@@ -367,55 +358,9 @@ const MoreRouteContent = ({
   const avatarUrl = user
     ? user.profile_image_url_large || user.profile_image_url
     : null;
-  const hasAvatar = Boolean(avatarUrl && avatarUrl.trim().length > 0);
   const avatarInitial = displayName
     ? displayName.slice(0, 1).toUpperCase()
     : '?';
-  const polaroidCaption = (
-    <Text
-      className="mt-1 text-[10px] leading-[12px] text-center text-foreground/70"
-      style={[POLAROID_CAPTION_STYLE, profileThemeStyles.mutedTextStyle]}
-      numberOfLines={1}
-      ellipsizeMode="tail"
-      adjustsFontSizeToFit
-      minimumFontScale={0.75}
-    >
-      {handleName}
-    </Text>
-  );
-  const polaroidAvatar =
-    hasAvatar && avatarUrl ? (
-      <View className="bg-white dark:bg-surface-secondary rounded-sm p-2 border border-foreground/10 shadow-card">
-        <Image
-          source={{ uri: avatarUrl }}
-          className="bg-surface-tertiary"
-          style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
-        />
-        {polaroidCaption}
-      </View>
-    ) : (
-      <View className="bg-white dark:bg-surface-secondary rounded-sm p-2 border border-foreground/10 shadow-card">
-        <View
-          className="items-center justify-center bg-surface-tertiary"
-          style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
-        >
-          <Text className="text-[40px] font-black text-foreground">
-            {avatarInitial}
-          </Text>
-        </View>
-        {polaroidCaption}
-      </View>
-    );
-  const polaroidLoading = (
-    <View className="bg-white dark:bg-surface-secondary rounded-sm p-2 pb-6 border border-foreground/10 shadow-card">
-      <View
-        className="items-center justify-center bg-surface-tertiary"
-        style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
-      >
-        <NeobrutalActivityIndicator size="small" />
-      </View>
-    </View>
-  );
   const showLoadingState = !user && (isLoading || isFetching);
   const isPlainTheme = appThemePreference !== APP_THEME_OPTION.COLORFUL;
   const renderSettingIcon = (
@@ -732,76 +677,30 @@ const MoreRouteContent = ({
             <View style={{ gap: SECTION_GAP }}>
               {/* Profile block: V12 polaroid + journal + sticky notes */}
               <View style={{ gap: PROFILE_GROUP_GAP }}>
-                <View className="flex-row items-end gap-3 pt-1">
-                  <View style={STYLES_V12.avatarRotate}>
-                    {showLoadingState ? polaroidLoading : polaroidAvatar}
-                  </View>
-                  <View className="flex-1 mb-2 pl-1" style={STYLES_V12.nameRotate}>
-                    <Text
-                      className="text-[26px] leading-[32px] font-black text-foreground"
-                      style={profileThemeStyles.primaryTextStyle}
-                      dynamicTypeRamp="title1"
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {displayName}
-                    </Text>
-                    {location ? (
-                      <Text
-                        className="text-[12px] text-muted mt-1"
-                        style={profileThemeStyles.mutedTextStyle}
-                        numberOfLines={1}
-                      >
-                        {location}
-                      </Text>
-                    ) : null}
-                    {joinedAt ? (
-                      <Text
-                        className="text-[11px] text-muted mt-0.5"
-                        style={profileThemeStyles.mutedTextStyle}
-                        numberOfLines={1}
-                      >
-                        {t('profileJoinedAt', { date: joinedAt })}
-                      </Text>
-                    ) : null}
-                    {profileUrl ? (
-                      <Text
-                        className="text-[12px] font-semibold text-accent mt-1"
-                        style={profileThemeStyles.linkTextStyle}
-                        numberOfLines={1}
-                      >
-                        {profileUrl}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
+                <ProfileHeroRow
+                  avatar={
+                    <ProfilePolaroidAvatar
+                      avatarUrl={avatarUrl}
+                      handleName={handleName}
+                      fallbackInitial={avatarInitial}
+                      isLoading={showLoadingState}
+                      mutedTextStyle={profileThemeStyles.mutedTextStyle}
+                    />
+                  }
+                  displayName={displayName}
+                  location={location}
+                  joinedLine={joinedAt ? t('profileJoinedAt', { date: joinedAt }) : null}
+                  profileUrl={profileUrl}
+                  primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                  mutedTextStyle={profileThemeStyles.mutedTextStyle}
+                  linkTextStyle={profileThemeStyles.linkTextStyle}
+                />
 
                 {errorMessage ? (
                   <ErrorBanner
                     message={errorMessage}
                     technicalDetail={technicalError}
                   />
-                ) : null}
-
-                {description ? (
-                  <View
-                    className="self-start rounded-sm px-4 py-3 shadow-card"
-                    style={[
-                      {
-                        backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)
-                          .default,
-                      },
-                      STYLES_V12.journalRotate,
-                      panelStyle.profile,
-                    ]}
-                  >
-                    <Text
-                      className="text-[15px] leading-[24px] text-foreground"
-                      style={profileThemeStyles.primaryTextStyle}
-                    >
-                      {description}
-                    </Text>
-                  </View>
                 ) : null}
 
                 <ProfileStatsRow
@@ -812,6 +711,13 @@ const MoreRouteContent = ({
                   primaryTextStyle={profileThemeStyles.primaryTextStyle}
                   mutedTextStyle={profileThemeStyles.mutedTextStyle}
                 />
+
+                {description ? (
+                  <ProfileDescriptionPaper
+                    description={description}
+                    primaryTextStyle={profileThemeStyles.primaryTextStyle}
+                  />
+                ) : null}
               </View>
 
               {/* Messages */}
