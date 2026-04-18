@@ -89,7 +89,6 @@ import {
   useStatusUpdateMutation,
 } from '@/query/post-mutations';
 import { deleteStatus, isStatusOwnedByUser } from '@/utils/delete-status';
-import { openLink } from '@/utils/open-link';
 import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
@@ -487,23 +486,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       setIsBlockSubmitting(false);
     }
   };
-  const handleReport = () => {
-    if (!user) {
-      return;
-    }
-    Alert.alert(
-      t('profileReportConfirmTitle'),
-      t('profileReportConfirmMessage'),
-      [
-        { text: t('profileReportConfirmCancel'), style: 'cancel' },
-        {
-          text: t('profileReportConfirmOpen'),
-          style: 'destructive',
-          onPress: () => openLink(`https://fanfou.com/${user.id}`),
-        },
-      ],
-    );
-  };
   const setBookmarkPending = (statusId: string, pending: boolean) => {
     setPendingBookmarkIds(previous => {
       const next = new Set(previous);
@@ -825,7 +807,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   }
   if (!user) {
     return (
-      <View className="flex-1 bg-background px-6 pt-8">
+      <View className="flex-1 bg-background px-6 justify-center">
         <ErrorBanner message={profileErrorMessage ?? t('profileLoadFailed')} technicalDetail={profileTechnicalError} />
       </View>
     );
@@ -955,7 +937,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   });
   if (!accessToken) {
     return (
-      <View className="flex-1 bg-background px-6 pt-8">
+      <View className="flex-1 bg-background px-6 justify-center">
         <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
@@ -1305,7 +1287,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     !isHydratingRecentStatuses &&
                     recentStatusItems.length === 0 &&
                     !recentStatusesErrorMessage ? (
-                    <TimelineEmptyPlaceholder icon={Clock} message={t('recentActivityEmpty')} />
+                    <TimelineEmptyPlaceholder icon={Clock} message={t('recentActivityEmpty')} compact />
                   ) : null}
 
                   {recentStatusItems.length > 0 ? (
@@ -1350,18 +1332,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               </View>
             ) : null}
 
-            {!isSelf && user ? (
-              <Pressable
-                onPress={handleReport}
-                className="py-6"
-                accessibilityRole="button"
-                accessibilityLabel={t('profileActionReport')}
-              >
-                <Text className="text-[13px] text-center text-muted">
-                  {t('profileActionReport')}
-                </Text>
-              </Pressable>
-            ) : null}
           </Animated.ScrollView>
           <PhotoViewerModal
             visible={photoViewerVisible}
@@ -1407,7 +1377,7 @@ const ProfileRoute = () => {
   const routeUserId = normalizeUserId(route.params?.userId);
   if (!routeUserId) {
     return (
-      <View className="flex-1 bg-background px-6 pt-8">
+      <View className="flex-1 bg-background px-6 justify-center">
         <ErrorBanner message="Missing profile user id." />
       </View>
     );

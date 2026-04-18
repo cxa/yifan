@@ -514,16 +514,18 @@ const AuthHomeRoute = () => {
             </Animated.View>
           }
           ListEmptyComponent={
-            <Animated.View style={timelineListSettings.animatedItemStyle}>
-              {isPending || isLoading || isHydratingTimelineItems ? (
-                <TimelineSkeletonList
-                  keyPrefix="timeline-skeleton"
-                  availableHeight={skeletonAvailableHeight}
-                />
-              ) : (
-                <TimelineEmptyPlaceholder icon={Home} message={t('homeEmpty')} />
-              )}
-            </Animated.View>
+            errorMessage ? null : (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                {isPending || isLoading || isHydratingTimelineItems ? (
+                  <TimelineSkeletonList
+                    keyPrefix="timeline-skeleton"
+                    availableHeight={skeletonAvailableHeight}
+                  />
+                ) : (
+                  <TimelineEmptyPlaceholder icon={Home} message={t('homeEmpty')} />
+                )}
+              </Animated.View>
+            )
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}

@@ -39,7 +39,7 @@ import useTimelineStatusInteractions from '@/components/use-timeline-status-inte
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { AtSign } from 'lucide-react-native';
+import { AlertCircle, AtSign } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { useUserFilterEffect } from '@/query/status-query-invalidation';
 import TimelineTitleHeader from '@/components/timeline-title-header';
@@ -379,22 +379,28 @@ const MentionsRoute = () => {
                 title={t('mentionsTitle')}
                 titleContainerStyle={titleContainerStyle}
                 titleTextStyle={titleTextStyle}
-                errorMessage={errorMessage}
+                errorMessage={timelineItems.length > 0 ? errorMessage : null}
                 technicalError={technicalError}
               />
             </Animated.View>
           }
           ListEmptyComponent={
-            <Animated.View style={timelineListSettings.animatedItemStyle}>
-              {isLoading || isHydratingTimelineItems ? (
-                <TimelineSkeletonList
-                  keyPrefix="mentions-skeleton"
-                  availableHeight={skeletonAvailableHeight}
-                />
-              ) : (
-                <TimelineEmptyPlaceholder icon={AtSign} message={t('mentionsEmpty')} />
-              )}
-            </Animated.View>
+            errorMessage ? (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <TimelineEmptyPlaceholder icon={AlertCircle} message={errorMessage} detail={technicalError} tone="danger" />
+              </Animated.View>
+            ) : (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                {isLoading || isHydratingTimelineItems ? (
+                  <TimelineSkeletonList
+                    keyPrefix="mentions-skeleton"
+                    availableHeight={skeletonAvailableHeight}
+                  />
+                ) : (
+                  <TimelineEmptyPlaceholder icon={AtSign} message={t('mentionsEmpty')} />
+                )}
+              </Animated.View>
+            )
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}

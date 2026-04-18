@@ -37,7 +37,7 @@ import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { Heart } from 'lucide-react-native';
+import { AlertCircle, Heart } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
@@ -241,7 +241,7 @@ const FavoritesRoute = () => {
   };
   if (!resolvedUserId) {
     return (
-      <View className="flex-1 bg-background px-6 pt-8">
+      <View className="flex-1 bg-background px-6 justify-center">
         <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );
@@ -267,23 +267,29 @@ const FavoritesRoute = () => {
             fetchNextPage().catch(() => undefined);
           }}
           ListHeaderComponent={
-            errorMessage ? (
+            errorMessage && items.length > 0 ? (
               <Animated.View style={timelineListSettings.animatedItemStyle}>
                 <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
               </Animated.View>
             ) : null
           }
           ListEmptyComponent={
-            <Animated.View style={timelineListSettings.animatedItemStyle}>
-              {isPending ? (
-                <TimelineSkeletonList
-                  keyPrefix="favorite-skeleton"
-                  availableHeight={skeletonAvailableHeight}
-                />
-              ) : (
-                <TimelineEmptyPlaceholder icon={Heart} message={t('favoritesEmpty')} />
-              )}
-            </Animated.View>
+            errorMessage ? (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <TimelineEmptyPlaceholder icon={AlertCircle} message={errorMessage} detail={technicalError} tone="danger" />
+              </Animated.View>
+            ) : (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                {isPending ? (
+                  <TimelineSkeletonList
+                    keyPrefix="favorite-skeleton"
+                    availableHeight={skeletonAvailableHeight}
+                  />
+                ) : (
+                  <TimelineEmptyPlaceholder icon={Heart} message={t('favoritesEmpty')} />
+                )}
+              </Animated.View>
+            )
           }
           renderItem={({ item, index }) => (
             <Animated.View style={timelineListSettings.animatedItemStyle}>

@@ -35,7 +35,7 @@ import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { Wind } from 'lucide-react-native';
+import { AlertCircle, Wind } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { useUserFilterEffect } from '@/query/status-query-invalidation';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
@@ -279,23 +279,29 @@ const PublicTimelineRoute = () => {
             ) : null
           }
           ListHeaderComponent={
-            errorMessage ? (
+            errorMessage && timelineItems.length > 0 ? (
               <Animated.View style={timelineListSettings.animatedItemStyle}>
                 <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
               </Animated.View>
             ) : null
           }
           ListEmptyComponent={
-            <Animated.View style={timelineListSettings.animatedItemStyle}>
-              {isLoading || isHydratingTimelineItems ? (
-                <TimelineSkeletonList
-                  keyPrefix="public-timeline-skeleton"
-                  availableHeight={skeletonAvailableHeight}
-                />
-              ) : (
-                <TimelineEmptyPlaceholder icon={Wind} message={t('publicTimelineEmpty')} />
-              )}
-            </Animated.View>
+            errorMessage ? (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <TimelineEmptyPlaceholder icon={AlertCircle} message={errorMessage} detail={technicalError} tone="danger" />
+              </Animated.View>
+            ) : (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                {isLoading || isHydratingTimelineItems ? (
+                  <TimelineSkeletonList
+                    keyPrefix="public-timeline-skeleton"
+                    availableHeight={skeletonAvailableHeight}
+                  />
+                ) : (
+                  <TimelineEmptyPlaceholder icon={Wind} message={t('publicTimelineEmpty')} />
+                )}
+              </Animated.View>
+            )
           }
           onEndReached={fetchMore}
           onEndReachedThreshold={0.4}

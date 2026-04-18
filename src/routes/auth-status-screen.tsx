@@ -446,7 +446,7 @@ const StatusDetailRoute = () => {
   };
   if (!routeStatusId) {
     return (
-      <View className="flex-1 bg-background px-6 pt-8">
+      <View className="flex-1 bg-background px-6 justify-center">
         <ErrorBanner message={t('statusMissingId')} />
       </View>
     );

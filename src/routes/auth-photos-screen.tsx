@@ -31,7 +31,7 @@ import ComposerModal from '@/components/composer-modal';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { Camera } from 'lucide-react-native';
+import { AlertCircle, Camera } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
@@ -282,20 +282,26 @@ const PhotosRouteContent = ({
             fetchNextPage().catch(() => undefined);
           }}
           ListHeaderComponent={
-            errorMessage ? (
+            errorMessage && items.length > 0 ? (
               <Animated.View style={timelineListSettings.animatedItemStyle}>
                 <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
               </Animated.View>
             ) : null
           }
           ListEmptyComponent={
-            <Animated.View style={timelineListSettings.animatedItemStyle}>
-              {isPending ? (
-                <TimelineSkeletonList keyPrefix="photo-skeleton" />
-              ) : (
-                <TimelineEmptyPlaceholder icon={Camera} message={t('photosEmpty')} />
-              )}
-            </Animated.View>
+            errorMessage ? (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                <TimelineEmptyPlaceholder icon={AlertCircle} message={errorMessage} detail={technicalError} tone="danger" />
+              </Animated.View>
+            ) : (
+              <Animated.View style={timelineListSettings.animatedItemStyle}>
+                {isPending ? (
+                  <TimelineSkeletonList keyPrefix="photo-skeleton" />
+                ) : (
+                  <TimelineEmptyPlaceholder icon={Camera} message={t('photosEmpty')} />
+                )}
+              </Animated.View>
+            )
           }
           renderItem={({ item, index }) => (
             <Animated.View style={timelineListSettings.animatedItemStyle}>
@@ -373,7 +379,7 @@ const PhotosRoute = () => {
   const backCount = route.params?.backCount;
   if (!resolvedUserId) {
     return (
-      <View className="flex-1 bg-background px-6 pt-8">
+      <View className="flex-1 bg-background px-6 justify-center">
         <ErrorBanner message={t('notLoggedIn')} />
       </View>
     );

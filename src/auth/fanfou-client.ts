@@ -6,6 +6,7 @@ import {
 
 import type { AuthAccessToken } from './secure-token-storage';
 import type { FanfouUser } from '@/types/fanfou';
+import { toFanfouError } from '@/utils/parse-fanfou-error';
 
 let fanfouClient: FanfouClient | null = null;
 let cachedAccessToken: AuthAccessToken | null = null;
@@ -38,10 +39,14 @@ export const get = async (
   params?: FanfouGetParams,
 ): Promise<unknown> => {
   const client = getFanfouClient();
-  return client.get(endpoint, {
-    ...params,
-    format: 'html',
-  });
+  try {
+    return await client.get(endpoint, {
+      ...params,
+      format: 'html',
+    });
+  } catch (err) {
+    throw toFanfouError(err);
+  }
 };
 
 export const post = async (
@@ -49,10 +54,14 @@ export const post = async (
   params?: FanfouPostParams,
 ): Promise<unknown> => {
   const client = getFanfouClient();
-  return client.post(endpoint, {
-    ...params,
-    format: 'html',
-  });
+  try {
+    return await client.post(endpoint, {
+      ...params,
+      format: 'html',
+    });
+  } catch (err) {
+    throw toFanfouError(err);
+  }
 };
 
 export const uploadPhoto = async ({
@@ -69,16 +78,20 @@ export const uploadPhoto = async ({
   params?: FanfouPostParams;
 }): Promise<unknown> => {
   const client = getFanfouClient();
-  return client.uploadPhoto({
-    photoBase64,
-    status: status ?? '',
-    mimeType,
-    fileName,
-    params: {
-      ...params,
-      format: 'html',
-    },
-  });
+  try {
+    return await client.uploadPhoto({
+      photoBase64,
+      status: status ?? '',
+      mimeType,
+      fileName,
+      params: {
+        ...params,
+        format: 'html',
+      },
+    });
+  } catch (err) {
+    throw toFanfouError(err);
+  }
 };
 
 export const uploadProfileImage = async ({
@@ -89,13 +102,17 @@ export const uploadProfileImage = async ({
   params?: FanfouPostParams;
 }): Promise<unknown> => {
   const client = getFanfouClient();
-  return client.uploadProfileImage({
-    imageBase64,
-    params: {
-      ...params,
-      format: 'html',
-    },
-  });
+  try {
+    return await client.uploadProfileImage({
+      imageBase64,
+      params: {
+        ...params,
+        format: 'html',
+      },
+    });
+  } catch (err) {
+    throw toFanfouError(err);
+  }
 };
 
 export const requestFanfouAccessToken = async (callbackUrl: string) => {

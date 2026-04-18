@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
-import { Users } from 'lucide-react-native';
+import { AlertCircle, Users } from 'lucide-react-native';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { useHeaderHeight } from '@react-navigation/elements';
 import NeobrutalActivityIndicator, {
@@ -177,7 +177,7 @@ const UserListRoute = () => {
           refreshControl={refreshControl}
           ItemSeparatorComponent={UserItemSeparator}
           ListHeaderComponent={
-            errorMessage ? (
+            errorMessage && items.length > 0 ? (
               <View className="mb-4">
                 <ErrorBanner message={errorMessage} technicalDetail={technicalError} />
               </View>
@@ -251,7 +251,9 @@ const UserListRoute = () => {
             );
           }}
           ListEmptyComponent={
-            isPending ? (
+            errorMessage ? (
+              <TimelineEmptyPlaceholder icon={AlertCircle} message={errorMessage} detail={technicalError} tone="danger" />
+            ) : isPending ? (
               <View className="gap-4">
                 {Array.from({
                   length: countSkeletonItemsForHeight(

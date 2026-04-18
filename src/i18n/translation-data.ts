@@ -424,51 +424,51 @@ const enUS: BaseTranslations = {
 
   // Home screen
   homeTitle: 'Home',
-  homeEmpty: 'Nothing here yet.',
-  homeLoadFailed: 'Failed to load timeline.',
+  homeEmpty: 'Nothing here yet',
+  homeLoadFailed: 'Failed to load timeline',
 
   // Mentions screen
   mentionsTitle: 'Mentions',
-  mentionsEmpty: 'No mentions yet.',
-  mentionsLoadFailed: 'Failed to load mentions.',
+  mentionsEmpty: 'No mentions yet',
+  mentionsLoadFailed: 'Failed to load mentions',
 
   // My timeline screen
   myTimelineTitle: 'My Posts',
   timelineTitle: 'Timeline',
-  myTimelineEmpty: 'No posts yet.',
-  timelineLoadFailed: 'Failed to load timeline.',
+  myTimelineEmpty: 'No posts yet',
+  timelineLoadFailed: 'Failed to load timeline',
 
   // Photos screen
   photosTitle: 'Photos',
-  photosEmpty: 'No photos yet.',
-  photosLoadFailed: 'Failed to load photos.',
+  photosEmpty: 'No photos yet',
+  photosLoadFailed: 'Failed to load photos',
 
   // Favorites screen
   favoritesTitle: 'Favorites',
-  favoritesEmpty: 'No favorites yet.',
-  favoritesLoadFailed: 'Failed to load favorites.',
+  favoritesEmpty: 'No favorites yet',
+  favoritesLoadFailed: 'Failed to load favorites',
 
   // Status screen
-  statusLoadFailed: 'Failed to load post.',
-  conversationLoadFailed: 'Failed to load conversation.',
+  statusLoadFailed: 'Failed to load post',
+  conversationLoadFailed: 'Failed to load conversation',
   statusMissingId: 'Missing post ID.',
   conversationLoading: 'Loading conversation…',
 
   // Search screen
   searchPlaceholder: 'Search posts…',
-  searchHint: 'Type to search posts.',
-  searchEmpty: 'No results found.',
+  searchHint: 'Type to search posts',
+  searchEmpty: 'No results found',
 
   // Public timeline screen
   publicTimelineTitle: 'Just Passing By',
-  publicTimelineEmpty: 'No posts found.',
-  publicTimelineLoadFailed: 'Failed to load public timeline.',
+  publicTimelineEmpty: 'No posts found',
+  publicTimelineLoadFailed: 'Failed to load public timeline',
 
   // Tag timeline screen
   tagTimelineTitle: '#{{tag}}#',
   tagTimelineFallbackTitle: 'Tag Timeline',
-  tagTimelineEmpty: 'No posts for this tag.',
-  tagTimelineLoadFailed: 'Failed to load tag timeline.',
+  tagTimelineEmpty: 'No posts for this tag',
+  tagTimelineLoadFailed: 'Failed to load tag timeline',
   tagMissing: 'Missing tag.',
 
   // User list screen
@@ -476,11 +476,11 @@ const enUS: BaseTranslations = {
   followersTitle: 'Followers',
   followingTitleOther: 'Following',
   followersTitleOther: 'Followers',
-  followingEmpty: 'Not following anyone.',
-  followersEmpty: 'No followers yet.',
-  followingEmptyOther: 'Not following anyone yet.',
-  followersEmptyOther: 'No followers yet.',
-  userListLoadFailed: 'Failed to load user list.',
+  followingEmpty: 'Not following anyone',
+  followersEmpty: 'No followers yet',
+  followingEmptyOther: 'Not following anyone yet',
+  followersEmptyOther: 'No followers yet',
+  userListLoadFailed: 'Failed to load user list',
 
   // Profile screen
   profileStatPosts: 'Posts',
@@ -491,12 +491,12 @@ const enUS: BaseTranslations = {
   profileStatFavorites: 'Favorites',
   profileStatPhotos: 'Photos',
   recentActivity: 'Recent Activity',
-  recentActivityEmpty: 'No recent activity.',
+  recentActivityEmpty: 'No recent activity',
   protectedAccountNotice:
     'This account is protected. Follow to see recent activity.',
   blockedAccountNotice:
     'You have blocked this user.',
-  profileLoadFailed: 'Failed to load profile.',
+  profileLoadFailed: 'Failed to load profile',
   profileOpenAvatar: 'Open avatar',
   profileJoinedAt: 'Joined {{date}}',
   profileActionMention: 'Mention',
@@ -537,9 +537,9 @@ const enUS: BaseTranslations = {
   messagesTitle: 'Messages',
   messagesInbox: 'Inbox',
   messagesOutbox: 'Sent',
-  messagesInboxEmpty: 'No messages in inbox.',
-  messagesOutboxEmpty: 'No sent messages.',
-  messagesLoadFailed: 'Failed to load messages.',
+  messagesInboxEmpty: 'No messages in inbox',
+  messagesOutboxEmpty: 'No sent messages',
+  messagesLoadFailed: 'Failed to load messages',
   messageDeleteTitle: 'Delete Message',
   messageDeleteConfirm: 'Delete message from {{name}}?',
   messageDeleteCancel: 'Cancel',
@@ -589,7 +589,7 @@ const enUS: BaseTranslations = {
   moreFollowProfile: 'Follow User Color Settings',
   moreFollowProfileHint: "If this page looks off, set your background and color scheme on Fanfou's website, or turn off Follow User Color Settings.",
   moreAccountLoading: 'Loading account…',
-  moreAccountLoadFailed: 'Failed to load account.',
+  moreAccountLoadFailed: 'Failed to load account',
   moreAccountLoadFailedNoId: 'Cannot load account: missing user ID.',
   morePostcardCraftedByPrefix: 'Crafted by ',
   morePostcardCraftedBySuffix: '',
@@ -597,7 +597,7 @@ const enUS: BaseTranslations = {
 
   // Edit profile screen
   editProfileLoading: 'Loading profile…',
-  editProfileLoadFailed: 'Failed to load profile.',
+  editProfileLoadFailed: 'Failed to load profile',
   editProfileRetry: 'Retry',
   editProfileName: 'Name',
   editProfileNamePlaceholder: 'Your name',
@@ -744,51 +744,51 @@ const zhCN: BaseTranslations = {
 
   // Home screen
   homeTitle: '首页',
-  homeEmpty: '这里还没有内容。',
-  homeLoadFailed: '加载时间线失败。',
+  homeEmpty: '这里还没有内容',
+  homeLoadFailed: '加载时间线失败',
 
   // Mentions screen
   mentionsTitle: '提到我的',
-  mentionsEmpty: '还没有提到我的内容。',
-  mentionsLoadFailed: '加载提到我的失败。',
+  mentionsEmpty: '还没有提到我的内容',
+  mentionsLoadFailed: '加载提到我的失败',
 
   // My timeline screen
   myTimelineTitle: '我的饭否',
   timelineTitle: '时间线',
-  myTimelineEmpty: '还没有发布内容。',
-  timelineLoadFailed: '加载时间线失败。',
+  myTimelineEmpty: '还没有发布内容',
+  timelineLoadFailed: '加载时间线失败',
 
   // Photos screen
   photosTitle: '照片',
-  photosEmpty: '还没有照片。',
-  photosLoadFailed: '加载照片失败。',
+  photosEmpty: '还没有照片',
+  photosLoadFailed: '加载照片失败',
 
   // Favorites screen
   favoritesTitle: '收藏',
-  favoritesEmpty: '还没有收藏的内容。',
-  favoritesLoadFailed: '加载收藏失败。',
+  favoritesEmpty: '还没有收藏的内容',
+  favoritesLoadFailed: '加载收藏失败',
 
   // Status screen
-  statusLoadFailed: '加载动态失败。',
-  conversationLoadFailed: '加载对话失败。',
+  statusLoadFailed: '加载动态失败',
+  conversationLoadFailed: '加载对话失败',
   statusMissingId: '缺少动态 ID。',
   conversationLoading: '加载对话中…',
 
   // Search screen
   searchPlaceholder: '搜索消息…',
-  searchHint: '输入关键词搜索消息。',
-  searchEmpty: '没有找到相关内容。',
+  searchHint: '输入关键词搜索消息',
+  searchEmpty: '没有找到相关内容',
 
   // Public timeline screen
   publicTimelineTitle: '随便看看',
-  publicTimelineEmpty: '暂无内容。',
-  publicTimelineLoadFailed: '加载公开时间线失败。',
+  publicTimelineEmpty: '暂无内容',
+  publicTimelineLoadFailed: '加载公开时间线失败',
 
   // Tag timeline screen
   tagTimelineTitle: '#{{tag}}#',
   tagTimelineFallbackTitle: '话题时间线',
-  tagTimelineEmpty: '该话题还没有内容。',
-  tagTimelineLoadFailed: '加载话题时间线失败。',
+  tagTimelineEmpty: '该话题还没有内容',
+  tagTimelineLoadFailed: '加载话题时间线失败',
   tagMissing: '缺少话题。',
 
   // User list screen
@@ -796,11 +796,11 @@ const zhCN: BaseTranslations = {
   followersTitle: '关注我的人',
   followingTitleOther: 'TA关注的人',
   followersTitleOther: '关注TA的人',
-  followingEmpty: '还没有关注任何人。',
-  followersEmpty: '还没有关注我的人。',
-  followingEmptyOther: 'TA还没有关注任何人。',
-  followersEmptyOther: '还没有人关注TA。',
-  userListLoadFailed: '加载用户列表失败。',
+  followingEmpty: '还没有关注任何人',
+  followersEmpty: '还没有关注我的人',
+  followingEmptyOther: 'TA还没有关注任何人',
+  followersEmptyOther: '还没有人关注TA',
+  userListLoadFailed: '加载用户列表失败',
 
   // Profile screen
   profileStatPosts: '消息',
@@ -811,10 +811,10 @@ const zhCN: BaseTranslations = {
   profileStatFavorites: '收藏',
   profileStatPhotos: '照片',
   recentActivity: '最近动态',
-  recentActivityEmpty: '还没有最近动态。',
+  recentActivityEmpty: '还没有最近动态',
   protectedAccountNotice: '该账号已设置为保护，关注后可查看最近动态。',
   blockedAccountNotice: '你已屏蔽该用户。',
-  profileLoadFailed: '加载用户资料失败。',
+  profileLoadFailed: '加载用户资料失败',
   profileOpenAvatar: '查看头像',
   profileJoinedAt: '{{date}} 加入',
   profileActionMention: '提及',
@@ -854,9 +854,9 @@ const zhCN: BaseTranslations = {
   messagesTitle: '私信',
   messagesInbox: '收件箱',
   messagesOutbox: '发件箱',
-  messagesInboxEmpty: '收件箱没有消息。',
-  messagesOutboxEmpty: '发件箱没有消息。',
-  messagesLoadFailed: '加载私信失败。',
+  messagesInboxEmpty: '收件箱没有消息',
+  messagesOutboxEmpty: '发件箱没有消息',
+  messagesLoadFailed: '加载私信失败',
   messageDeleteTitle: '删除消息',
   messageDeleteConfirm: '确认删除来自 {{name}} 的消息？',
   messageDeleteCancel: '取消',
@@ -906,7 +906,7 @@ const zhCN: BaseTranslations = {
   moreFollowProfile: '跟随用户颜色设置',
   moreFollowProfileHint: '如果觉得这个页面的颜色不好看，可以前往饭否官网设置自己的背景图和配色，或者关闭「跟随用户颜色设置」。',
   moreAccountLoading: '正在加载账号…',
-  moreAccountLoadFailed: '无法加载账号信息。',
+  moreAccountLoadFailed: '无法加载账号信息',
   moreAccountLoadFailedNoId: '无法加载账号信息，缺少用户 ID。',
   morePostcardCraftedByPrefix: '由 ',
   morePostcardCraftedBySuffix: ' 制作',
@@ -914,7 +914,7 @@ const zhCN: BaseTranslations = {
 
   // Edit profile screen
   editProfileLoading: '正在加载个人资料…',
-  editProfileLoadFailed: '无法加载个人资料。',
+  editProfileLoadFailed: '无法加载个人资料',
   editProfileRetry: '重试',
   editProfileName: '昵称',
   editProfileNamePlaceholder: '你的昵称',
