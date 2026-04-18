@@ -835,14 +835,14 @@ const MoreRouteContent = ({
                   </View>
                 ) : null}
 
-                <View className="flex-row flex-wrap gap-3 pt-1">
+                <View className="flex-row gap-2 pt-1">
                   {profileStats.map(stat => (
-                    <View key={stat.label} style={stat.rotate}>
+                    <View key={stat.label} className="flex-1" style={stat.rotate}>
                       <PressableFeedback
                         onPress={stat.onPress}
                         accessibilityRole="button"
                         accessibilityLabel={stat.label}
-                        className="rounded-sm px-3 py-2 shadow-card"
+                        className="rounded-sm px-2.5 py-2 shadow-card"
                         style={{
                           backgroundColor: (() => {
                             const pastel = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
@@ -857,9 +857,11 @@ const MoreRouteContent = ({
                         }}
                       >
                         <Text
-                          className="text-[10px] uppercase tracking-wider font-bold text-foreground/70"
+                          className="text-[9px] uppercase tracking-normal font-bold text-foreground/70"
                           style={profileThemeStyles.mutedTextStyle}
                           numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.6}
                         >
                           {stat.label}
                         </Text>
@@ -867,6 +869,8 @@ const MoreRouteContent = ({
                           className="mt-0.5 text-[18px] font-extrabold tabular-nums text-foreground"
                           style={profileThemeStyles.primaryTextStyle}
                           numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.6}
                         >
                           {stat.value}
                         </Text>
@@ -905,6 +909,38 @@ const MoreRouteContent = ({
                 className="bg-surface-secondary overflow-hidden p-0"
                 style={panelStyle.settings}
               >
+                    <Select
+                      value={languageSelectValue}
+                      onValueChange={opt =>
+                        opt &&
+                        handleSelectLanguagePreference(opt.value as AppLanguageOption)
+                      }
+                    >
+                      <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
+                        {renderSettingIcon(Languages, '#34C759')}
+                        <Text
+                          className="flex-1 text-[15px] font-normal text-foreground"
+                          style={profileThemeStyles.primaryTextStyle}
+                        >
+                          {t('moreLanguage')}
+                        </Text>
+                        <Text className="text-[13px] text-foreground/55">{languageSelectValue.label}</Text>
+                        <ChevronRight size={14} color={muted} />
+                      </Select.Trigger>
+                      <Select.Portal>
+                        <Select.Overlay />
+                        <Select.Content presentation="popover" placement="top" width="trigger" className="rounded-3xl">
+                          {APP_LANGUAGE_OPTIONS.map(option => (
+                            <Select.Item
+                              key={option.value}
+                              value={option.value}
+                              label={option.value === 'system' ? t('moreLanguageSystemDefault') : option.nativeLabel}
+                            />
+                          ))}
+                        </Select.Content>
+                      </Select.Portal>
+                    </Select>
+                    <View className="h-px bg-foreground/10 ml-[60px]" />
                     <Select
                       value={fontSelectValue}
                       onValueChange={opt =>
@@ -962,38 +998,6 @@ const MoreRouteContent = ({
                         <Select.Content presentation="popover" placement="top" width="trigger" className="rounded-3xl">
                           {APP_FONT_SIZE_OPTIONS.map(option => (
                             <Select.Item key={option.value} value={option.value} label={fontSizeLabels[option.value]} />
-                          ))}
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select>
-                    <View className="h-px bg-foreground/10 ml-[60px]" />
-                    <Select
-                      value={languageSelectValue}
-                      onValueChange={opt =>
-                        opt &&
-                        handleSelectLanguagePreference(opt.value as AppLanguageOption)
-                      }
-                    >
-                      <Select.Trigger variant="unstyled" className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70">
-                        {renderSettingIcon(Languages, '#34C759')}
-                        <Text
-                          className="flex-1 text-[15px] font-normal text-foreground"
-                          style={profileThemeStyles.primaryTextStyle}
-                        >
-                          {t('moreLanguage')}
-                        </Text>
-                        <Text className="text-[13px] text-foreground/55">{languageSelectValue.label}</Text>
-                        <ChevronRight size={14} color={muted} />
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Overlay />
-                        <Select.Content presentation="popover" placement="top" width="trigger" className="rounded-3xl">
-                          {APP_LANGUAGE_OPTIONS.map(option => (
-                            <Select.Item
-                              key={option.value}
-                              value={option.value}
-                              label={option.value === 'system' ? t('moreLanguageSystemDefault') : option.nativeLabel}
-                            />
                           ))}
                         </Select.Content>
                       </Select.Portal>

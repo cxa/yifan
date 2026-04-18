@@ -30,7 +30,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Popover, Surface, Switch, useThemeColor } from 'heroui-native';
+import { Popover, Surface, useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
@@ -57,7 +57,7 @@ import PhotoViewerModal from '@/components/photo-viewer-modal';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
 import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { AtSign, Ban, Clock, Mail } from 'lucide-react-native';
+import { AtSign, Ban, Check, Clock, Mail, Palette } from 'lucide-react-native';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
@@ -790,7 +790,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               <ShimmerBar className="mt-2 h-3 w-28 bg-surface-tertiary" isActive={false} />
             </View>
           </View>
-          <View className="flex-row flex-wrap gap-3 pt-2">
+          <View className="flex-row flex-wrap gap-2 pt-2">
             {[STYLES_V12.stickyA, STYLES_V12.stickyB, STYLES_V12.stickyC, STYLES_V12.stickyD].map(
               (rotate, index) => (
                 <View key={index} style={rotate}>
@@ -1018,7 +1018,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             </View>
 
             {!isBlocked ? (
-              <View className="flex-row flex-wrap gap-3 pt-2">
+              <View className="flex-row gap-2 pt-2">
                 {[
                   {
                     label: t('profileStatPosts'),
@@ -1056,10 +1056,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     rotate: STYLES_V12.stickyE,
                   },
                 ].map(stat => (
-                  <View key={stat.label} style={stat.rotate}>
+                  <View key={stat.label} className="flex-1" style={stat.rotate}>
                     <Pressable
                       onPress={stat.onPress}
-                      className="rounded-sm px-3 py-2 shadow-card active:opacity-75"
+                      className="rounded-sm px-2.5 py-2 shadow-card active:opacity-75"
                       style={{
                         backgroundColor: (() => {
                           const pastel = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
@@ -1073,9 +1073,11 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                       accessibilityLabel={stat.label}
                     >
                       <Text
-                        className="text-[10px] uppercase tracking-wider font-bold text-foreground/70"
+                        className="text-[9px] uppercase tracking-normal font-bold text-foreground/70"
                         style={profileThemeStyles.mutedTextStyle}
                         numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.6}
                       >
                         {stat.label}
                       </Text>
@@ -1083,6 +1085,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                         className="mt-0.5 text-[18px] font-extrabold tabular-nums text-foreground"
                         style={profileThemeStyles.primaryTextStyle}
                         numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.6}
                       >
                         {formatStatValue(stat.value)}
                       </Text>
@@ -1167,9 +1171,35 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                       presentation="popover"
                       placement="top"
                       align="end"
-                      width={200}
+                      width={320}
                       className="rounded-2xl p-1"
                     >
+                      <Pressable
+                        onPress={() => {
+                          handleToggleFollowProfile(!followProfileTheme);
+                        }}
+                        className="flex-row items-center gap-3 px-3 py-2.5 rounded-xl active:bg-surface-secondary"
+                        accessibilityRole="button"
+                        accessibilityLabel={t('moreFollowProfile')}
+                      >
+                        <Palette size={18} color={timelineAccentColor} strokeWidth={2.2} />
+                        <Text
+                          className="flex-1 text-[15px] font-semibold text-foreground"
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.8}
+                        >
+                          {t('moreFollowProfile')}
+                        </Text>
+                        {followProfileTheme ? (
+                          <Check
+                            size={16}
+                            color={timelineAccentColor}
+                            strokeWidth={2.5}
+                          />
+                        ) : null}
+                      </Pressable>
+                      <View className="my-1 mx-3 h-px bg-foreground/10" />
                       <Pressable
                         onPress={() => runFromMenu(handleOpenMentionComposer)}
                         className="flex-row items-center gap-3 px-3 py-2.5 rounded-xl active:bg-surface-secondary"
@@ -1208,26 +1238,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 </Popover>
               </View>
             ) : null}
-
-            <DropShadowBox>
-              <Surface
-                className="bg-surface-secondary px-4 py-3"
-                style={profileThemeStyles.panelStyle}
-              >
-                <View className="flex-row items-center justify-between">
-                  <Text
-                    className="text-[14px] font-semibold text-foreground"
-                    style={profileThemeStyles.primaryTextStyle}
-                  >
-                    {t('moreFollowProfile')}
-                  </Text>
-                  <Switch
-                    isSelected={followProfileTheme}
-                    onSelectedChange={handleToggleFollowProfile}
-                  />
-                </View>
-              </Surface>
-            </DropShadowBox>
 
             {profileErrorMessage ? (
               <ErrorBanner message={profileErrorMessage} technicalDetail={profileTechnicalError} />
