@@ -114,17 +114,6 @@ export const createProfileThemeStyles = (
   };
 };
 
-export const resolveProfilePanelShadowStyle = (
-  palette: ProfileThemePalette,
-): ViewStyle | undefined => {
-  if (!palette.panelBorderColor) {
-    return undefined;
-  }
-  return {
-    backgroundColor: palette.panelBorderColor,
-  };
-};
-
 // ─── Dark-mode palette adaptation ────────────────────────────────────────────
 
 const hexToHSL = (hex: string): [number, number, number] => {

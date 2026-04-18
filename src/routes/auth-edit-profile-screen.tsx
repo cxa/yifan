@@ -200,14 +200,11 @@ const EditProfileRoute = () => {
             </Surface>
           </DropShadowBox>
 
-          <DropShadowBox
-            containerClassName="w-full"
-            shadowOffsetClassName="-translate-x-1.5 translate-y-1.5"
-          >
+          <DropShadowBox containerClassName="w-full">
             <Pressable
               onPress={handleSave}
               disabled={isSaving}
-              className={`w-full h-14 items-center justify-center bg-accent ${isSaving
+              className={`w-full h-14 items-center justify-center rounded-3xl bg-accent ${isSaving
                   ? 'opacity-70'
                   : 'active:translate-x-[-3px] active:translate-y-[3px]'
                 }`}

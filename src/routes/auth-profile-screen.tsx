@@ -46,7 +46,6 @@ import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
 import DropShadowBox, {
-  getDropShadowBorderClass,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
 import NativeEdgeScrollShadow, {
@@ -100,7 +99,6 @@ import {
   createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
-  resolveProfilePanelShadowStyle,
   resolveProfileThemePalette,
 } from '@/utils/profile-theme';
 import { useTranslation } from 'react-i18next';
@@ -804,8 +802,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
-  const profilePanelShadowStyle =
-    resolveProfilePanelShadowStyle(profileThemePalette);
   const timelineAccentColor = profileThemePalette.linkColor ?? accent;
   const timelineMutedColor = profileThemePalette.mutedTextColor ?? muted;
   const statsPrimary: ProfileStatItem[] = [
@@ -929,10 +925,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               />
             }
           >
-            <DropShadowBox
-              containerClassName="mb-4"
-              shadowStyle={profilePanelShadowStyle}
-            >
+            <DropShadowBox containerClassName="mb-4">
               <ProfileSummaryCard
                 avatar={profileAvatar}
                 displayName={displayName}
@@ -948,7 +941,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               />
             </DropShadowBox>
 
-            <DropShadowBox containerClassName="pb-2" shadowStyle={profilePanelShadowStyle}>
+            <DropShadowBox>
               <Surface className="bg-surface-secondary px-4 py-3" style={profileThemeStyles.panelStyle}>
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[14px] font-semibold text-foreground" style={profileThemeStyles.primaryTextStyle}>
@@ -964,25 +957,20 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 <ProfileStatRow
                   stats={statsPrimary}
                   panelStyle={profileThemeStyles.panelStyle}
-                  shadowStyle={profilePanelShadowStyle}
                   valueTextStyle={profileThemeStyles.primaryTextStyle}
-                  labelTextStyle={profileThemeStyles.primaryTextStyle}
+                  labelTextStyle={profileThemeStyles.mutedTextStyle}
                 />
                 <ProfileStatRow
                   stats={statsSecondary}
                   panelStyle={profileThemeStyles.panelStyle}
-                  shadowStyle={profilePanelShadowStyle}
                   valueTextStyle={profileThemeStyles.primaryTextStyle}
-                  labelTextStyle={profileThemeStyles.primaryTextStyle}
+                  labelTextStyle={profileThemeStyles.mutedTextStyle}
                 />
               </>
             ) : null}
 
             {!isSelf && !isBlocked ? (
-              <DropShadowBox
-                containerClassName="pb-2"
-                shadowStyle={profilePanelShadowStyle}
-              >
+              <DropShadowBox>
                 <Surface
                   className="bg-surface-secondary p-4"
                   style={profileThemeStyles.panelStyle}
@@ -1057,31 +1045,35 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             ) : null}
 
             {isBlocked ? (
-              <View className="p-4">
-                <Text className="text-[14px] leading-6 text-foreground">
-                  {t('blockedAccountNotice')}
-                </Text>
-                <Pressable
-                  onPress={handleBlockToggle}
-                  disabled={isBlockSubmitting}
-                  className="mt-3 items-center rounded-full border bg-success px-4 py-2"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('profileActionUnblock')}
-                >
-                  <Text className="text-[13px] font-semibold text-white">
-                    {isBlockSubmitting
-                      ? t('profileActionUpdating')
-                      : t('profileActionUnblock')}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : isProtectedTimeline ? (
-              <DropShadowBox type="warning" containerClassName="pb-2">
+              <DropShadowBox>
                 <Surface
-                  className={`bg-surface-secondary ${getDropShadowBorderClass(
-                    'warning',
-                  )} px-4 py-4`}
+                  className="bg-surface-secondary px-4 py-4"
+                  style={profileThemeStyles.panelStyle}
                 >
+                  <Text
+                    className="text-[14px] leading-6 text-foreground"
+                    style={profileThemeStyles.primaryTextStyle}
+                  >
+                    {t('blockedAccountNotice')}
+                  </Text>
+                  <Pressable
+                    onPress={handleBlockToggle}
+                    disabled={isBlockSubmitting}
+                    className="mt-3 self-start rounded-full border bg-success px-4 py-2"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('profileActionUnblock')}
+                  >
+                    <Text className="text-[13px] font-semibold text-white">
+                      {isBlockSubmitting
+                        ? t('profileActionUpdating')
+                        : t('profileActionUnblock')}
+                    </Text>
+                  </Pressable>
+                </Surface>
+              </DropShadowBox>
+            ) : isProtectedTimeline ? (
+              <DropShadowBox>
+                <Surface className="bg-surface-secondary px-4 py-4">
                   <Text className="text-[14px] leading-6 text-warning">
                     {t('protectedAccountNotice')}
                   </Text>

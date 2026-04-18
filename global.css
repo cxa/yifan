@@ -13,9 +13,23 @@
     --font-huiwen-mincho: Huiwen-MinchoGBK-Regular;
 }
 
-/* Shared card elevation. Use `shadow-card dark:shadow-none` on any surface
-   that should float above the background in light mode — the warm shadow
-   melts into the dark background and only wastes GPU, so we omit it there. */
+/* Card elevation is owned by DropShadowBox via `shadow-card`. Large
+   offset-to-blur ratio (4px offset, 2px blur) keeps the shadow strictly
+   downward with no upward leak onto the card above it. */
 @utility shadow-card {
-    box-shadow: 0 2px 6px rgba(26, 18, 8, 0.08);
+    box-shadow: 0 4px 2px rgba(26, 18, 8, 0.06);
+}
+
+/* Kill heroui-native's built-in Surface shadow at the variable level.
+   Must be scoped under the same `@variant light` that heroui-native uses,
+   otherwise Uniwind's processor routes heroui's assignment into
+   `scopedVars[__theme_light]` and our unscoped `:root` override lands in
+   the main `vars` map — where the scoped value always wins in light mode.
+   Result: Surface never stacks a shadow on top of DropShadowBox. */
+@layer theme {
+    :root {
+        @variant light {
+            --surface-shadow: none;
+        }
+    }
 }

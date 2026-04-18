@@ -18,7 +18,6 @@ type ProfileStatRowProps = {
   skeleton?: boolean;
   itemCount?: number;
   panelStyle?: StyleProp<ViewStyle>;
-  shadowStyle?: StyleProp<ViewStyle>;
   valueTextStyle?: StyleProp<TextStyle>;
   labelTextStyle?: StyleProp<TextStyle>;
 };
@@ -26,7 +25,7 @@ type ProfileStatRowProps = {
 const getStatValue = (value: ProfileStatItem['value']) => value ?? '--';
 
 const StatDivider = () => (
-  <View className="w-px bg-foreground/10 my-3" />
+  <View className="w-px bg-foreground/10 my-4" />
 );
 
 const ProfileStatRow = ({
@@ -34,14 +33,13 @@ const ProfileStatRow = ({
   skeleton,
   itemCount,
   panelStyle,
-  shadowStyle,
   valueTextStyle,
   labelTextStyle,
 }: ProfileStatRowProps) => {
   if (skeleton) {
     const count = itemCount ?? 3;
     return (
-      <DropShadowBox shadowStyle={shadowStyle}>
+      <DropShadowBox>
         <Surface
           className="bg-surface-secondary overflow-hidden flex-row"
           style={panelStyle}
@@ -50,9 +48,9 @@ const ProfileStatRow = ({
             <React.Fragment key={i}>
               {i > 0 ? <StatDivider /> : null}
               <View className="flex-1 p-4">
-                <ShimmerBar className="h-8 w-12 bg-surface-tertiary" isActive />
+                <ShimmerBar className="h-7 w-14 bg-surface-tertiary" isActive />
                 <ShimmerBar
-                  className="mt-1 h-5 w-16 bg-surface-tertiary"
+                  className="mt-1.5 h-3.5 w-12 bg-surface-tertiary"
                   isActive={false}
                 />
               </View>
@@ -64,7 +62,7 @@ const ProfileStatRow = ({
   }
 
   return (
-    <DropShadowBox shadowStyle={shadowStyle}>
+    <DropShadowBox>
       <Surface
         className="bg-surface-secondary overflow-hidden flex-row"
         style={panelStyle}
@@ -88,7 +86,7 @@ const ProfileStatRow = ({
                 {getStatValue(stat.value)}
               </Text>
               <Text
-                className="text-sm text-foreground"
+                className="mt-0.5 text-sm text-foreground/60"
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.7}
