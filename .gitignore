@@ -90,3 +90,6 @@ ios/yifan/EnvSecrets.m
 
 # heroui-agents-md
 .heroui-docs/
+
+# UI design mockups (local previews, not shipped)
+mockups/

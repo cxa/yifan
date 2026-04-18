@@ -118,6 +118,7 @@ import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
   adaptProfilePaletteForDarkMode,
+  blendHexColors,
   createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
@@ -842,14 +843,18 @@ const MoreRouteContent = ({
                         accessibilityRole="button"
                         accessibilityLabel={stat.label}
                         className="rounded-sm px-3 py-2 shadow-card"
-                        style={[
-                          {
-                            backgroundColor: (isDark
-                              ? CARD_BG_DARK
-                              : CARD_BG_LIGHT)[stat.type],
-                          },
-                          profileThemeStyles.panelStyle,
-                        ]}
+                        style={{
+                          backgroundColor: (() => {
+                            const pastel = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
+                              stat.type
+                            ];
+                            const tint =
+                              profileThemePalette.panelBackgroundColor;
+                            return tint
+                              ? blendHexColors(pastel, tint, 0.5)
+                              : pastel;
+                          })(),
+                        }}
                       >
                         <Text
                           className="text-[10px] uppercase tracking-wider font-bold text-foreground/70"

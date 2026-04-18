@@ -60,6 +60,31 @@ const withAlpha = (normalizedHexColor: string, alpha: number): string => {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 };
 
+const toHexByte = (value: number): string => {
+  const clamped = Math.max(0, Math.min(255, Math.round(value)));
+  return clamped.toString(16).padStart(2, '0').toUpperCase();
+};
+
+/**
+ * Blend two hex colors channel-wise.
+ * weight = 0 returns `base`, weight = 1 returns `overlay`.
+ * Both inputs must be 6-digit hex (#RRGGBB) or the function
+ * falls back to returning `base`.
+ */
+export const blendHexColors = (
+  base: string,
+  overlay: string,
+  weight: number,
+): string => {
+  const normalizedBase = normalizeHexColor(base);
+  const normalizedOverlay = normalizeHexColor(overlay);
+  if (!normalizedBase || !normalizedOverlay) return base;
+  const [br, bg, bb] = resolveColorChannels(normalizedBase);
+  const [or, og, ob] = resolveColorChannels(normalizedOverlay);
+  const mix = (a: number, b: number) => a * (1 - weight) + b * weight;
+  return `#${toHexByte(mix(br, or))}${toHexByte(mix(bg, og))}${toHexByte(mix(bb, ob))}`;
+};
+
 const normalizeBackgroundImageUrl = (
   value?: string | null,
 ): string | undefined => {

@@ -94,6 +94,7 @@ import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
   adaptProfilePaletteForDarkMode,
+  blendHexColors,
   createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
@@ -729,6 +730,14 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       : palette;
   })();
   const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
+  const onImageTextStyle = hasBackgroundImage
+    ? ({
+        color: '#FFFFFF',
+        textShadowColor: 'rgba(0, 0, 0, 0.85)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
+      } as const)
+    : null;
   const preferredHeaderTintColor =
     profileThemePalette.linkColor ?? profileThemePalette.textColor;
   const headerTintColor = hasBackgroundImage
@@ -971,7 +980,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               <View className="flex-1 mb-2 pl-1" style={STYLES_V12.nameRotate}>
                 <Text
                   className="text-[28px] leading-[34px] font-black text-foreground"
-                  style={profileThemeStyles.primaryTextStyle}
+                  style={[profileThemeStyles.primaryTextStyle, onImageTextStyle]}
                   dynamicTypeRamp="title1"
                   numberOfLines={1}
                   ellipsizeMode="tail"
@@ -981,7 +990,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 {normalizedLocation ? (
                   <Text
                     className="text-[12px] text-muted mt-1"
-                    style={profileThemeStyles.mutedTextStyle}
+                    style={[profileThemeStyles.mutedTextStyle, onImageTextStyle]}
                     numberOfLines={1}
                   >
                     {normalizedLocation}
@@ -990,7 +999,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 {joinedLine ? (
                   <Text
                     className="text-[11px] text-muted mt-0.5"
-                    style={profileThemeStyles.mutedTextStyle}
+                    style={[profileThemeStyles.mutedTextStyle, onImageTextStyle]}
                     numberOfLines={1}
                   >
                     {joinedLine}
@@ -999,7 +1008,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 {profileUrl ? (
                   <Text
                     className="text-[12px] font-semibold text-accent mt-1"
-                    style={profileThemeStyles.linkTextStyle}
+                    style={[profileThemeStyles.linkTextStyle, onImageTextStyle]}
                     numberOfLines={1}
                   >
                     {profileUrl}
@@ -1051,14 +1060,15 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                     <Pressable
                       onPress={stat.onPress}
                       className="rounded-sm px-3 py-2 shadow-card active:opacity-75"
-                      style={[
-                        {
-                          backgroundColor: (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
+                      style={{
+                        backgroundColor: (() => {
+                          const pastel = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[
                             stat.type
-                          ],
-                        },
-                        profileThemeStyles.panelStyle,
-                      ]}
+                          ];
+                          const tint = profileThemePalette.panelBackgroundColor;
+                          return tint ? blendHexColors(pastel, tint, 0.5) : pastel;
+                        })(),
+                      }}
                       accessibilityRole="button"
                       accessibilityLabel={stat.label}
                     >
