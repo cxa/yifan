@@ -5,7 +5,9 @@ const SERVICE = 'app.profile-theme-preference';
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
-let followProfileTheme = false;
+// Default ON: profiles with their own theme look flatter without it, and
+// the toggle lives in More for anyone who prefers the neutral palette.
+let followProfileTheme = true;
 let hydrationPromise: Promise<void> | null = null;
 
 const emitChange = () => {
@@ -21,9 +23,10 @@ const setSnapshot = (next: boolean) => {
 const hydrate = async () => {
   try {
     const creds = await Keychain.getGenericPassword({ service: SERVICE });
-    if (creds && creds.password === 'true') {
-      setSnapshot(true);
+    if (creds) {
+      setSnapshot(creds.password === 'true');
     }
+    // No stored value → keep the default (true).
   } catch {
     // keep default
   }
