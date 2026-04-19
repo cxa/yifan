@@ -310,10 +310,12 @@ const TagTimelineRoute = () => {
   });
   if (!routeTag) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <View>
-          <ErrorBanner message={t('tagMissing')} />
-        </View>
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={Hash}
+          message={t('tagMissing')}
+          tone="danger"
+        />
       </View>
     );
   }

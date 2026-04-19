@@ -10,15 +10,14 @@ export type DropShadowBoxType =
   | 'sky';
 
 /** Rotate through pastel card backgrounds for visual variety in lists.
- * Order alternates warm/cool to give scrolling a temperature rhythm:
- * warm → cool → warm → cool → cool, with the final cool pair (mint/lilac)
- * sitting across the color wheel from each other so they still read distinct. */
+ * Punchy cool-first alternation: mint opens fresh, then warm/cool beats
+ * trade off so adjacent cards always contrast hard while scrolling. */
 export const CARD_PASTEL_CYCLE: DropShadowBoxType[] = [
-  'accent',   // coral  — warm
-  'sky',      // sky    — cool
-  'warning',  // apricot — warm
-  'success',  // mint   — cool
-  'danger',   // lilac  — cool, complementary to mint
+  'success',  // mint   — cool green, fresh opener
+  'accent',   // coral  — warm red
+  'sky',      // sky    — cool blue
+  'warning',  // apricot — warm yellow
+  'danger',   // lilac  — cool purple
 ];
 
 /** Light-mode pastel card background colors indexed by shadow type */

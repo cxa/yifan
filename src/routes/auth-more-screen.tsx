@@ -26,6 +26,7 @@ import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ALargeSmall,
+  AlertCircle,
   ChevronRight,
   Languages,
   Leaf,
@@ -35,6 +36,7 @@ import {
   SunMoon,
   Type,
 } from 'lucide-react-native';
+import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { checkForUpdate, notifyUpdateFound } from '@/services/app-updater';
 import { setAuthAccessToken, useAuthSession } from '@/auth/auth-session';
 import { saveAuthAccessToken } from '@/auth/secure-token-storage';
@@ -1100,9 +1102,11 @@ const MissingUserIdPlaceholder = () => {
         }}
         contentContainerStyle={contentContainerStyle}
       >
-        <Surface className="bg-surface-secondary px-5 py-6">
-          <ErrorBanner message={t('moreAccountLoadFailedNoId')} />
-        </Surface>
+        <TimelineEmptyPlaceholder
+          icon={AlertCircle}
+          message={t('moreAccountLoadFailedNoId')}
+          tone="danger"
+        />
       </Animated.ScrollView>
     </NativeEdgeScrollShadow>
   );

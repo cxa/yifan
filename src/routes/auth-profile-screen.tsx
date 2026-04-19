@@ -30,7 +30,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Popover, Surface, useThemeColor } from 'heroui-native';
+import { Popover, useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
@@ -45,7 +45,7 @@ import { Text } from '@/components/app-text';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
-import DropShadowBox, {
+import {
   CARD_BG_LIGHT,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
@@ -60,7 +60,7 @@ import ProfilePageBackdrop from '@/components/profile-page-backdrop';
 import ProfilePolaroidAvatar from '@/components/profile-polaroid-avatar';
 import ProfileStatsRow from '@/components/profile-stats-row';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { AtSign, Ban, Check, Clock, Mail, MoreHorizontal, Palette } from 'lucide-react-native';
+import { AlertCircle, AtSign, Ban, Check, Clock, Lock, Mail, MoreHorizontal, Palette, UserX } from 'lucide-react-native';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
@@ -828,8 +828,13 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   }
   if (!user) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={profileErrorMessage ?? t('profileLoadFailed')} technicalDetail={profileTechnicalError} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={AlertCircle}
+          message={profileErrorMessage ?? t('profileLoadFailed')}
+          detail={profileTechnicalError}
+          tone="danger"
+        />
       </View>
     );
   }
@@ -926,8 +931,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   });
   if (!accessToken) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={t('notLoggedIn')} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={UserX}
+          message={t('notLoggedIn')}
+          tone="danger"
+        />
       </View>
     );
   }
@@ -1138,40 +1147,32 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
             ) : null}
 
             {isBlocked ? (
-              <DropShadowBox>
-                <Surface
-                  className="bg-surface-secondary px-4 py-4"
-                  style={profileThemeStyles.panelStyle}
+              <View className="items-center">
+                <TimelineEmptyPlaceholder
+                  icon={Ban}
+                  message={t('blockedAccountNotice')}
+                  compact
+                />
+                <Pressable
+                  onPress={handleBlockToggle}
+                  disabled={isBlockSubmitting}
+                  className="mt-2 rounded-full border bg-success px-4 py-2"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('profileActionUnblock')}
                 >
-                  <Text
-                    className="text-[14px] leading-6 text-foreground"
-                    style={profileThemeStyles.primaryTextStyle}
-                  >
-                    {t('blockedAccountNotice')}
+                  <Text className="text-[13px] font-semibold text-white">
+                    {isBlockSubmitting
+                      ? t('profileActionUpdating')
+                      : t('profileActionUnblock')}
                   </Text>
-                  <Pressable
-                    onPress={handleBlockToggle}
-                    disabled={isBlockSubmitting}
-                    className="mt-3 self-start rounded-full border bg-success px-4 py-2"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('profileActionUnblock')}
-                  >
-                    <Text className="text-[13px] font-semibold text-white">
-                      {isBlockSubmitting
-                        ? t('profileActionUpdating')
-                        : t('profileActionUnblock')}
-                    </Text>
-                  </Pressable>
-                </Surface>
-              </DropShadowBox>
+                </Pressable>
+              </View>
             ) : isProtectedTimeline ? (
-              <DropShadowBox>
-                <Surface className="bg-surface-secondary px-4 py-4">
-                  <Text className="text-[14px] leading-6 text-warning">
-                    {t('protectedAccountNotice')}
-                  </Text>
-                </Surface>
-              </DropShadowBox>
+              <TimelineEmptyPlaceholder
+                icon={Lock}
+                message={t('protectedAccountNotice')}
+                compact
+              />
             ) : (
               <>
                 <Text
@@ -1291,8 +1292,12 @@ const ProfileRoute = () => {
   const routeUserId = normalizeUserId(route.params?.userId);
   if (!routeUserId) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message="Missing profile user id." />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={AlertCircle}
+          message="Missing profile user id."
+          tone="danger"
+        />
       </View>
     );
   }

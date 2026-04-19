@@ -23,7 +23,9 @@ const TimelineEmptyPlaceholder = ({
   const { height } = useWindowDimensions();
   const iconColor = tone === 'danger' ? danger : muted;
   const textColorClass = tone === 'danger' ? 'text-danger' : 'text-muted';
-  const normalizedDetail = detail?.trim() || null;
+  const trimmedDetail = detail?.trim() || null;
+  const normalizedDetail =
+    trimmedDetail && trimmedDetail !== message.trim() ? trimmedDetail : null;
 
   if (compact) {
     return (

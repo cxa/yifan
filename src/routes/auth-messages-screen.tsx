@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Dialog, Tabs, useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Inbox, Reply, Send, Trash2 } from 'lucide-react-native';
+import { AlertCircle, Inbox, Reply, Send, Trash2, UserX } from 'lucide-react-native';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import Svg, { Path } from 'react-native-svg';
 import { useAuthSession } from '@/auth/auth-session';
@@ -740,8 +740,12 @@ const PrivateMessagesRoute = () => {
   const accessToken = auth.accessToken;
   if (!accessToken) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={t('notLoggedIn')} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={UserX}
+          message={t('notLoggedIn')}
+          tone="danger"
+        />
       </View>
     );
   }

@@ -26,6 +26,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
+import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
+import { AlertCircle } from 'lucide-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
@@ -446,8 +448,12 @@ const StatusDetailRoute = () => {
   };
   if (!routeStatusId) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={t('statusMissingId')} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={AlertCircle}
+          message={t('statusMissingId')}
+          tone="danger"
+        />
       </View>
     );
   }
@@ -481,9 +487,12 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {!mainStatus && !isStatusLoading && !isContextLoading ? (
-            <View className="pb-2">
-              <ErrorBanner message={statusErrorMessage ?? t('statusLoadFailed')} technicalDetail={statusTechnicalError} />
-            </View>
+            <TimelineEmptyPlaceholder
+              icon={AlertCircle}
+              message={statusErrorMessage ?? t('statusLoadFailed')}
+              detail={statusTechnicalError}
+              tone="danger"
+            />
           ) : null}
 
           {mainStatus ? (

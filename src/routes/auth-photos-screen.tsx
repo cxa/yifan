@@ -31,7 +31,7 @@ import ComposerModal from '@/components/composer-modal';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { AlertCircle, Camera } from 'lucide-react-native';
+import { AlertCircle, Camera, UserX } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
@@ -379,8 +379,12 @@ const PhotosRoute = () => {
   const backCount = route.params?.backCount;
   if (!resolvedUserId) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={t('notLoggedIn')} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={UserX}
+          message={t('notLoggedIn')}
+          tone="danger"
+        />
       </View>
     );
   }

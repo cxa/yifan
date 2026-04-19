@@ -12,7 +12,8 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface, useThemeColor } from 'heroui-native';
-import ErrorBanner from '@/components/error-banner';
+import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
+import { AlertCircle, UserX } from 'lucide-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthSession } from '@/auth/auth-session';
 import { post } from '@/auth/fanfou-client';
@@ -111,13 +112,19 @@ const EditProfileRoute = () => {
       ) : null}
 
       {!user && !isLoading ? (
-        <View className="pb-2 gap-3">
-          <ErrorBanner message={errorMessage ?? t('editProfileLoadFailed')} technicalDetail={technicalError} />
+        <View className="items-center">
+          <TimelineEmptyPlaceholder
+            icon={AlertCircle}
+            message={errorMessage ?? t('editProfileLoadFailed')}
+            detail={technicalError}
+            tone="danger"
+            compact
+          />
           <Pressable
             onPress={() => {
               refetch().catch(() => undefined);
             }}
-            className="self-start rounded-full border bg-danger-soft px-3 py-2 active:opacity-70"
+            className="mt-2 rounded-full border bg-danger-soft px-3 py-2 active:opacity-70"
             accessibilityRole="button"
             accessibilityLabel={t('editProfileRetry')}
           >
@@ -286,8 +293,12 @@ const EditProfileRoute = () => {
   }
   if (!userId) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={t('notLoggedIn')} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={UserX}
+          message={t('notLoggedIn')}
+          tone="danger"
+        />
       </View>
     );
   }

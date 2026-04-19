@@ -37,7 +37,7 @@ import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { AlertCircle, Feather } from 'lucide-react-native';
+import { AlertCircle, Feather, UserX } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import useTimelineStatusInteractions from '@/components/use-timeline-status-interactions';
@@ -362,8 +362,12 @@ const MyTimelineRoute = () => {
   const resolvedUserId = routeUserId ?? accessToken?.userId;
   if (!resolvedUserId) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <ErrorBanner message={t('notLoggedIn')} />
+      <View className="flex-1 bg-background">
+        <TimelineEmptyPlaceholder
+          icon={UserX}
+          message={t('notLoggedIn')}
+          tone="danger"
+        />
       </View>
     );
   }

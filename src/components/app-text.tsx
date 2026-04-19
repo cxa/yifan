@@ -120,6 +120,8 @@ const Text = React.forwardRef<
       allowFontScaling = true,
       dynamicTypeRamp,
       maxFontSizeMultiplier,
+      textBreakStrategy = 'balanced',
+      lineBreakStrategyIOS = 'push-out',
       style,
       children,
       ...props
@@ -159,6 +161,8 @@ const Text = React.forwardRef<
             : dynamicTypeRamp
         }
         maxFontSizeMultiplier={maxFontSizeMultiplier}
+        textBreakStrategy={textBreakStrategy}
+        lineBreakStrategyIOS={lineBreakStrategyIOS}
         className={finalClassName}
       >
         {fontClassName ? processEmojiChildren(children) : children}
@@ -197,6 +201,8 @@ const AnimatedText = React.forwardRef<
       allowFontScaling = true,
       dynamicTypeRamp,
       maxFontSizeMultiplier,
+      textBreakStrategy = 'balanced',
+      lineBreakStrategyIOS = 'push-out',
       style,
       children,
       ...props
@@ -237,6 +243,8 @@ const AnimatedText = React.forwardRef<
             : dynamicTypeRamp
         }
         maxFontSizeMultiplier={maxFontSizeMultiplier}
+        textBreakStrategy={textBreakStrategy}
+        lineBreakStrategyIOS={lineBreakStrategyIOS}
         className={finalClassName}
       >
         {fontClassName ? processEmojiChildren(children as React.ReactNode) : children}
