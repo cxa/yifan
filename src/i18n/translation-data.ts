@@ -265,6 +265,7 @@ type BaseTranslations = {
   moreStyleSharp: string;
   moreFollowProfile: string;
   moreFollowProfileHint: string;
+  profileFollowUser: string;
   moreAccountLoading: string;
   moreAccountLoadFailed: string;
   moreAccountLoadFailedNoId: string;
@@ -586,8 +587,9 @@ const enUS: BaseTranslations = {
   moreStyle: 'Style',
   moreStyleSoft: 'Soft',
   moreStyleSharp: 'Sharp',
-  moreFollowProfile: 'Follow User Color Settings',
-  moreFollowProfileHint: "If this page doesn't look right, adjust your background and colors on Fanfou's website, or turn off Follow User Color Settings.",
+  moreFollowProfile: 'Follow My Color Settings',
+  moreFollowProfileHint: "If this page doesn't look right, adjust your background and colors on Fanfou's website, or turn off Follow My Color Settings.",
+  profileFollowUser: 'Follow User Color Settings',
   moreAccountLoading: 'Loading account…',
   moreAccountLoadFailed: 'Failed to load account',
   moreAccountLoadFailedNoId: 'Cannot load account: missing user ID.',
@@ -903,8 +905,9 @@ const zhCN: BaseTranslations = {
   moreStyle: '风格',
   moreStyleSoft: '柔和',
   moreStyleSharp: '干练',
-  moreFollowProfile: '跟随用户颜色设置',
-  moreFollowProfileHint: '如果觉得这个页面的颜色不好看，可以前往饭否官网设置自己的背景图和配色，或者关闭「跟随用户颜色设置」。',
+  moreFollowProfile: '跟随我的颜色设置',
+  moreFollowProfileHint: '如果觉得这个页面的颜色不好看，可以前往饭否官网设置自己的背景图和配色，或者关闭「跟随我的颜色设置」。',
+  profileFollowUser: '跟随用户颜色设置',
   moreAccountLoading: '正在加载账号…',
   moreAccountLoadFailed: '无法加载账号信息',
   moreAccountLoadFailedNoId: '无法加载账号信息，缺少用户 ID。',

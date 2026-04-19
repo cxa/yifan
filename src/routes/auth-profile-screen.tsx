@@ -1083,7 +1083,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                         }}
                         className="flex-row items-center gap-3 px-3 py-2.5 rounded-xl active:bg-surface-secondary"
                         accessibilityRole="button"
-                        accessibilityLabel={t('moreFollowProfile')}
+                        accessibilityLabel={t('profileFollowUser')}
                       >
                         <Palette size={18} color={timelineAccentColor} strokeWidth={2.2} />
                         <Text
@@ -1092,7 +1092,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                           adjustsFontSizeToFit
                           minimumFontScale={0.8}
                         >
-                          {t('moreFollowProfile')}
+                          {t('profileFollowUser')}
                         </Text>
                         {followProfileTheme ? (
                           <Check

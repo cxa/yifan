@@ -108,9 +108,9 @@ import {
   useEffectiveIsDark,
 } from '@/settings/app-appearance-preference';
 import {
-  setAppProfileThemePreference,
-  useAppProfileThemePreference,
-} from '@/settings/app-profile-theme-preference';
+  setAppMyProfileThemePreference,
+  useAppMyProfileThemePreference,
+} from '@/settings/app-my-profile-theme-preference';
 import {
   APP_UI_STYLE_OPTIONS,
   setAppUiStylePreference,
@@ -225,7 +225,7 @@ const MoreRouteContent = ({
   const [background, muted] = useThemeColor(['background', 'muted']);
   const { prepareSnapshot, requestTransition } = useThemeTransition();
   const isDark = useEffectiveIsDark();
-  const followProfileTheme = useAppProfileThemePreference();
+  const followProfileTheme = useAppMyProfileThemePreference();
   const appFontPreference = useAppFontPreference();
   const appFontSizePreference = useAppFontSizePreference();
   const appLanguagePreference = useAppLanguagePreference();
@@ -522,7 +522,7 @@ const MoreRouteContent = ({
   };
   const handleToggleFollowProfile = async (next: boolean) => {
     try {
-      await setAppProfileThemePreference(next);
+      await setAppMyProfileThemePreference(next);
     } catch {
       // ignore — UI already reverted optimistically inside the store
     }
