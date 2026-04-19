@@ -222,7 +222,7 @@ const MoreRouteContent = ({
     headerHeight,
   });
   const queryClient = useQueryClient();
-  const [background, muted] = useThemeColor(['background', 'muted']);
+  const [background, muted, foreground] = useThemeColor(['background', 'muted', 'foreground']);
   const { prepareSnapshot, requestTransition } = useThemeTransition();
   const isDark = useEffectiveIsDark();
   const followProfileTheme = useAppMyProfileThemePreference();
@@ -348,7 +348,7 @@ const MoreRouteContent = ({
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
   useEffect(() => { setMoreBackgroundColor(pageBackgroundColor); }, [pageBackgroundColor]);
-  const entryIconColor = profileThemePalette.linkColor ?? muted;
+  const subtitleColor = `${foreground}8C`;
   const displayName = user
     ? user.name || user.screen_name || displayNameFallback
     : displayNameFallback;
@@ -734,14 +734,14 @@ const MoreRouteContent = ({
                 >
                   <PressableFeedback.Highlight />
                   <View className="flex-row items-center gap-3 px-4 py-3.5">
-                    {renderSettingIcon(Mail, '#30C759')}
+                    {renderSettingIcon(Mail, '#FF2D55')}
                     <Text
                       className="flex-1 text-[15px] font-normal text-foreground"
                       style={profileThemeStyles.primaryTextStyle}
                     >
                       {t('morePrivateMessages')}
                     </Text>
-                    <ChevronRight size={14} color={entryIconColor} />
+                    <ChevronRight size={14} color={subtitleColor} />
                   </View>
                 </Surface>
               </PressableFeedback>
@@ -767,7 +767,7 @@ const MoreRouteContent = ({
                           {t('moreLanguage')}
                         </Text>
                         <Text className="text-[13px] text-foreground/55">{languageSelectValue.label}</Text>
-                        <ChevronRight size={14} color={muted} />
+                        <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -799,7 +799,7 @@ const MoreRouteContent = ({
                           {t('moreFontStyle')}
                         </Text>
                         <Text className="text-[13px] text-foreground/55">{fontSelectValue?.label}</Text>
-                        <ChevronRight size={14} color={muted} />
+                        <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -833,7 +833,7 @@ const MoreRouteContent = ({
                           {t('moreFontSize')}
                         </Text>
                         <Text className="text-[13px] text-foreground/55">{fontSizeSelectValue?.label}</Text>
-                        <ChevronRight size={14} color={muted} />
+                        <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -861,7 +861,7 @@ const MoreRouteContent = ({
                           {t('moreAppearance')}
                         </Text>
                         <Text className="text-[13px] text-foreground/55">{appearanceSelectValue.label}</Text>
-                        <ChevronRight size={14} color={muted} />
+                        <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -893,7 +893,7 @@ const MoreRouteContent = ({
                           {t('moreTheme')}
                         </Text>
                         <Text className="text-[13px] text-foreground/55">{themeSelectValue.label}</Text>
-                        <ChevronRight size={14} color={muted} />
+                        <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
@@ -925,7 +925,7 @@ const MoreRouteContent = ({
                           {t('moreStyle')}
                         </Text>
                         <Text className="text-[13px] text-foreground/55">{uiStyleSelectValue.label}</Text>
-                        <ChevronRight size={14} color={muted} />
+                        <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
                         <Select.Overlay />
