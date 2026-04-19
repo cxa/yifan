@@ -1,10 +1,6 @@
-• split My vs User color-follow toggles
-• default Follow User Color Settings to on
-• make profile URL tappable when it looks like a link
-• horizontally scrollable stat stickies + polish
-• 5 stat stickies in one row + theme-follow toggle in profile menu
-• restore sticky variety when theme-follow is on + readable text on bg images
-• unified error/empty placeholders with parsed Fanfou reasons
-• iOS-style settings list on More tab + unfollow confirmation
-• redesign profile and More with polaroid scrapbook layout
-• route mention taps to the href id, not the link text
+• Messages list: only tapping the avatar opens the sender's profile — the rest of the card is inert
+• Bio description redesigned as a cream index card with colored rules
+• More-tab private-messages icon is now pink to stand out from its neighbor
+• Row chevrons on More match the subtitle color instead of muted
+• Android: top bar and status bar follow the light/dark theme
+• Android: fixed screenshot capture failing at app start
