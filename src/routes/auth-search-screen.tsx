@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +15,7 @@ import { useThemeColor } from 'heroui-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { useUserFilterEffect } from '@/query/status-query-invalidation';
 import { useAuthSession } from '@/auth/auth-session';
@@ -64,10 +66,15 @@ const SearchRoute = () => {
     'accent', 'background', 'muted', 'foreground',
   ]);
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const isDark = useEffectiveIsDark();
+  // Near-opaque iOS system-fill colors (0.92 alpha) so the search text stays
+  // legible even when dark photos scroll behind the translucent header. The
+  // slight translucency keeps it from looking like a hard pill floating over
+  // the bar — content peeks through enough to feel connected.
   const inputBackground = isDark
-    ? 'rgba(118,118,128,0.24)'
-    : 'rgba(118,118,128,0.12)';
+    ? 'rgba(44,44,46,0.92)'
+    : 'rgba(235,235,238,0.92)';
 
   const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   useEffect(() => {
@@ -241,22 +248,35 @@ const SearchRoute = () => {
   const scrollHandler = useAnimatedScrollHandler({ onScroll: () => {} });
   const timelineListSettings = useTimelineListSettings(insets, { hasBottomTabBar: false });
 
+  // On Android the transparent header doesn't auto-inset content, so we
+  // push content down by headerHeight ourselves. iOS handles this via
+  // contentInsetAdjustmentBehavior="automatic" on the FlatList below.
+  const androidHeaderOffset = Platform.OS === 'android' ? headerHeight : 0;
   const listContentContainerStyle = {
     ...timelineListSettings.contentContainerStyle,
-    paddingTop: results.length > 0 ? TIMELINE_SPACING : 0,
+    paddingTop: androidHeaderOffset + (results.length > 0 ? TIMELINE_SPACING : 0),
     flexGrow: 1,
   };
 
   const isEmpty = !isLoading && Boolean(query) && results.length === 0;
 
+  // KAV only on iOS. Android has windowSoftInputMode=adjustResize and handles
+  // keyboard resize natively; wrapping the content in a KAV there animates the
+  // container size each keyboard frame and makes the empty placeholder + bottom
+  // edge flicker.
+  const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+  const keyboardWrapperProps =
+    Platform.OS === 'ios' ? { behavior: 'padding' as const } : {};
+
   return (
     <View style={[styles.flex, { backgroundColor: background }]}>
-      {/* Content — KAV shrinks this area when keyboard appears so empty state centers correctly */}
-      <KeyboardAvoidingView
+      <KeyboardWrapper style={styles.flex} {...keyboardWrapperProps}>
+      <NativeEdgeScrollShadow
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        color={background}
+        size={100}
+        visibility={Platform.OS === 'android' ? 'top' : 'both'}
       >
-      <NativeEdgeScrollShadow style={styles.flex} color={background}>
         <Animated.FlatList
           style={styles.flex}
           data={results}
@@ -321,7 +341,19 @@ const SearchRoute = () => {
           originRect={photoViewerOriginRect}
         />
       </NativeEdgeScrollShadow>
-      </KeyboardAvoidingView>
+      </KeyboardWrapper>
+
+      {/* Bottom fade for Android. Pinned to root View's bottom: 0 (NOT inside
+          the ScrollShadow wrapper) so it doesn't re-measure when the keyboard
+          resizes the content area. The native window-resize animates the whole
+          root View in one step; the gradient rides along smoothly. */}
+      {Platform.OS === 'android' ? (
+        <LinearGradient
+          pointerEvents="none"
+          colors={['transparent', background]}
+          style={styles.bottomFade}
+        />
+      ) : null}
 
       <ComposerModal
         visible={composeMode !== null}
@@ -361,10 +393,28 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     lineHeight: 20,
+    // Android TextInput defaults to a tall Material-style field with
+    // includeFontPadding + built-in vertical padding. Strip both so the
+    // pill height matches iOS and the input follows the container's
+    // paddingVertical: 8 exactly.
+    ...Platform.select({
+      android: {
+        paddingVertical: 0,
+        textAlignVertical: 'center' as const,
+        includeFontPadding: false,
+      },
+    }),
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 100,
   },
 });
