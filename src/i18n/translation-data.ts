@@ -387,10 +387,10 @@ const enUS: BaseTranslations = {
   composerRemovePhoto: 'Remove',
   composerRemovePhotoA11y: 'Remove photo',
   composerQuotedStatusA11y: 'Quoted post by {{name}}',
-  composerPhotoError: 'Cannot attach photo',
+  composerPhotoError: 'Cannot Attach Photo',
   composerPhotoNeedsText: 'Please enter some text to go with your photo.',
   composerTextTooLong: 'Text is too long. Please keep it within 140 characters.',
-  composerLivePhotoStaticHint: 'This Live Photo was added as a still image. To send as a GIF, tap the photo button below to re-pick it.',
+  composerLivePhotoStaticHint: 'This Live Photo was added as a still image. To send it as a GIF, tap the photo button below and pick it again.',
 
   // Post/send results
   sentTitle: 'Sent',
@@ -587,13 +587,13 @@ const enUS: BaseTranslations = {
   moreStyleSoft: 'Soft',
   moreStyleSharp: 'Sharp',
   moreFollowProfile: 'Follow User Color Settings',
-  moreFollowProfileHint: "If this page looks off, set your background and color scheme on Fanfou's website, or turn off Follow User Color Settings.",
+  moreFollowProfileHint: "If this page doesn't look right, adjust your background and colors on Fanfou's website, or turn off Follow User Color Settings.",
   moreAccountLoading: 'Loading account…',
   moreAccountLoadFailed: 'Failed to load account',
   moreAccountLoadFailedNoId: 'Cannot load account: missing user ID.',
   morePostcardCraftedByPrefix: 'Crafted by ',
   morePostcardCraftedBySuffix: '',
-  morePostcardLabel: 'Would you send me a postcard? Tap to see address',
+  morePostcardLabel: 'Would you send me a postcard? Tap to see the address.',
 
   // Edit profile screen
   editProfileLoading: 'Loading profile…',
@@ -816,7 +816,7 @@ const zhCN: BaseTranslations = {
   blockedAccountNotice: '你已屏蔽该用户。',
   profileLoadFailed: '加载用户资料失败',
   profileOpenAvatar: '查看头像',
-  profileJoinedAt: '{{date}} 加入',
+  profileJoinedAt: '{{date}}加入',
   profileActionMention: '提及',
   profileActionMessage: '私信',
   profileActionMore: '更多…',

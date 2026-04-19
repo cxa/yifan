@@ -1,3 +1,5 @@
+import { getIntlLocale } from '@/i18n/intl-locale';
+
 const FANFOU_DATE_REGEX =
   /^[A-Za-z]{3}\s([A-Za-z]{3})\s(\d{1,2})\s(\d{2}):(\d{2}):(\d{2})\s([+-]\d{4})\s(\d{4})$/;
 const MONTHS: Record<string, number> = {
@@ -82,7 +84,9 @@ export const formatJoinedAt = (value?: string) => {
     return '';
   }
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    // Use the app's current i18n locale so the month label follows the UI
+    // language rather than the device locale (e.g. "Nov 2010" vs "2010年11月").
+    return new Intl.DateTimeFormat(getIntlLocale(), {
       month: 'short',
       year: 'numeric',
     }).format(date);

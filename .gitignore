@@ -1,6 +1,7 @@
 .agent-shell
 .agent
 .agents
+.asc
 .claude
 .pi
 tmp/
