@@ -16,6 +16,7 @@ import {
   usePullScrollY,
   usePullRefreshState,
 } from '@/components/use-pull-to-refresh';
+import { useHeaderHeight } from '@react-navigation/elements';
 import {
   useNavigation,
   useRoute,
@@ -112,6 +113,7 @@ const TagTimelineRoute = () => {
     'muted',
   ]);
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { height: windowHeight } = useWindowDimensions();
   const skeletonAvailableHeight =
     windowHeight -
@@ -301,7 +303,7 @@ const TagTimelineRoute = () => {
   });
   const listContentContainerStyle = {
     ...timelineListSettings.contentContainerStyle,
-    paddingTop: Platform.OS === 'android' ? TIMELINE_SPACING : 0,
+    paddingTop: Platform.OS === 'android' ? headerHeight + TIMELINE_SPACING : 0,
   };
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,

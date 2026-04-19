@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { Appearance, Image, StyleSheet } from 'react-native';
+import { Appearance, Image, StatusBar, StyleSheet } from 'react-native';
 import { captureScreen, releaseCapture } from 'react-native-view-shot';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -32,6 +32,15 @@ const RootLayout = ({ children }: RootLayoutProps) => {
   useLayoutEffect(() => {
     Uniwind.setTheme(isDark ? 'dark' : 'light');
     Appearance.setColorScheme('unspecified');
+    // Re-assert status bar icon color after the Appearance reset — on Android
+    // with edge-to-edge, setColorScheme('unspecified') triggers a config
+    // change that clobbers the WindowInsetsController appearance bits set by
+    // the <StatusBar> component above. Applying it imperatively on the next
+    // tick pins it to the app's theme.
+    const barStyle = isDark ? 'light-content' : 'dark-content';
+    StatusBar.setBarStyle(barStyle, false);
+    const timer = setTimeout(() => StatusBar.setBarStyle(barStyle, false), 0);
+    return () => clearTimeout(timer);
   }, [isDark]);
   const [snapshotUri, setSnapshotUri] = useState<string | null>(null);
   const pendingUri = useRef<string | null>(null);
@@ -92,6 +101,11 @@ const RootLayout = ({ children }: RootLayoutProps) => {
 
   return (
     <ThemeTransitionContext.Provider value={{ prepareSnapshot, requestTransition }}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
       <GestureHandlerRootView className={`flex-1 bg-background ${isDark ? 'dark' : ''}`}>
         <KeyboardProvider>
           <SafeAreaProvider initialMetrics={initialWindowMetrics}>

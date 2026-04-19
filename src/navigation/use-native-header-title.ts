@@ -1,5 +1,4 @@
 import { useLayoutEffect } from 'react';
-import { Platform } from 'react-native';
 import { useNavigation, type ParamListBase } from '@react-navigation/native';
 import { useThemeColor } from 'heroui-native';
 import type {
@@ -25,7 +24,8 @@ const useNativeHeaderTitle = ({ title }: UseNativeHeaderTitleOptions) => {
     const headerOptions: NativeStackNavigationOptions = {
       title,
       headerLargeTitle: false,
-      headerTransparent: Platform.OS === 'ios',
+      headerTransparent: true,
+      headerStyle: { backgroundColor: 'transparent' },
       headerTintColor: foreground,
       headerBackButtonDisplayMode: 'minimal',
       headerShadowVisible: false,

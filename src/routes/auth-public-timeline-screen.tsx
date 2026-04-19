@@ -16,6 +16,7 @@ import {
   usePullScrollY,
   usePullRefreshState,
 } from '@/components/use-pull-to-refresh';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
@@ -87,6 +88,7 @@ const PublicTimelineRoute = () => {
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const [accent, background, muted] = useThemeColor(['accent', 'background', 'muted']);
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { height: windowHeight } = useWindowDimensions();
   const skeletonAvailableHeight =
     windowHeight - insets.top - TIMELINE_TOP_CONTENT_GAP - getTabBarOccludedHeight(insets.bottom);
@@ -241,7 +243,7 @@ const PublicTimelineRoute = () => {
   const timelineListSettings = useTimelineListSettings(insets, { hasBottomTabBar: false });
   const listContentContainerStyle = {
     ...timelineListSettings.contentContainerStyle,
-    paddingTop: Platform.OS === 'android' ? TIMELINE_SPACING : 0,
+    paddingTop: Platform.OS === 'android' ? headerHeight + TIMELINE_SPACING : 0,
   };
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
