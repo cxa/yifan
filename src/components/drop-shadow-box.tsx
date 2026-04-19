@@ -74,6 +74,58 @@ export const CARD_BAR_DARK: Record<DropShadowBoxType, string> = {
 export const SKELETON_BAR_FALLBACK_LIGHT = 'rgba(0,0,0,0.08)';
 export const SKELETON_BAR_FALLBACK_DARK = 'rgba(255,255,255,0.12)';
 
+/** Warm "printed paper" stock color — used for elements that should read as
+ * pasted-on paper (postage stamps, notes) sitting atop a pastel card. Kept
+ * slightly warmer than pure white so it doesn't read as a harsh chip. */
+export const PAPER_STOCK_LIGHT = '#FDFBF5';
+export const PAPER_STOCK_DARK = '#3A342E';
+
+/** Faint ruled-line ink for letter/note paper. Low-saturation blue so the
+ * rules recede behind text — they should read as notebook lines, not dividers. */
+export const RULED_LINE_INK_LIGHT = 'rgba(90, 135, 200, 0.22)';
+export const RULED_LINE_INK_DARK = 'rgba(130, 170, 220, 0.18)';
+
+/** Per-category "colored ink" used to draw rules/marks on cream paper that
+ * visually belong to the card's pastel flavor. A saturated mid-tone of each
+ * hue at low alpha — reads as a faded fountain-pen stroke, not as the pastel
+ * fill (which would vanish against paper). */
+export const CARD_INK_ON_PAPER_LIGHT: Record<DropShadowBoxType, string> = {
+  default: 'rgba(138, 106, 75, 0.35)',
+  accent:  'rgba(216, 90, 72, 0.32)',
+  warning: 'rgba(196, 144, 64, 0.38)',
+  danger:  'rgba(153, 104, 196, 0.32)',
+  sky:     'rgba(71, 136, 179, 0.35)',
+  success: 'rgba(74, 155, 120, 0.38)',
+};
+export const CARD_INK_ON_PAPER_DARK: Record<DropShadowBoxType, string> = {
+  default: 'rgba(220, 180, 130, 0.25)',
+  accent:  'rgba(255, 170, 150, 0.25)',
+  warning: 'rgba(255, 210, 140, 0.28)',
+  danger:  'rgba(210, 170, 240, 0.25)',
+  sky:     'rgba(150, 200, 240, 0.28)',
+  success: 'rgba(170, 230, 200, 0.28)',
+};
+
+/** Stronger variant of CARD_INK_ON_PAPER for punctuating marks (tear-lines,
+ * postmark dots) that need to read as separators rather than recede like the
+ * body rules. Same hue, higher alpha. */
+export const CARD_INK_ON_PAPER_STRONG_LIGHT: Record<DropShadowBoxType, string> = {
+  default: 'rgba(138, 106, 75, 0.55)',
+  accent:  'rgba(216, 90, 72, 0.50)',
+  warning: 'rgba(196, 144, 64, 0.58)',
+  danger:  'rgba(153, 104, 196, 0.50)',
+  sky:     'rgba(71, 136, 179, 0.55)',
+  success: 'rgba(74, 155, 120, 0.58)',
+};
+export const CARD_INK_ON_PAPER_STRONG_DARK: Record<DropShadowBoxType, string> = {
+  default: 'rgba(220, 180, 130, 0.45)',
+  accent:  'rgba(255, 170, 150, 0.45)',
+  warning: 'rgba(255, 210, 140, 0.48)',
+  danger:  'rgba(210, 170, 240, 0.45)',
+  sky:     'rgba(150, 200, 240, 0.48)',
+  success: 'rgba(170, 230, 200, 0.48)',
+};
+
 /** Shimmer sweep highlight — translucent white band that drifts across a
  * skeleton bar. Kept whisper-soft so a glance at the screen won't catch it
  * mid-sweep; only a focused look reveals the motion. */

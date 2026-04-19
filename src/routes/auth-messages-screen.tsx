@@ -41,9 +41,16 @@ import { Text } from '@/components/app-text';
 import DropShadowBox, {
   CARD_BG_DARK,
   CARD_BG_LIGHT,
+  CARD_INK_ON_PAPER_DARK,
+  CARD_INK_ON_PAPER_LIGHT,
+  CARD_INK_ON_PAPER_STRONG_DARK,
+  CARD_INK_ON_PAPER_STRONG_LIGHT,
   CARD_PASTEL_CYCLE,
+  PAPER_STOCK_DARK,
+  PAPER_STOCK_LIGHT,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
+import RuledPaperText from '@/components/ruled-paper-text';
 import { ShimmerBar } from '@/components/timeline-skeleton-card';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
@@ -76,6 +83,12 @@ const STAMP_WAVE_SVG_STYLE = {
   top: 0,
   left: 0,
 };
+// Hand-applied tilt — stamps never land perfectly square on an envelope
+const STAMP_TILT_STYLE = {
+  transform: [{ rotate: '-3deg' }] as const,
+};
+const STAMP_PAPER_INSET = 4;
+const STAMP_PAPER_SIZE = STAMP_SIZE - STAMP_PAPER_INSET * 2;
 
 // Wavy cancellation lines clustered in bottom-right; last wave bleeds past bottom border
 const STAMP_WAVE_LINES: {
@@ -84,15 +97,15 @@ const STAMP_WAVE_LINES: {
 }[] = [
     {
       d: 'M7.5 9.5  C9 8.7   10.5 10.5 12 9.7  C13 9.2  14.2 9.6  16 9.3',
-      opacity: 0.25,
+      opacity: 0.35,
     },
     {
       d: 'M6.5 11.1 C8 10.3  9.5 12.1  11 11.3 C12.2 10.7 13.5 11.2 16 10.9',
-      opacity: 0.5,
+      opacity: 0.65,
     },
     {
       d: 'M6   12.7 C7.5 11.9 9 13.7  10.5 12.9 C11.8 12.3 13 12.8 16 12.5',
-      opacity: 0.3,
+      opacity: 0.4,
     },
   ];
 type MailboxKind = 'inbox' | 'outbox';
@@ -130,26 +143,53 @@ const normalizeDirectMessages = (value: unknown): FanfouDirectMessage[] => {
 };
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
-const TimelineEmptyMessage = ({ message }: { message: string }) => (
-  <TimelineEmptyPlaceholder icon={Inbox} message={message} />
+const TimelineEmptyMessage = ({
+  message,
+  mailbox,
+}: {
+  message: string;
+  mailbox: MailboxKind;
+}) => (
+  <TimelineEmptyPlaceholder
+    icon={mailbox === 'inbox' ? Inbox : Send}
+    message={message}
+  />
 );
 const MessageItemSeparator = () => <View className="h-4" />;
+const STAMP_SHIFT_STYLE = { marginTop: 4 } as const;
 const PostageStamp = ({
   avatarUrl,
   initial,
   borderColor,
+  paperColor,
+  cancellationColor,
 }: {
   avatarUrl?: string;
   initial: string;
   borderColor: string;
+  paperColor: string;
+  cancellationColor: string;
 }) => (
   <View
     className="items-center justify-center"
-    style={{
-      width: STAMP_SIZE,
-      height: STAMP_SIZE,
-    }}
+    style={[
+      {
+        width: STAMP_SIZE,
+        height: STAMP_SIZE,
+      },
+      STAMP_TILT_STYLE,
+    ]}
   >
+    <View
+      className="absolute rounded-[2px]"
+      style={{
+        left: STAMP_PAPER_INSET,
+        top: STAMP_PAPER_INSET,
+        width: STAMP_PAPER_SIZE,
+        height: STAMP_PAPER_SIZE,
+        backgroundColor: paperColor,
+      }}
+    />
     <View
       className="absolute overflow-hidden"
       style={{
@@ -167,8 +207,8 @@ const PostageStamp = ({
           className="h-full w-full"
         />
       ) : (
-        <View className="h-full w-full items-center justify-center bg-surface-secondary">
-          <Text className="text-[10px] font-semibold text-muted">
+        <View className="h-full w-full items-center justify-center">
+          <Text className="text-[13px] font-extrabold text-foreground">
             {initial}
           </Text>
         </View>
@@ -184,7 +224,7 @@ const PostageStamp = ({
         d={POSTAGE_STAMP_PATH}
         fill="none"
         stroke={borderColor}
-        strokeWidth="0.7"
+        strokeWidth="0.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -200,8 +240,8 @@ const PostageStamp = ({
           key={i}
           d={d}
           fill="none"
-          stroke="#E63946"
-          strokeWidth="0.6"
+          stroke={cancellationColor}
+          strokeWidth="0.75"
           strokeLinecap="round"
           opacity={opacity}
         />
@@ -223,40 +263,62 @@ const MessageSkeletonCard = ({
   const themePreference = useAppThemePreference();
   const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const shadowType = CARD_PASTEL_CYCLE[colorIndex % CARD_PASTEL_CYCLE.length];
+  const pastelFill = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
+  const paperFill = isDark ? PAPER_STOCK_DARK : PAPER_STOCK_LIGHT;
   const skeletonBgStyle = {
     backgroundColor: isPlain
       ? (isDark ? '#1E1E1E' : '#FFFFFF')
-      : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
+      : paperFill,
   };
+  const stampPaperColor = isPlain ? paperFill : pastelFill;
+  const cardInkStrong = isPlain
+    ? undefined
+    : (isDark ? CARD_INK_ON_PAPER_STRONG_DARK : CARD_INK_ON_PAPER_STRONG_LIGHT)[shadowType];
   const dividerColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+  const [skeletonDanger] = useThemeColor(['danger']);
   return (
     <DropShadowBox containerClassName="w-full">
       <View style={skeletonBgStyle} className="w-full overflow-hidden rounded-3xl border border-border/40 px-4 pb-4 pt-5">
+        {!isPlain ? (
+          <View
+            className="absolute left-0 right-0 top-0 h-1"
+            style={{ backgroundColor: pastelFill }}
+          />
+        ) : null}
         <View className="flex-row gap-3">
-          <PostageStamp initial="" borderColor={dividerColor} />
-          <View className="flex-1">
-            <View className="absolute bottom-0 left-0 top-0 w-0.5 bg-danger/50" />
-            <View className="pl-3 gap-2">
-              <View className="flex-row items-baseline gap-1">
-                <ShimmerBar
-                  className="h-3 w-24 bg-surface-secondary"
-                  isActive={shimmerIndex === 0}
-                />
-                <ShimmerBar
-                  className="h-2.5 w-12 bg-surface-secondary"
-                  isActive={false}
-                />
-              </View>
+          <View style={STAMP_SHIFT_STYLE}>
+            <PostageStamp
+              initial=""
+              borderColor={dividerColor}
+              paperColor={stampPaperColor}
+              cancellationColor={skeletonDanger}
+            />
+          </View>
+          <View className="min-w-0 flex-1">
+            <View className="flex-row items-baseline gap-1">
               <ShimmerBar
-                className="h-3 w-full bg-surface-secondary"
-                isActive={shimmerIndex === 1}
+                className="h-3 w-24 bg-surface-secondary"
+                isActive={shimmerIndex === 0}
               />
               <ShimmerBar
-                className="h-3 w-4/5 bg-surface-secondary"
-                style={SKELETON_TEXT_LINE_2_STYLE}
-                isActive={shimmerIndex === 2}
+                className="h-2.5 w-12 bg-surface-secondary"
+                isActive={false}
               />
-              <View className="mt-1 border-t border-dashed" style={{ borderColor: dividerColor }} />
+            </View>
+            <ShimmerBar
+              className="mt-2 h-3 w-full bg-surface-secondary"
+              isActive={shimmerIndex === 1}
+            />
+            <ShimmerBar
+              className="mt-2 h-3 w-4/5 bg-surface-secondary"
+              style={SKELETON_TEXT_LINE_2_STYLE}
+              isActive={shimmerIndex === 2}
+            />
+            <View className="mt-4 flex-row items-center gap-2">
+              <View
+                className={`size-1.5 rounded-full ${cardInkStrong ? '' : 'bg-danger/60'}`}
+                style={cardInkStrong ? { backgroundColor: cardInkStrong } : undefined}
+              />
               <ShimmerBar
                 className="h-2.5 w-16 bg-surface-secondary"
                 isActive={false}
@@ -278,6 +340,7 @@ const MessageCard = ({
 }: MessageCardProps) => {
   const isDark = useEffectiveIsDark();
   const themePreference = useAppThemePreference();
+  const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
   const counterpart = mailbox === 'inbox' ? message.sender : message.recipient;
   const counterpartId =
     counterpart?.id ||
@@ -290,12 +353,18 @@ const MessageCard = ({
   const messageText = parseHtmlToText(message.text).trim();
   const initial = displayName.slice(0, 1).toUpperCase();
   const isPressable = Boolean(counterpartId);
+  const pastelFill = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
+  const paperFill = isDark ? PAPER_STOCK_DARK : PAPER_STOCK_LIGHT;
   const cardBgStyle = {
-    backgroundColor: themePreference === APP_THEME_OPTION.PLAIN
+    backgroundColor: isPlain
       ? (isDark ? '#1E1E1E' : '#FFFFFF')
-      : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
+      : paperFill,
   };
-  const [danger, muted] = useThemeColor(['danger', 'muted']);
+  const stampPaperColor = isPlain ? paperFill : pastelFill;
+  const cardInkStrong = isPlain
+    ? undefined
+    : (isDark ? CARD_INK_ON_PAPER_STRONG_DARK : CARD_INK_ON_PAPER_STRONG_LIGHT)[shadowType];
+  const [danger, accent] = useThemeColor(['danger', 'accent']);
   const dividerColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
   const handleDelete = () => {
     onDelete?.();
@@ -313,70 +382,86 @@ const MessageCard = ({
         style={cardBgStyle}
         accessibilityRole={isPressable ? 'button' : undefined}
         className={`relative w-full overflow-hidden rounded-3xl border border-border/40 px-4 pb-4 pt-5 ${isPressable
-            ? 'active:translate-x-[-4px] active:translate-y-[4px]'
+            ? 'active:translate-x-[-4px] active:translate-y-[4px] active:opacity-90'
             : ''
           }`}
       >
+        {!isPlain ? (
+          <View
+            className="absolute left-0 right-0 top-0 h-1"
+            style={{ backgroundColor: pastelFill }}
+          />
+        ) : null}
         {onReply ? (
           <Pressable
             onPress={onReply}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Reply to message"
-            className="absolute right-3 top-3 z-10 active:opacity-50"
+            className="absolute right-4 top-3 z-10 active:opacity-50"
           >
-            <Reply size={14} color={muted} />
+            <Reply size={15} color={accent} />
           </Pressable>
         ) : null}
         <View className="flex-row gap-3">
-          <PostageStamp
-            avatarUrl={avatarUrl}
-            initial={initial}
-            borderColor={dividerColor}
-          />
+          <View style={STAMP_SHIFT_STYLE}>
+            <PostageStamp
+              avatarUrl={avatarUrl}
+              initial={initial}
+              borderColor={dividerColor}
+              paperColor={stampPaperColor}
+              cancellationColor={danger}
+            />
+          </View>
 
-          <View className="relative flex-1">
-            <View className="absolute bottom-0 left-0 top-0 w-0.5 bg-danger/50" />
-
-            <View className="pl-3">
-              <View className="min-w-0 flex-row items-baseline gap-1">
-                <Text
-                  className="shrink text-[16px] font-semibold text-foreground"
-                  numberOfLines={1}
-                >
-                  {displayName}
-                </Text>
-                {handle ? (
-                  <Text className="shrink-0 text-[12px] text-muted">
-                    {handle}
-                  </Text>
-                ) : null}
-              </View>
-
-              {messageText ? (
-                <Text className="mt-2 text-[14px] leading-6 text-foreground">
-                  {messageText}
-                </Text>
+          <View className="min-w-0 flex-1">
+            <View
+              className={`min-w-0 flex-row items-baseline gap-1 ${onReply ? 'pr-6' : ''}`}
+            >
+              <Text
+                className="shrink text-[16px] font-semibold text-foreground"
+                numberOfLines={1}
+              >
+                {displayName}
+              </Text>
+              {handle ? (
+                <Text className="shrink-0 text-[12px] text-muted">{handle}</Text>
               ) : null}
+            </View>
 
-              <View className="relative mt-3 border-t border-dashed" style={{ borderColor: dividerColor }}>
-                <View className="absolute left-[-15px] top-[-4px] size-2 rounded-full border bg-surface-secondary" />
-              </View>
+            {messageText ? (
+              <RuledPaperText
+                text={messageText}
+                className="text-[14px] leading-7 text-foreground"
+                containerClassName="mt-2"
+                numberOfLines={8}
+                inkColor={
+                  isPlain
+                    ? undefined
+                    : (isDark ? CARD_INK_ON_PAPER_DARK : CARD_INK_ON_PAPER_LIGHT)[shadowType]
+                }
+              />
+            ) : null}
 
-              <View className="mt-2 flex-row items-center justify-between">
+            <View className="mt-4 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <View
+                  className={`size-1.5 rounded-full ${cardInkStrong ? '' : 'bg-danger/60'}`}
+                  style={cardInkStrong ? { backgroundColor: cardInkStrong } : undefined}
+                />
                 <Text className="text-[12px] text-muted">{timestamp}</Text>
-                {onDelete ? (
-                  <Pressable
-                    onPress={handleDelete}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Delete message"
-                    className="active:opacity-50"
-                  >
-                    <Trash2 size={14} color={danger} />
-                  </Pressable>
-                ) : null}
               </View>
+              {onDelete ? (
+                <Pressable
+                  onPress={handleDelete}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete message"
+                  className="active:opacity-50"
+                >
+                  <Trash2 size={14} color={danger} />
+                </Pressable>
+              ) : null}
             </View>
           </View>
         </View>
@@ -398,10 +483,11 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
     NAV_HEADER_HEIGHT -
     insets.bottom -
     PAGE_BOTTOM_PADDING;
-  const [background, muted, accent] = useThemeColor([
+  const [background, muted, accent, dialogDanger] = useThemeColor([
     'background',
     'muted',
     'accent',
+    'danger',
   ]);
   const queryClient = useQueryClient();
   const [activeMailbox, setActiveMailbox] = useState<MailboxKind>('inbox');
@@ -458,7 +544,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         <Tabs.Trigger value="inbox">
           {({ isSelected }) => (
             <>
-              <Inbox size={12} color={isSelected ? accent : muted} />
+              <Inbox size={14} color={isSelected ? accent : muted} />
               <Tabs.Label>{t('messagesInbox')}</Tabs.Label>
             </>
           )}
@@ -466,7 +552,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
         <Tabs.Trigger value="outbox">
           {({ isSelected }) => (
             <>
-              <Send size={12} color={isSelected ? accent : muted} />
+              <Send size={14} color={isSelected ? accent : muted} />
               <Tabs.Label>{t('messagesOutbox')}</Tabs.Label>
             </>
           )}
@@ -653,6 +739,7 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
               </View>
             ) : (
               <TimelineEmptyMessage
+                mailbox={mailbox}
                 message={
                   mailbox === 'inbox'
                     ? t('messagesInboxEmpty')
@@ -704,7 +791,10 @@ const PrivateMessagesContent = ({ userId }: PrivateMessagesContentProps) => {
           <Dialog.Overlay className="bg-black/80" />
           <Dialog.Content className="w-[92%] max-w-[360px] self-center">
             <View className="mb-5 gap-1.5">
-              <Dialog.Title>{t('messageDeleteTitle')}</Dialog.Title>
+              <View className="flex-row items-center gap-2">
+                <Trash2 size={18} color={dialogDanger} />
+                <Dialog.Title>{t('messageDeleteTitle')}</Dialog.Title>
+              </View>
               <Dialog.Description>
                 {deleteTarget
                   ? t('messageDeleteConfirm', { name: deleteTarget.displayName })
