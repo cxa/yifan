@@ -46,32 +46,39 @@ export const CARD_BG_DARK: Record<DropShadowBoxType, string> = {
   success: '#1A4538',
 };
 
-/** Slightly deeper tint of each card bg — used for skeleton shimmer bars,
- * chips, and any decorative surface that should sit one step darker than
- * the card background while staying in the same hue family. */
+/** Subtle tint of each card bg — used for skeleton bars and any decorative
+ * shape that should sit barely-darker than the card while staying in the
+ * same hue family. Kept gentle so skeletons read as ghosted, not heavy. */
 export const CARD_BAR_LIGHT: Record<DropShadowBoxType, string> = {
-  default: '#EAD9C0',
-  accent:  '#F5C4B8',
-  warning: '#F5E298',
-  danger:  '#CCBAEC',
-  sky:     '#A8D0EC',
-  success: '#9ED6CC',
+  default: '#F0E5D0',
+  accent:  '#F0CCC0',
+  warning: '#F8E1A8',
+  danger:  '#D8C1E6',
+  sky:     '#AFD3E3',
+  success: '#A8D6BE',
 };
 
-/** Dark-mode variant of CARD_BAR_LIGHT. */
+/** Dark-mode variant of CARD_BAR_LIGHT. Bars sit barely-lighter than card
+ * bg so they remain visible without shouting. */
 export const CARD_BAR_DARK: Record<DropShadowBoxType, string> = {
-  default: '#3A3028',
-  accent:  '#5A3830',
-  warning: '#4A4020',
-  danger:  '#402850',
-  sky:     '#203A50',
-  success: '#1E4840',
+  default: '#342E28',
+  accent:  '#6A3A2E',
+  warning: '#5A4224',
+  danger:  '#4A2A58',
+  sky:     '#234A68',
+  success: '#225240',
 };
 
 /** Neutral fallback bar tint used when a card has no pastel bg to derive
  * from (e.g. plain-theme skeletons). Translucent so it reads on any surface. */
 export const SKELETON_BAR_FALLBACK_LIGHT = 'rgba(0,0,0,0.08)';
 export const SKELETON_BAR_FALLBACK_DARK = 'rgba(255,255,255,0.12)';
+
+/** Shimmer sweep highlight — translucent white band that drifts across a
+ * skeleton bar. Kept whisper-soft so a glance at the screen won't catch it
+ * mid-sweep; only a focused look reveals the motion. */
+export const SHIMMER_HIGHLIGHT_LIGHT = 'rgba(255,255,255,0.20)';
+export const SHIMMER_HIGHLIGHT_DARK = 'rgba(255,255,255,0.06)';
 
 type DropShadowBoxProps = {
   children: React.ReactNode;

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useThemeColor } from 'heroui-native';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
-import LinearGradient from 'react-native-linear-gradient';
 import { Text } from '@/components/app-text';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import {
@@ -12,6 +12,8 @@ import {
   CARD_BG_DARK,
   CARD_BG_LIGHT,
   CARD_PASTEL_CYCLE,
+  SHIMMER_HIGHLIGHT_DARK,
+  SHIMMER_HIGHLIGHT_LIGHT,
   SKELETON_BAR_FALLBACK_DARK,
   SKELETON_BAR_FALLBACK_LIGHT,
 } from '@/components/drop-shadow-box';
@@ -22,9 +24,18 @@ type TimelineSkeletonCardProps = {
   message?: string;
 };
 
-const SHIMMER_DURATION = 1800;
-const SHIMMER_MIN_WIDTH = 80;
-const SHIMMER_RATIO = 0.4;
+// One sweep per cycle: slow drift + long rest. Rest dominates the cycle so
+// the card reads as still most of the time; the sweep becomes an occasional
+// whisper, not constant motion. `inOut(sin)` gives continuous velocity so
+// the drift itself is smooth.
+const SWEEP_DURATION_MS = 2400;
+const SWEEP_REST_MS = 1400;
+const SWEEP_WIDTH_RATIO = 0.8;
+const SWEEP_MIN_WIDTH = 140;
+// Wide fade zone so the sweep enters and exits softly rather than clipping
+// at the bar edges.
+const SWEEP_OPACITY_INPUT = [0, 0.12, 0.88, 1];
+const SWEEP_OPACITY_OUTPUT = [0, 1, 1, 0];
 
 type ShimmerBarProps = {
   className?: string;
@@ -35,7 +46,7 @@ type ShimmerBarProps = {
 
 export const ShimmerBar = ({ className, style, barColor, isActive }: ShimmerBarProps) => {
   const isDark = useEffectiveIsDark();
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const sweep = useRef(new Animated.Value(0)).current;
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
@@ -43,46 +54,56 @@ export const ShimmerBar = ({ className, style, barColor, isActive }: ShimmerBarP
       return;
     }
     const animation = Animated.loop(
-      Animated.timing(shimmer, {
-        toValue: 1,
-        duration: SHIMMER_DURATION,
-        useNativeDriver: true,
-      }),
+      Animated.sequence([
+        Animated.timing(sweep, {
+          toValue: 1,
+          duration: SWEEP_DURATION_MS,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.delay(SWEEP_REST_MS),
+        Animated.timing(sweep, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]),
     );
     animation.start();
     return () => {
       animation.stop();
     };
-  }, [isActive, shimmer, width]);
+  }, [isActive, sweep, width]);
 
-  const shimmerWidth = Math.max(width * SHIMMER_RATIO, SHIMMER_MIN_WIDTH);
-  const translateX = shimmer.interpolate({
+  const sweepWidth = Math.max(width * SWEEP_WIDTH_RATIO, SWEEP_MIN_WIDTH);
+  const translateX = sweep.interpolate({
     inputRange: [0, 1],
-    outputRange: [-shimmerWidth, width + shimmerWidth],
+    outputRange: [-sweepWidth, width + sweepWidth],
   });
-
-  const gradientColors = isDark
-    ? ['transparent', 'rgba(255,255,255,0.07)', 'transparent']
-    : ['transparent', 'rgba(255,255,255,0.40)', 'transparent'];
-
-  const shimmerStyle = [
-    styles.shimmer,
-    { width: shimmerWidth, transform: [{ translateX }] },
-  ];
-
+  const sweepOpacity = sweep.interpolate({
+    inputRange: SWEEP_OPACITY_INPUT,
+    outputRange: SWEEP_OPACITY_OUTPUT,
+  });
+  const highlight = isDark ? SHIMMER_HIGHLIGHT_DARK : SHIMMER_HIGHLIGHT_LIGHT;
   const resolvedBarColor =
     barColor ?? (isDark ? SKELETON_BAR_FALLBACK_DARK : SKELETON_BAR_FALLBACK_LIGHT);
 
   return (
     <View
       className={`relative overflow-hidden rounded-full ${className ?? ''}`}
-      style={[style, { backgroundColor: resolvedBarColor }]}
+      style={[{ backgroundColor: resolvedBarColor }, style]}
       onLayout={event => setWidth(event.nativeEvent.layout.width)}
     >
       {isActive && width > 0 ? (
-        <Animated.View pointerEvents="none" style={shimmerStyle}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.sweep,
+            { width: sweepWidth, opacity: sweepOpacity, transform: [{ translateX }] },
+          ]}
+        >
           <LinearGradient
-            colors={gradientColors}
+            colors={['transparent', highlight, 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={StyleSheet.absoluteFill}
@@ -122,7 +143,10 @@ const TimelineSkeletonCard = ({
         <View className="flex-row gap-3">
           <View
             className="size-10 rounded-full"
-            style={{ backgroundColor: barColor ?? (isDark ? SKELETON_BAR_FALLBACK_DARK : SKELETON_BAR_FALLBACK_LIGHT) }}
+            style={{
+              backgroundColor:
+                barColor ?? (isDark ? SKELETON_BAR_FALLBACK_DARK : SKELETON_BAR_FALLBACK_LIGHT),
+            }}
           />
           <View className="flex-1 gap-2">
             <ShimmerBar
@@ -150,7 +174,7 @@ const styles = StyleSheet.create({
   card: {
     borderCurve: 'continuous',
   },
-  shimmer: {
+  sweep: {
     position: 'absolute',
     left: 0,
     top: 0,
