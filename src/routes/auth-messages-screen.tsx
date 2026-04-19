@@ -163,12 +163,14 @@ const PostageStamp = ({
   borderColor,
   paperColor,
   cancellationColor,
+  onPressAvatar,
 }: {
   avatarUrl?: string;
   initial: string;
   borderColor: string;
   paperColor: string;
   cancellationColor: string;
+  onPressAvatar?: () => void;
 }) => (
   <View
     className="items-center justify-center"
@@ -190,8 +192,11 @@ const PostageStamp = ({
         backgroundColor: paperColor,
       }}
     />
-    <View
-      className="absolute overflow-hidden"
+    <Pressable
+      onPress={onPressAvatar}
+      disabled={!onPressAvatar}
+      accessibilityRole={onPressAvatar ? 'button' : undefined}
+      className={`absolute overflow-hidden ${onPressAvatar ? 'active:opacity-70' : ''}`}
       style={{
         left: STAMP_CONTENT_OFFSET,
         top: STAMP_CONTENT_OFFSET,
@@ -213,8 +218,9 @@ const PostageStamp = ({
           </Text>
         </View>
       )}
-    </View>
+    </Pressable>
     <Svg
+      pointerEvents="none"
       width={STAMP_SIZE}
       height={STAMP_SIZE}
       viewBox="0 0 15 15"
@@ -230,6 +236,7 @@ const PostageStamp = ({
       />
     </Svg>
     <Svg
+      pointerEvents="none"
       width={STAMP_WAVE_SVG_WIDTH}
       height={STAMP_WAVE_SVG_HEIGHT}
       viewBox="0 0 18 19"
@@ -369,22 +376,15 @@ const MessageCard = ({
   const handleDelete = () => {
     onDelete?.();
   };
+  const handlePressAvatar = () => {
+    if (!counterpartId) return;
+    onPressProfile(counterpartId);
+  };
   return (
     <DropShadowBox containerClassName="w-full">
-      <Pressable
-        onPress={() => {
-          if (!counterpartId) {
-            return;
-          }
-          onPressProfile(counterpartId);
-        }}
-        disabled={!isPressable}
+      <View
         style={cardBgStyle}
-        accessibilityRole={isPressable ? 'button' : undefined}
-        className={`relative w-full overflow-hidden rounded-3xl border border-border/40 px-4 pb-4 pt-5 ${isPressable
-            ? 'active:translate-x-[-4px] active:translate-y-[4px] active:opacity-90'
-            : ''
-          }`}
+        className="relative w-full overflow-hidden rounded-3xl border border-border/40 px-4 pb-4 pt-5"
       >
         {!isPlain ? (
           <View
@@ -411,6 +411,7 @@ const MessageCard = ({
               borderColor={dividerColor}
               paperColor={stampPaperColor}
               cancellationColor={danger}
+              onPressAvatar={isPressable ? handlePressAvatar : undefined}
             />
           </View>
 
@@ -465,7 +466,7 @@ const MessageCard = ({
             </View>
           </View>
         </View>
-      </Pressable>
+      </View>
     </DropShadowBox>
   );
 };
