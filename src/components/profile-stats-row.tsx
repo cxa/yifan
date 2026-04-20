@@ -6,7 +6,11 @@ import {
   CARD_BG_LIGHT,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
-import { blendHexColors } from '@/utils/profile-theme';
+import {
+  blendHexColors,
+  isColorDark,
+  resolveTextStylesForBackground,
+} from '@/utils/profile-theme';
 
 export type ProfileStat = {
   label: string;
@@ -87,10 +91,26 @@ const ProfileStatsRow = ({
         const type = STICKY_TYPES[index % STICKY_TYPES.length];
         const rotate = STICKY_ROTATES[index % STICKY_ROTATES.length];
         const pastel = (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[type];
-        const pastelBlended = panelBackgroundColor
-          ? blendHexColors(pastel, panelBackgroundColor, 0.5)
-          : pastel;
+        // Only blend pastel with the user's panel fill when they sit in the
+        // same luminance zone. Mixing light pastel with a dark panel (or vice
+        // versa) collapses the colour into muddy mid-grey.
+        const panelIsDark = panelBackgroundColor
+          ? isColorDark(panelBackgroundColor)
+          : undefined;
+        const shouldBlend =
+          panelBackgroundColor !== undefined && panelIsDark === isDark;
+        const pastelBlended =
+          shouldBlend && panelBackgroundColor
+            ? blendHexColors(pastel, panelBackgroundColor, 0.5)
+            : pastel;
         const pressableStyle = { backgroundColor: pastelBlended };
+        // The sticky sits on a pastel tile, not the panel fill the caller
+        // tinted for. Re-tint against this specific pastel so numbers and
+        // labels stay readable no matter which colour the tile landed on.
+        const stickyTextStyles = resolveTextStylesForBackground(
+          primaryTextStyle?.color as string | undefined,
+          pastelBlended,
+        );
         return (
           <View key={stat.label} style={rotate}>
             <Pressable
@@ -102,14 +122,14 @@ const ProfileStatsRow = ({
             >
               <Text
                 className="text-[10px] uppercase tracking-normal font-bold text-foreground/70"
-                style={mutedTextStyle}
+                style={stickyTextStyles.mutedTextStyle ?? mutedTextStyle}
                 numberOfLines={1}
               >
                 {stat.label}
               </Text>
               <Text
                 className="mt-0.5 text-[20px] leading-[24px] font-extrabold tabular-nums text-foreground"
-                style={primaryTextStyle}
+                style={stickyTextStyles.primaryTextStyle ?? primaryTextStyle}
                 numberOfLines={1}
               >
                 {formatValue(stat.value)}

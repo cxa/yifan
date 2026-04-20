@@ -96,12 +96,10 @@ import type { FanfouStatus, FanfouUser } from '@/types/fanfou';
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
-  adaptProfilePaletteForDarkMode,
-  createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
-  resolveProfileThemePalette,
 } from '@/utils/profile-theme';
+import { useProfileHeroTheme } from '@/utils/use-profile-hero-theme';
 import { useTranslation } from 'react-i18next';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import {
@@ -723,32 +721,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const recentStatusesErrorMessage = recentStatusesError ? t('recentActivityEmpty') : null;
   const recentStatusesTechnicalError =
     recentStatusesError instanceof Error ? recentStatusesError.message : null;
-  const profileThemePalette = (() => {
-    const palette = followProfileTheme
-      ? resolveProfileThemePalette(user)
-      : resolveProfileThemePalette(undefined);
-    return followProfileTheme && isDark
-      ? adaptProfilePaletteForDarkMode(palette)
-      : palette;
-  })();
-  const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
-  // Single 1px drop shadow with (almost) no blur — reads as a crisp offset
-  // outline rather than a glow. Colour is the opposite of the user's text
-  // colour so the characters pop regardless of what's behind them.
-  // NB: Android's setShadowLayer needs a positive radius to render at all, so
-  // use a tiny non-zero value on both platforms — visually still crisp.
-  const themeTextHaloStyle = (() => {
-    const baseColor = profileThemePalette.textColor;
-    if (!baseColor) return null;
-    const baseIsDark = isColorDark(baseColor);
-    return {
-      textShadowColor: baseIsDark
-        ? 'rgba(255, 255, 255, 0.95)'
-        : 'rgba(0, 0, 0, 0.9)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: Platform.OS === 'android' ? 1 : 0.1,
-    } as const;
-  })();
+  const {
+    profileThemePalette,
+    profileThemeStyles,
+    heroTextStyles,
+    hasBackgroundImage,
+  } = useProfileHeroTheme(user, { followProfileTheme });
   const preferredHeaderTintColor =
     profileThemePalette.linkColor ?? profileThemePalette.textColor;
   const headerTintColor = hasBackgroundImage
@@ -845,7 +823,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const profileUrl = parseHtmlToText(user.url);
   const avatarUrl = user.profile_image_url_large;
   const hasAvatar = avatarUrl.trim().length > 0;
-  const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
   const profileAvatar = (
     <ProfilePolaroidAvatar
       avatarUrl={avatarUrl}
@@ -970,10 +947,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
               location={normalizedLocation}
               joinedLine={joinedLine}
               profileUrl={profileUrl}
-              primaryTextStyle={profileThemeStyles.primaryTextStyle}
-              mutedTextStyle={profileThemeStyles.mutedTextStyle}
-              linkTextStyle={profileThemeStyles.linkTextStyle}
-              textHaloStyle={themeTextHaloStyle}
+              primaryTextStyle={heroTextStyles.primaryTextStyle}
+              mutedTextStyle={heroTextStyles.mutedTextStyle}
+              textHaloStyle={heroTextStyles.textHaloStyle}
             />
 
             {!isBlocked ? (
@@ -1054,14 +1030,12 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                   <Popover.Trigger
                     asChild={false}
                     className="size-12 rounded-full bg-white dark:bg-surface-secondary border border-foreground/15 items-center justify-center"
-                    style={[STYLES_V12.moreRotate, profileThemeStyles.panelStyle]}
+                    style={STYLES_V12.moreRotate}
                     accessibilityLabel={t('profileActionMore')}
                   >
                     <MoreHorizontal
                       size={20}
-                      color={
-                        profileThemeStyles.primaryTextStyle?.color ?? foregroundIconColor
-                      }
+                      color={foregroundIconColor}
                       strokeWidth={2.4}
                     />
                   </Popover.Trigger>
@@ -1175,10 +1149,10 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 <Text
                   className="mt-4 ml-1 text-[24px] font-extrabold text-foreground"
                   dynamicTypeRamp="title1"
-                  style={
-                    profileThemeStyles.linkTextStyle ??
-                    profileThemeStyles.primaryTextStyle
-                  }
+                  style={[
+                    heroTextStyles.primaryTextStyle,
+                    heroTextStyles.textHaloStyle,
+                  ]}
                 >
                   {t('recentActivity')}
                 </Text>

@@ -95,6 +95,19 @@ const normalizeBackgroundImageUrl = (
   return /^https?:\/\//i.test(trimmedValue) ? trimmedValue : undefined;
 };
 
+// Fanfou inherits Twitter's v1 schema and occasionally serialises boolean
+// fields as strings ("true"/"false") or integers (1/0). Treat all the
+// truthy spellings as tiled and everything else (including missing) as
+// not-tiled — missing ought to mean "default, don't tile".
+const isTruthyTileFlag = (value: unknown): boolean => {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1';
+  }
+  return false;
+};
+
 export const resolveProfileThemePalette = (
   user?: ProfileThemeSource | null,
 ): ProfileThemePalette => {
@@ -109,7 +122,7 @@ export const resolveProfileThemePalette = (
     backgroundImageUrl: normalizeBackgroundImageUrl(
       user?.profile_background_image_url,
     ),
-    isBackgroundImageTiled: user?.profile_background_tile === true,
+    isBackgroundImageTiled: isTruthyTileFlag(user?.profile_background_tile),
   };
 };
 
@@ -127,13 +140,18 @@ export const createProfileThemeStyles = (
             : {}),
         }
       : undefined;
+  // Text inside a themed panel sits on `profile_sidebar_fill_color`. The
+  // user picks both colours independently, so the pair is not guaranteed
+  // to be readable — tint the text when contrast falls below WCAG AA.
+  const textOnPanel =
+    palette.textColor && palette.panelBackgroundColor
+      ? tintTextForBackground(palette.textColor, palette.panelBackgroundColor)
+      : palette.textColor;
   return {
     panelStyle,
-    primaryTextStyle: palette.textColor
-      ? { color: palette.textColor }
-      : undefined,
-    mutedTextStyle: palette.mutedTextColor
-      ? { color: palette.mutedTextColor }
+    primaryTextStyle: textOnPanel ? { color: textOnPanel } : undefined,
+    mutedTextStyle: textOnPanel
+      ? { color: withAlpha(textOnPanel, 0.74) }
       : undefined,
     linkTextStyle: palette.linkColor ? { color: palette.linkColor } : undefined,
   };
@@ -283,6 +301,40 @@ const getContrastRatio = (firstColor: string, secondColor: string) => {
   return (lighter + 0.05) / (darker + 0.05);
 };
 
+/**
+ * Return a version of `textColor` that contrasts with `backgroundColor`.
+ * Preserves the user's hue and a reasonable saturation — we only swing the
+ * lightness to the opposite extreme if the original doesn't clear the WCAG
+ * AA threshold. If even a tinted extreme can't make it (mid-luminance bg),
+ * fall back to pure black / white.
+ */
+export const tintTextForBackground = (
+  textColor: string,
+  backgroundColor: string,
+  minContrast = 4.5,
+): string => {
+  const normalizedText = normalizeHexColor(textColor);
+  const normalizedBg = normalizeHexColor(backgroundColor);
+  if (!normalizedText || !normalizedBg) return textColor;
+  if (getContrastRatio(normalizedText, normalizedBg) >= minContrast) {
+    return normalizedText;
+  }
+  const [hue, saturation] = hexToHSL(normalizedText);
+  const bgIsDark = getRelativeLuminance(normalizedBg) < 0.5;
+  const tintedCandidate = hslToHex(
+    hue,
+    Math.min(saturation, 0.6),
+    bgIsDark ? 0.88 : 0.12,
+  );
+  if (getContrastRatio(tintedCandidate, normalizedBg) >= minContrast) {
+    return tintedCandidate;
+  }
+  return (
+    resolveReadableTextColor({ backgroundColor: normalizedBg }) ??
+    normalizedText
+  );
+};
+
 export const resolveReadableTextColor = ({
   backgroundColor,
   lightTextColor = '#FFFFFF',
@@ -313,4 +365,104 @@ export const resolveReadableTextColor = ({
   return lightContrast >= darkContrast
     ? normalizedLightTextColor
     : normalizedDarkTextColor;
+};
+
+export type HeroTextStyles = {
+  primaryTextStyle?: TextStyle;
+  mutedTextStyle?: TextStyle;
+  textHaloStyle?: TextStyle;
+};
+
+/**
+ * Produce a { primary, muted } text style pair that is guaranteed to
+ * contrast with `backgroundColor`. Same rule as `tintTextForBackground`:
+ * preserve the user's hue when possible, tint lightness when it isn't,
+ * fall back to pure B/W as last resort.
+ */
+export const resolveTextStylesForBackground = (
+  textColor: string | undefined,
+  backgroundColor: string,
+): HeroTextStyles => {
+  // Keep the user's hue when possible, tint L to guarantee contrast,
+  // fall back to pure B/W only when hue-tinting can't clear the bar.
+  const heroColor = textColor
+    ? tintTextForBackground(textColor, backgroundColor)
+    : resolveReadableTextColor({ backgroundColor });
+  if (!heroColor) return {};
+  return {
+    primaryTextStyle: { color: heroColor },
+    mutedTextStyle: { color: withAlpha(heroColor, 0.74) },
+  };
+};
+
+/**
+ * Derive text styles for the hero row. What sits behind the hero text
+ * depends on how the bg image is used:
+ *
+ * - Tiled image covers the whole viewport → pick contrast against the
+ *   sampled image color. Halo fallback while the sample is in-flight.
+ * - Non-tiled image is a top-left anchored decoration — the hero actually
+ *   sits on the solid page background below the decoration, so contrast
+ *   against `pageBackgroundColor`, NOT the sampled image colour.
+ * - No image → same, against `pageBackgroundColor`.
+ *
+ * In dark mode with a background image, `ProfilePageBackdrop` lays a 0.8
+ * black overlay between image and content. Hero text actually sits on top
+ * of that overlay, so the effective contrast target is
+ *   effective = sampled|page × 0.2 + black × 0.8.
+ * Without this correction, the sample/page colour the hero was tinted
+ * against is nowhere close to what the user actually sees.
+ */
+export const deriveHeroTextStyles = ({
+  pageBackgroundColor,
+  textColor,
+  hasBackgroundImage,
+  isBackgroundImageTiled,
+  sampledBackgroundColor,
+  isDark,
+}: {
+  pageBackgroundColor?: string;
+  textColor?: string;
+  hasBackgroundImage: boolean;
+  isBackgroundImageTiled: boolean;
+  sampledBackgroundColor?: string;
+  isDark: boolean;
+}): HeroTextStyles => {
+  // In dark mode with a background image, `ProfilePageBackdrop` lays an
+  // 80% pageBackgroundColor-tinted overlay between image and content. That
+  // means the effective colour behind the hero text is `source × 0.2 +
+  // pageBg × 0.8` — and for non-image regions, that collapses to `pageBg`.
+  const applyDarkOverlay = (color: string) =>
+    hasBackgroundImage && isDark && pageBackgroundColor
+      ? blendHexColors(color, pageBackgroundColor, 0.8)
+      : color;
+  const imageCoversViewport = hasBackgroundImage && isBackgroundImageTiled;
+  if (imageCoversViewport) {
+    if (sampledBackgroundColor) {
+      return resolveTextStylesForBackground(
+        textColor,
+        applyDarkOverlay(sampledBackgroundColor),
+      );
+    }
+    if (!textColor) return {};
+    const textIsDark = isColorDark(textColor);
+    return {
+      primaryTextStyle: { color: textColor },
+      mutedTextStyle: { color: withAlpha(textColor, 0.74) },
+      textHaloStyle: {
+        textShadowColor: textIsDark
+          ? 'rgba(255, 255, 255, 0.95)'
+          : 'rgba(0, 0, 0, 0.9)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 3,
+      },
+    };
+  }
+  if (!pageBackgroundColor) {
+    return {};
+  }
+  return resolveTextStylesForBackground(
+    textColor,
+    applyDarkOverlay(pageBackgroundColor),
+  );
 };

@@ -11,7 +11,6 @@ type ProfileHeroRowProps = {
   profileUrl?: string | null;
   primaryTextStyle?: TextStyle;
   mutedTextStyle?: TextStyle;
-  linkTextStyle?: TextStyle;
   textHaloStyle?: TextStyle | null;
 };
 
@@ -26,7 +25,6 @@ const ProfileHeroRow = ({
   profileUrl,
   primaryTextStyle,
   mutedTextStyle,
-  linkTextStyle,
   textHaloStyle,
 }: ProfileHeroRowProps) => (
   <View className="flex-row items-end gap-3 pt-1">
@@ -72,8 +70,8 @@ const ProfileHeroRow = ({
             hitSlop={12}
           >
             <Text
-              className="text-[12px] font-semibold text-accent underline"
-              style={[linkTextStyle, textHaloStyle]}
+              className="text-[12px] font-semibold text-muted underline"
+              style={[mutedTextStyle, textHaloStyle]}
               numberOfLines={1}
             >
               {profileUrl}
@@ -81,8 +79,8 @@ const ProfileHeroRow = ({
           </Pressable>
         ) : (
           <Text
-            className="text-[12px] font-semibold text-accent mt-1"
-            style={[linkTextStyle, textHaloStyle]}
+            className="text-[12px] font-semibold text-muted mt-1"
+            style={[mutedTextStyle, textHaloStyle]}
             numberOfLines={1}
           >
             {profileUrl}

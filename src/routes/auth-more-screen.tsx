@@ -120,12 +120,10 @@ import {
 import { formatJoinedAt } from '@/utils/fanfou-date';
 import { parseHtmlToText } from '@/utils/parse-html';
 import {
-  adaptProfilePaletteForDarkMode,
-  createProfileThemeStyles,
   isColorDark,
   resolveReadableTextColor,
-  resolveProfileThemePalette,
 } from '@/utils/profile-theme';
+import { useProfileHeroTheme } from '@/utils/use-profile-hero-theme';
 const APP_VERSION: string = (require('../../package.json') as { version: string }).version;
 const PAGE_HORIZONTAL_PADDING = 20;
 const PAGE_BOTTOM_PADDING = 24;
@@ -290,14 +288,12 @@ const MoreRouteContent = ({
 
   const errorMessage = error ? t('moreAccountLoadFailed') : null;
   const technicalError = error instanceof Error ? error.message : null;
-  const profileThemePalette = (() => {
-    const palette = followProfileTheme
-      ? resolveProfileThemePalette(user)
-      : resolveProfileThemePalette(undefined);
-    return followProfileTheme && isDark
-      ? adaptProfilePaletteForDarkMode(palette)
-      : palette;
-  })();
+  const {
+    profileThemePalette,
+    profileThemeStyles,
+    heroTextStyles,
+    hasBackgroundImage,
+  } = useProfileHeroTheme(user, { followProfileTheme });
   // Shuffle pastels once on mount so sections get a fresh random combo each visit.
   const colorfulPaletteRef = useRef<typeof CARD_PASTEL_CYCLE | null>(null);
   if (colorfulPaletteRef.current === null) {
@@ -312,7 +308,6 @@ const MoreRouteContent = ({
         settings: { backgroundColor: isDark ? CARD_BG_DARK[shuffledPalette[3]] : CARD_BG_LIGHT[shuffledPalette[3]] },
       }
     : null;
-  const hasBackgroundImage = Boolean(profileThemePalette.backgroundImageUrl);
   const preferredHeaderTintColor =
     profileThemePalette.linkColor ?? profileThemePalette.textColor;
   const headerTintColor = hasBackgroundImage
@@ -338,7 +333,6 @@ const MoreRouteContent = ({
     headerBackgroundColor,
     showHeaderTitle,
   });
-  const profileThemeStyles = createProfileThemeStyles(profileThemePalette);
   const panelStyle = {
     profile:  colorfulSectionStyles?.profile  ?? profileThemeStyles.panelStyle,
     stats:    colorfulSectionStyles?.stats    ?? profileThemeStyles.panelStyle,
@@ -348,7 +342,11 @@ const MoreRouteContent = ({
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
   useEffect(() => { setMoreBackgroundColor(pageBackgroundColor); }, [pageBackgroundColor]);
-  const subtitleColor = `${foreground}8C`;
+  const themedPrimaryColor = profileThemeStyles.primaryTextStyle?.color;
+  const subtitleColor =
+    typeof themedPrimaryColor === 'string'
+      ? `${themedPrimaryColor}8C`
+      : `${foreground}8C`;
   const displayName = user
     ? user.name || user.screen_name || displayNameFallback
     : displayNameFallback;
@@ -693,9 +691,9 @@ const MoreRouteContent = ({
                   location={location}
                   joinedLine={joinedAt ? t('profileJoinedAt', { date: joinedAt }) : null}
                   profileUrl={profileUrl}
-                  primaryTextStyle={profileThemeStyles.primaryTextStyle}
-                  mutedTextStyle={profileThemeStyles.mutedTextStyle}
-                  linkTextStyle={profileThemeStyles.linkTextStyle}
+                  primaryTextStyle={heroTextStyles.primaryTextStyle}
+                  mutedTextStyle={heroTextStyles.mutedTextStyle}
+                  textHaloStyle={heroTextStyles.textHaloStyle}
                 />
 
                 {errorMessage ? (
@@ -763,7 +761,7 @@ const MoreRouteContent = ({
                         >
                           {t('moreLanguage')}
                         </Text>
-                        <Text className="text-[13px] text-foreground/55">{languageSelectValue.label}</Text>
+                        <Text className="text-[13px] text-foreground/55" style={profileThemeStyles.mutedTextStyle}>{languageSelectValue.label}</Text>
                         <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
@@ -795,7 +793,7 @@ const MoreRouteContent = ({
                         >
                           {t('moreFontStyle')}
                         </Text>
-                        <Text className="text-[13px] text-foreground/55">{fontSelectValue?.label}</Text>
+                        <Text className="text-[13px] text-foreground/55" style={profileThemeStyles.mutedTextStyle}>{fontSelectValue?.label}</Text>
                         <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
@@ -829,7 +827,7 @@ const MoreRouteContent = ({
                         >
                           {t('moreFontSize')}
                         </Text>
-                        <Text className="text-[13px] text-foreground/55">{fontSizeSelectValue?.label}</Text>
+                        <Text className="text-[13px] text-foreground/55" style={profileThemeStyles.mutedTextStyle}>{fontSizeSelectValue?.label}</Text>
                         <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
@@ -857,7 +855,7 @@ const MoreRouteContent = ({
                         >
                           {t('moreAppearance')}
                         </Text>
-                        <Text className="text-[13px] text-foreground/55">{appearanceSelectValue.label}</Text>
+                        <Text className="text-[13px] text-foreground/55" style={profileThemeStyles.mutedTextStyle}>{appearanceSelectValue.label}</Text>
                         <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
@@ -889,7 +887,7 @@ const MoreRouteContent = ({
                         >
                           {t('moreTheme')}
                         </Text>
-                        <Text className="text-[13px] text-foreground/55">{themeSelectValue.label}</Text>
+                        <Text className="text-[13px] text-foreground/55" style={profileThemeStyles.mutedTextStyle}>{themeSelectValue.label}</Text>
                         <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
@@ -921,7 +919,7 @@ const MoreRouteContent = ({
                         >
                           {t('moreStyle')}
                         </Text>
-                        <Text className="text-[13px] text-foreground/55">{uiStyleSelectValue.label}</Text>
+                        <Text className="text-[13px] text-foreground/55" style={profileThemeStyles.mutedTextStyle}>{uiStyleSelectValue.label}</Text>
                         <ChevronRight size={14} color={subtitleColor} />
                       </Select.Trigger>
                       <Select.Portal>
@@ -978,7 +976,10 @@ const MoreRouteContent = ({
                 />
               </View>
               <View className="mt-12 px-1">
-                <Text className="text-[13px] text-muted opacity-40 text-center tracking-widest mb-2">
+                <Text
+                  className="text-[13px] text-muted opacity-40 text-center tracking-widest mb-2"
+                  style={heroTextStyles.primaryTextStyle}
+                >
                   {t('morePostcardCraftedByPrefix')}<Text
                     className="underline active:opacity-50"
                     onPress={() => {
@@ -1002,26 +1003,37 @@ const MoreRouteContent = ({
                     });
                   }}
                 >
-                  <Text className="text-[11px] text-muted opacity-30 text-center">{t('morePostcardLabel')}</Text>
+                  <Text
+                    className="text-[11px] text-muted opacity-30 text-center"
+                    style={heroTextStyles.primaryTextStyle}
+                  >
+                    {t('morePostcardLabel')}
+                  </Text>
                 </PressableFeedback>
                 {isPostcardExpanded && (
                   <>
                     <View className="flex-row items-center mt-5 mb-5">
                       <View className="flex-1 h-px bg-muted opacity-20" />
-                      <Leaf size={13} color={muted} className="mx-2" />
+                      <Leaf size={13} color={heroTextStyles.primaryTextStyle?.color ?? muted} className="mx-2" />
                       <View className="flex-1 h-px bg-muted opacity-20" />
                     </View>
-                    <Text className="text-[13px] text-muted leading-6 text-center">
+                    <Text
+                      className="text-[13px] text-muted leading-6 text-center"
+                      style={heroTextStyles.mutedTextStyle}
+                    >
                       广西南宁市青秀区凤凰岭路1号{'\n'}荣和大地二组团10B202（邮编 530028）{'\n'}realazy 收
                     </Text>
                     <View className="flex-row items-center mt-5">
                       <View className="flex-1 h-px bg-muted opacity-20" />
-                      <Leaf size={13} color={muted} className="mx-2" />
+                      <Leaf size={13} color={heroTextStyles.primaryTextStyle?.color ?? muted} className="mx-2" />
                       <View className="flex-1 h-px bg-muted opacity-20" />
                     </View>
                   </>
                 )}
-                <Text className="mt-6 text-[11px] text-muted opacity-30 text-center tracking-widest">
+                <Text
+                  className="mt-6 text-[11px] text-muted opacity-30 text-center tracking-widest"
+                  style={heroTextStyles.primaryTextStyle}
+                >
                   v{APP_VERSION}
                 </Text>
               </View>
