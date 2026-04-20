@@ -30,6 +30,13 @@ import {
   type PickedImage,
 } from '@/utils/pick-image-from-library';
 import { MAX_STATUS_LENGTH } from '@/utils/composer-send';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
+
+// Submit button color stays in sync with the Compose tab's active pill so
+// "hit post" reads as one unified blue gesture across tab → composer.
+// Dark variant lifts a touch to stay legible on the dark modal bg.
+const COMPOSER_SUBMIT_BG = { light: '#4A8BF7', dark: '#5E9AFA' };
+const COMPOSER_SUBMIT_FG = '#FFFFFF';
 
 export type ComposerModalSubmitPayload = {
   text: string;
@@ -80,6 +87,8 @@ const ComposerModal = ({
     'muted',
     'border',
   ]);
+  const isDark = useEffectiveIsDark();
+  const submitBg = isDark ? COMPOSER_SUBMIT_BG.dark : COMPOSER_SUBMIT_BG.light;
   const inputRef = useRef<RNTextInput>(null);
   const [value, setValue] = useState(initialText);
   const [photo, setPhoto] = useState<PickedImage | null>(null);
@@ -295,12 +304,13 @@ const ComposerModal = ({
             </Text>
             <Pressable
               onPress={canSubmit ? handleSubmit : undefined}
-              className={`items-center rounded-full bg-accent px-5 py-2 ${canSubmit ? '' : 'opacity-40'}`}
+              style={{ backgroundColor: submitBg }}
+              className={`items-center rounded-full px-5 py-2 ${canSubmit ? '' : 'opacity-40'}`}
               accessibilityRole="button"
               accessibilityLabel={submitLabel}
               disabled={!canSubmit}
             >
-              <Text className="text-[14px] font-semibold text-accent-foreground">
+              <Text className="text-[14px] font-semibold" style={{ color: COMPOSER_SUBMIT_FG }}>
                 {isSubmitting ? t('composerSending') : submitLabel}
               </Text>
             </Pressable>

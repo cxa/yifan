@@ -366,7 +366,7 @@ const enUS: BaseTranslations = {
   // Tab labels
   tabHome: 'Home',
   tabMentions: 'Mentions',
-  tabMore: 'More',
+  tabMore: 'Me',
   tabCompose: 'Post',
 
   // Composer
@@ -687,7 +687,7 @@ const zhCN: BaseTranslations = {
   // Tab labels
   tabHome: '首页',
   tabMentions: '提到我的',
-  tabMore: '更多',
+  tabMore: '我',
   tabCompose: '发布',
 
   // Composer

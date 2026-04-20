@@ -10,8 +10,9 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
-import { Home, AtSign, MoreHorizontal, SquarePen } from 'lucide-react-native';
+import { Home, AtSign, Soup, Plus } from 'lucide-react-native';
 import { useAuthSession } from '@/auth/auth-session';
+import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
 } from '@/components/composer-modal';
@@ -40,6 +41,41 @@ import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { closePhotoViewer, usePhotoViewerStore } from '@/components/photo-viewer-store';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
 const Tab = createBottomTabNavigator<AuthTabParamList>();
+// Bottom tab bar intentionally inverts the app theme — a dark bar in light
+// mode, light bar in dark mode — so the bar reads as a distinct surface
+// sitting on top of the page content instead of blending with it. Each
+// tab still carries its own hue family at rest and lifts to the full
+// pastel when focused.
+const TAB_BG_LIGHT        = '#FFFFFF';
+const TAB_BG_DARK         = '#1E1E1E';
+const TAB_MUTED_LIGHT     = '#7C7268';
+const TAB_MUTED_DARK      = '#9C9288';
+const TAB_FG_LIGHT        = '#1A1208';
+const TAB_FG_DARK         = '#F2EDE8';
+const TAB_ACTIVE_HOME     = { light: '#D0E8F5', dark: '#1A3E5A' };
+const TAB_ACTIVE_MENTIONS = { light: '#FDF3C8', dark: '#4A3618' };
+const TAB_ACTIVE_MORE     = { light: '#C8EDE8', dark: '#1A4538' };
+// Compose uses a lilac pastel from CARD_BG.danger — distinct hue from
+// all three siblings (sky blue / amber yellow / mint green) so no two
+// pills read as "same color family" on the bar. Foreground follows
+// tabForeground for consistency with siblings.
+const TAB_ACTIVE_COMPOSE  = { light: '#E3CAEF', dark: '#3D2048' };
+// Per-tab rest bg — each pill carries its own hue at rest, a ~50% wash of
+// the active pastel toward the inverted bar bg. Keeps every tab
+// identifiable at a glance without stealing focus from the active pill.
+const TAB_REST_HOME       = { light: '#E8F3FA', dark: '#152D42' };
+const TAB_REST_MENTIONS   = { light: '#FEFAE4', dark: '#362814' };
+const TAB_REST_MORE       = { light: '#E4F6F3', dark: '#15332A' };
+// Compose always reads as the primary CTA — the rest bg = active bg,
+// no washed variant. The pill is permanently "Post-ready".
+const TAB_REST_COMPOSE    = { light: '#E3CAEF', dark: '#3D2048' };
+// Per-tab icon tints at rest — deeper brand hues readable against the
+// pastel rest bg. `.light` pairs sit on white-ish rest pills (needs
+// deeper chroma); `.dark` pairs sit on the dark rest pills (lifted for
+// legibility).
+const TAB_TINT_HOME       = { light: '#6A9DBC', dark: '#A8C4D6' };
+const TAB_TINT_MENTIONS   = { light: '#A89250', dark: '#D4BE88' };
+const TAB_TINT_MORE       = { light: '#6AAA92', dark: '#A8CEC0' };
 const TabScaleWrapper = ({ children, backgroundColor }: { children: React.ReactNode; backgroundColor: string }) => {
   return (
     <View style={[styles.fill, { backgroundColor }]}>
@@ -66,9 +102,9 @@ const iconForRoute = (routeName: keyof AuthTabParamList, color: string) => {
     case AUTH_TAB_ROUTE.MENTIONS:
       return <AtSign color={color} size={22} />;
     case AUTH_TAB_ROUTE.MORE:
-      return <MoreHorizontal color={color} size={22} />;
+      return <Soup color={color} size={22} />;
     case AUTH_TAB_ROUTE.COMPOSE:
-      return <SquarePen color={color} size={22} />;
+      return <Plus color={color} size={22} strokeWidth={2.5} />;
     default:
       return null;
   }
@@ -120,12 +156,15 @@ const AuthTabBar = ({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const readableInsets = useReadableContentInsets();
-  const [accent, muted, accentForeground, background] = useThemeColor([
+  const [accent, accentForeground] = useThemeColor([
     'accent',
-    'muted',
     'accent-foreground',
-    'background',
   ]);
+  const isDark = useEffectiveIsDark();
+  const invertedIsDark = !isDark;
+  const tabBackground = invertedIsDark ? TAB_BG_DARK : TAB_BG_LIGHT;
+  const tabMuted = invertedIsDark ? TAB_MUTED_DARK : TAB_MUTED_LIGHT;
+  const tabForeground = invertedIsDark ? TAB_FG_DARK : TAB_FG_LIGHT;
   const leftRoutesGroup = state.routes.filter(
     r => r.name !== AUTH_TAB_ROUTE.COMPOSE,
   );
@@ -144,25 +183,52 @@ const AuthTabBar = ({
     const isFocused = isComposeRoute
       ? isComposerVisible
       : state.index === state.routes.indexOf(route);
-    // Warm pastel tab colors matching design system
+    // Warm pastel tab colors matching design system. Active pills flip to
+    // their dark-palette counterparts when the bar itself is dark (i.e.
+    // when the app is in light mode and the bar inverts to dark).
+    const forInverted = (pair: { light: string; dark: string }) =>
+      invertedIsDark ? pair.dark : pair.light;
     const getActiveColors = (routeName: keyof AuthTabParamList) => {
       switch (routeName) {
         case AUTH_TAB_ROUTE.HOME:
-          return { bg: '#D0E8F5', fg: '#1A1208' }; // Sky blue, dark brown text
+          return { bg: forInverted(TAB_ACTIVE_HOME), fg: tabForeground };
         case AUTH_TAB_ROUTE.MENTIONS:
-          return { bg: '#FDF3C8', fg: '#1A1208' }; // Warm yellow, dark brown text
+          return { bg: forInverted(TAB_ACTIVE_MENTIONS), fg: tabForeground };
         case AUTH_TAB_ROUTE.MORE:
-          return { bg: '#C8EDE8', fg: '#1A1208' }; // Mint, dark brown text
+          return { bg: forInverted(TAB_ACTIVE_MORE), fg: tabForeground };
         case AUTH_TAB_ROUTE.COMPOSE:
-          return { bg: '#F47060', fg: '#FFFFFF' }; // Coral CTA, white text
+          return { bg: forInverted(TAB_ACTIVE_COMPOSE), fg: tabForeground };
         default:
           return { bg: accent, fg: accentForeground };
       }
     };
+    // Per-route rest bg — each tab keeps its own hue at rest as a washed
+    // pastel so the bar reads as "four quiet tabs with one loud" instead
+    // of "three blanks with one colored".
+    const getRestBgColor = (routeName: keyof AuthTabParamList): string => {
+      switch (routeName) {
+        case AUTH_TAB_ROUTE.HOME:     return forInverted(TAB_REST_HOME);
+        case AUTH_TAB_ROUTE.MENTIONS: return forInverted(TAB_REST_MENTIONS);
+        case AUTH_TAB_ROUTE.MORE:     return forInverted(TAB_REST_MORE);
+        case AUTH_TAB_ROUTE.COMPOSE:  return forInverted(TAB_REST_COMPOSE);
+        default: return tabBackground;
+      }
+    };
+    // Per-route tint for the icon at rest — adds color presence without
+    // competing with the active pill.
+    const getRestIconTint = (routeName: keyof AuthTabParamList): string => {
+      switch (routeName) {
+        case AUTH_TAB_ROUTE.HOME:     return forInverted(TAB_TINT_HOME);
+        case AUTH_TAB_ROUTE.MENTIONS: return forInverted(TAB_TINT_MENTIONS);
+        case AUTH_TAB_ROUTE.MORE:     return forInverted(TAB_TINT_MORE);
+        case AUTH_TAB_ROUTE.COMPOSE:  return tabForeground;
+        default: return tabMuted;
+      }
+    };
     const { bg: activeColor, fg: activeFg } = getActiveColors(route.name);
-    const textColor = isFocused ? activeFg : muted;
-    const bgColor = isFocused ? activeColor : background;
-    const iconColor = isFocused ? activeFg : muted;
+    const textColor = isFocused ? activeFg : tabMuted;
+    const bgColor = isFocused ? activeColor : getRestBgColor(route.name);
+    const iconColor = isFocused ? activeFg : getRestIconTint(route.name);
     const shouldShowLabel = isFocused && !isComposeRoute;
 
     const buttonStyle = StyleSheet.flatten([
@@ -210,7 +276,7 @@ const AuthTabBar = ({
           onPress={onPress}
           onLongPress={onLongPress}
           layout={springTransition}
-          className={`flex-row items-center justify-center shadow-sm rounded-full ${isFocused ? 'shadow-foreground/20' : ''
+          className={`flex-row items-center justify-center rounded-full active:scale-[0.96] ${isFocused ? 'shadow-sm shadow-foreground/20' : ''
             }`}
           style={buttonStyle}
         >
