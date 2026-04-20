@@ -727,13 +727,25 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   } = useProfileHeroTheme(user, { followProfileTheme });
   const preferredHeaderTintColor =
     profileThemePalette.linkColor ?? profileThemePalette.textColor;
-  const headerTintColor = hasBackgroundImage
-    ? preferredHeaderTintColor ?? '#FFFFFF'
-    : preferredHeaderTintColor ??
+  // Reuse the hero's already-computed contrast-safe primary colour for
+  // the nav back button and header title. `deriveHeroTextStyles` has
+  // already done the full WCAG-AA pipeline — it samples tiled bg
+  // images, collapses dark-mode overlays, and ultimately falls back to
+  // black/white if even a hue-tinted version can't hit 4.5:1 against
+  // the effective background. The navbar sits right above the hero, so
+  // the same colour reads cleanly on the same surface and the back
+  // button no longer goes blue-on-blue when the user's palette
+  // collides with their page background.
+  const heroPrimaryColor = (
+    heroTextStyles.primaryTextStyle as { color?: string } | undefined
+  )?.color;
+  const headerTintColor =
+    heroPrimaryColor ??
+    preferredHeaderTintColor ??
     (profileThemePalette.pageBackgroundColor
       ? resolveReadableTextColor({
-        backgroundColor: profileThemePalette.pageBackgroundColor,
-      })
+          backgroundColor: profileThemePalette.pageBackgroundColor,
+        })
       : undefined);
   const isHeaderTintDark = headerTintColor
     ? isColorDark(headerTintColor)
