@@ -77,6 +77,7 @@ const PUBLIC_TIMELINE_BUTTON_POSITION = { position: 'absolute', right: 32, zInde
 const HOME_TOP_BUTTONS_STYLE = { flexDirection: 'row', gap: 20 } as const;
 const HOME_TITLE_HEIGHT = 44; // matches titleContainerStyle animation start value
 const HOME_ICON_SIZE = 22;
+const HOME_TOP_BUTTON_SIZE = 36; // size-9 pill wrapping the icon
 const TimelineItemSeparator = () => (
   <View style={getTimelineItemSeparatorStyle()} />
 );
@@ -177,7 +178,7 @@ const AuthHomeRoute = () => {
         buttonTranslateY.value = withTiming(0, { duration: 200 });
       } else if (delta > 2) {
         // Scrolling up — hide
-        buttonTranslateY.value = withTiming(-(HOME_TITLE_HEIGHT + insets.top + HOME_ICON_SIZE), { duration: 250 });
+        buttonTranslateY.value = withTiming(-(HOME_TITLE_HEIGHT + insets.top + HOME_TOP_BUTTON_SIZE), { duration: 250 });
       } else if (delta < -2) {
         // Scrolling down — show
         buttonTranslateY.value = withTiming(0, { duration: 250 });
@@ -188,7 +189,7 @@ const AuthHomeRoute = () => {
     const offset = interpolate(
       scrollY.value,
       [0, HOME_TITLE_HEIGHT],
-      [HOME_TITLE_HEIGHT - HOME_ICON_SIZE, 0],
+      [HOME_TITLE_HEIGHT - (HOME_TOP_BUTTON_SIZE + HOME_ICON_SIZE) / 2, 0],
       Extrapolation.CLAMP,
     );
     return {
@@ -576,10 +577,18 @@ const AuthHomeRoute = () => {
       <Animated.View
         style={[PUBLIC_TIMELINE_BUTTON_POSITION, HOME_TOP_BUTTONS_STYLE, topButtonsStyle]}
       >
-        <Pressable onPress={handleOpenPublicTimeline} hitSlop={9}>
+        <Pressable
+          onPress={handleOpenPublicTimeline}
+          hitSlop={9}
+          className="size-9 items-center justify-center rounded-full bg-background"
+        >
           <Wind size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
         </Pressable>
-        <Pressable onPress={handleOpenSearch} hitSlop={9}>
+        <Pressable
+          onPress={handleOpenSearch}
+          hitSlop={9}
+          className="size-9 items-center justify-center rounded-full bg-background"
+        >
           <Search size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
         </Pressable>
       </Animated.View>
