@@ -77,6 +77,9 @@ const MUTED_DARK       = '#9C9288';
 const TAG_PILL_CLASS = 'bg-accent/15 text-accent px-2 py-0.5 rounded-full';
 const ACTIVE_TAG_PILL_CLASS =
   'bg-accent text-accent-foreground px-2 py-0.5 rounded-full';
+// Chinese ideographs are ~1em wide, so snapping the body column to an
+// integer multiple of the body font size keeps the right edge flush.
+const BODY_FONT_SIZE = 15;
 const FOOTER_META_GAP = 12;
 const FOOTER_META_ITEM_GAP = 4;
 const FOOTER_META_VIA_VISIBILITY_BUFFER = 6;
@@ -136,6 +139,10 @@ const TimelineStatusCard = ({
   const photoRef = useRef<View>(null);
   const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
   const [photoLoaded, setPhotoLoaded] = useState(false);
+  const [bodyColumnWidth, setBodyColumnWidth] = useState<number | null>(null);
+  const snappedBodyWidth = bodyColumnWidth
+    ? Math.floor(bodyColumnWidth / BODY_FONT_SIZE) * BODY_FONT_SIZE
+    : null;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [footerWidth, setFooterWidth] = React.useState(0);
@@ -206,7 +213,7 @@ const TimelineStatusCard = ({
         className="rounded-3xl p-4 shadow-card active:opacity-75 dark:shadow-none"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
-        <View className={showAvatar ? 'flex-row gap-3' : undefined}>
+        <View className={showAvatar ? 'flex-row gap-4' : undefined}>
           {showAvatar ? (
             <Pressable
               onPress={event => {
@@ -226,7 +233,16 @@ const TimelineStatusCard = ({
             </Pressable>
           ) : null}
 
-          <View className={showAvatar ? 'flex-1' : undefined}>
+          <View
+            className={showAvatar ? 'flex-1' : undefined}
+            style={snappedBodyWidth ? { width: snappedBodyWidth } : undefined}
+            onLayout={event => {
+              const next = event.nativeEvent.layout.width;
+              setBodyColumnWidth(previous =>
+                previous === next ? previous : next,
+              );
+            }}
+          >
             {showAuthor ? (
               <View className="flex-row items-center gap-2">
                 <Pressable
@@ -255,7 +271,7 @@ const TimelineStatusCard = ({
                 </Text>
               </View>
             ) : null}
-            <Text skipFont className="mt-1 text-[15px] leading-6 text-foreground" style={textColor ? { color: textColor } : undefined}>
+            <Text skipFont className="mt-1 text-[15px] leading-6 text-foreground text-justify" style={textColor ? { color: textColor } : undefined}>
               {segments.length > 0
                 ? segments.map((segment, segmentIndex) => {
                   if (segment.type === 'mention') {
@@ -331,7 +347,7 @@ const TimelineStatusCard = ({
                   className="w-full bg-surface-secondary"
                   style={
                     photoAspectRatio
-                      ? { aspectRatio: Math.min(Math.max(photoAspectRatio, 0.5), 2) }
+                      ? { aspectRatio: Math.min(Math.max(photoAspectRatio, 0.4), 2) }
                       : styles.photoPlaceholder
                   }
                 >
