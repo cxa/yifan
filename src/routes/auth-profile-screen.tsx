@@ -1153,7 +1153,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                 <Pressable
                   onPress={handleBlockToggle}
                   disabled={isBlockSubmitting}
-                  className="mt-2 rounded-full border bg-success px-4 py-2"
+                  className="mt-2 rounded-full border bg-success px-4 py-3 active:opacity-75"
                   accessibilityRole="button"
                   accessibilityLabel={t('profileActionUnblock')}
                 >

@@ -124,7 +124,7 @@ const EditProfileRoute = () => {
             onPress={() => {
               refetch().catch(() => undefined);
             }}
-            className="mt-2 rounded-full border bg-danger-soft px-3 py-2 active:opacity-70"
+            className="mt-2 rounded-full border bg-danger-soft px-4 py-3 active:opacity-70"
             accessibilityRole="button"
             accessibilityLabel={t('editProfileRetry')}
           >

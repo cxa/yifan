@@ -69,7 +69,7 @@ const ProfileHeroRow = ({
             className="mt-1 self-start active:opacity-70"
             accessibilityRole="link"
             accessibilityLabel={profileUrl}
-            hitSlop={6}
+            hitSlop={12}
           >
             <Text
               className="text-[12px] font-semibold text-accent underline"

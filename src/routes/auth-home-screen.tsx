@@ -576,10 +576,10 @@ const AuthHomeRoute = () => {
       <Animated.View
         style={[PUBLIC_TIMELINE_BUTTON_POSITION, HOME_TOP_BUTTONS_STYLE, topButtonsStyle]}
       >
-        <Pressable onPress={handleOpenPublicTimeline} hitSlop={12}>
+        <Pressable onPress={handleOpenPublicTimeline} hitSlop={9}>
           <Wind size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
         </Pressable>
-        <Pressable onPress={handleOpenSearch} hitSlop={12}>
+        <Pressable onPress={handleOpenSearch} hitSlop={9}>
           <Search size={HOME_ICON_SIZE} color={muted} strokeWidth={1.5} />
         </Pressable>
       </Animated.View>

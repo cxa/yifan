@@ -196,6 +196,7 @@ const PostageStamp = ({
       onPress={onPressAvatar}
       disabled={!onPressAvatar}
       accessibilityRole={onPressAvatar ? 'button' : undefined}
+      hitSlop={onPressAvatar ? 5 : undefined}
       className={`absolute overflow-hidden ${onPressAvatar ? 'active:opacity-70' : ''}`}
       style={{
         left: STAMP_CONTENT_OFFSET,
@@ -395,7 +396,7 @@ const MessageCard = ({
         {onReply ? (
           <Pressable
             onPress={onReply}
-            hitSlop={8}
+            hitSlop={13}
             accessibilityRole="button"
             accessibilityLabel="Reply to message"
             className="absolute right-4 top-3 z-10 active:opacity-50"
@@ -455,7 +456,7 @@ const MessageCard = ({
               {onDelete ? (
                 <Pressable
                   onPress={handleDelete}
-                  hitSlop={8}
+                  hitSlop={13}
                   accessibilityRole="button"
                   accessibilityLabel="Delete message"
                   className="active:opacity-50"

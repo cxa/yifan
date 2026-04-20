@@ -44,7 +44,7 @@ const ErrorBanner = ({ message, technicalDetail }: ErrorBannerProps) => {
           {technicalDetail ? (
             <Pressable
               onPress={handleToggle}
-              hitSlop={10}
+              hitSlop={13}
               className="active:opacity-60 mt-0.5"
             >
               <Animated.View style={iconStyle}>

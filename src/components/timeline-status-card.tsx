@@ -317,13 +317,13 @@ const TimelineStatusCard = ({
                 onPress={() => {
                   if (photoRef.current) {
                     photoRef.current.measureInWindow((x, y, width, height) => {
-                      onOpenPhoto(photoUrl, { x, y, width, height, borderRadius: 16 });
+                      onOpenPhoto(photoUrl, { x, y, width, height, borderRadius: 8 });
                     });
                   } else {
                     onOpenPhoto(photoUrl, null);
                   }
                 }}
-                className="mt-3 overflow-hidden rounded-3xl"
+                className="mt-3 overflow-hidden rounded-lg"
                 accessibilityRole="button"
                 accessibilityLabel="Open photo"
               >
