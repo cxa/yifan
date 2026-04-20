@@ -354,8 +354,11 @@ const MoreStackRoute = () => {
           headerTintColor: foreground,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
+          // Top uses 'automatic' so it fades beneath the transparent
+          // navbar; bottom uses 'soft' so content visibly fades as it
+          // meets the floating tab bar cluster at the screen's bottom.
           scrollEdgeEffects: isNativeScrollEdgeEffectAvailable
-            ? { top: 'automatic' }
+            ? { top: 'automatic', bottom: 'soft' }
             : undefined,
         }}
       >

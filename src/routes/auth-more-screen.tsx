@@ -12,7 +12,6 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { useHeaderHeight } from '@react-navigation/elements';
 import {
   useIsFocused,
   useNavigation,
@@ -66,7 +65,7 @@ import { useReadableContentInsets } from '@/navigation/readable-content-guide';
 import { setMoreBackgroundColor } from '@/routes/more-background-store';
 import type { AuthStackParamList, AuthTabParamList } from '@/navigation/types';
 import NativeEdgeScrollShadow, {
-  resolveNativeEdgeScrollShadowSize,
+  NATIVE_EDGE_SCROLL_SHADOW_SIZE,
 } from '@/components/native-edge-scroll-shadow';
 import {
   accountUserQueryOptions,
@@ -215,10 +214,7 @@ const MoreRouteContent = ({
     [APP_FONT_SIZE_OPTION.XL]: t('moreFontSizeXL'),
   };
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
-  const headerHeight = useHeaderHeight();
-  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
-    headerHeight,
-  });
+  const scrollShadowSize = NATIVE_EDGE_SCROLL_SHADOW_SIZE;
   const queryClient = useQueryClient();
   const [background, muted, foreground] = useThemeColor(['background', 'muted', 'foreground']);
   const { prepareSnapshot, requestTransition } = useThemeTransition();
@@ -658,7 +654,6 @@ const MoreRouteContent = ({
       <NativeEdgeScrollShadow
         className="flex-1"
         color={pageBackgroundColor}
-        size={scrollShadowSize}
       >
         <Animated.ScrollView
           ref={scrollRef}
@@ -1065,10 +1060,6 @@ const MoreRouteContent = ({
 };
 const MissingUserIdPlaceholder = () => {
   const { t } = useTranslation();
-  const headerHeight = useHeaderHeight();
-  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
-    headerHeight,
-  });
   const [background] = useThemeColor(['background']);
   const scrollRef =
     useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
@@ -1098,7 +1089,6 @@ const MissingUserIdPlaceholder = () => {
     <NativeEdgeScrollShadow
       className="flex-1"
       color={background}
-      size={scrollShadowSize}
     >
       <Animated.ScrollView
         ref={scrollRef}

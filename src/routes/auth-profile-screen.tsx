@@ -50,7 +50,7 @@ import {
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
 import NativeEdgeScrollShadow, {
-  resolveNativeEdgeScrollShadowSize,
+  NATIVE_EDGE_SCROLL_SHADOW_SIZE,
 } from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
@@ -163,9 +163,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const scrollShadowSize = resolveNativeEdgeScrollShadowSize({
-    headerHeight,
-  });
+  const scrollShadowSize = NATIVE_EDGE_SCROLL_SHADOW_SIZE;
   const queryClient = useQueryClient();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;

@@ -66,7 +66,6 @@ import { useTranslation } from 'react-i18next';
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
-const TIMELINE_SCROLL_SHADOW_SIZE = 100;
 const mergeTimelineItems = (
   existing: FanfouStatus[],
   incoming: FanfouStatus[],
@@ -343,7 +342,6 @@ const MentionsRoute = () => {
     <>
       <NativeEdgeScrollShadow
         className="flex-1"
-        size={TIMELINE_SCROLL_SHADOW_SIZE}
         color={background}
       >
         <FlatList

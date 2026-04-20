@@ -95,8 +95,11 @@ const buildNativeHeaderOptions = (
     headerTintColor: foreground,
     headerBackButtonDisplayMode: 'minimal',
     headerShadowVisible: false,
+    // Top uses 'automatic' so it fades cleanly beneath the transparent
+    // navbar; bottom uses 'soft' to force a visible fade even without a
+    // toolbar to hide behind.
     scrollEdgeEffects: isNativeScrollEdgeEffectAvailable
-      ? { top: 'automatic' }
+      ? { top: 'automatic', bottom: 'soft' }
       : undefined,
     headerTitleStyle: {
       fontFamily: headerFontFamily,

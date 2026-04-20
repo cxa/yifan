@@ -274,7 +274,6 @@ const SearchRoute = () => {
       <NativeEdgeScrollShadow
         style={styles.flex}
         color={background}
-        size={100}
         visibility={Platform.OS === 'android' ? 'top' : 'both'}
       >
         <Animated.FlatList

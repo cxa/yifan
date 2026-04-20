@@ -72,7 +72,6 @@ import { getTabBarOccludedHeight } from '@/navigation/tab-bar-layout';
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const getStatusId = (status: FanfouStatus): string => status.id;
-const TIMELINE_SCROLL_SHADOW_SIZE = 100;
 const PUBLIC_TIMELINE_BUTTON_POSITION = { position: 'absolute', right: 32, zIndex: 20 } as const;
 const HOME_TOP_BUTTONS_STYLE = { flexDirection: 'row', gap: 20 } as const;
 const HOME_TITLE_HEIGHT = 44; // matches titleContainerStyle animation start value
@@ -472,7 +471,6 @@ const AuthHomeRoute = () => {
     <View className="flex-1">
       <NativeEdgeScrollShadow
         className="flex-1"
-        size={TIMELINE_SCROLL_SHADOW_SIZE}
         color={background}
       >
         <FlatList
