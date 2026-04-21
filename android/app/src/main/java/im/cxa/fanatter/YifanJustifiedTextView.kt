@@ -184,32 +184,34 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
 
   override fun onTouchEvent(event: MotionEvent): Boolean {
     when (event.action) {
-      MotionEvent.ACTION_DOWN -> return true
+      MotionEvent.ACTION_DOWN ->
+          // Claim the touch only if it's on a segment. When we return
+          // false here the parent ViewGroup (the card Pressable) gets
+          // the DOWN instead and handles the tap normally.
+          return findSegmentAt(event.x, event.y) != null
       MotionEvent.ACTION_UP -> {
-        handleTap(event.x, event.y)
+        val hit = findSegmentAt(event.x, event.y)
+        if (hit != null) dispatchSegmentEvent(hit)
         return true
       }
+      MotionEvent.ACTION_CANCEL -> return true
     }
     return super.onTouchEvent(event)
   }
 
-  private fun handleTap(x: Float, y: Float) {
-    val spannable = text as? Spannable
-    val layout = layout
-    if (spannable == null || layout == null) {
-      emit("topPressText", null)
-      return
-    }
-    val adjustedX = x - totalPaddingLeft + scrollX
-    val adjustedY = y - totalPaddingTop + scrollY
-    val line = layout.getLineForVertical(adjustedY.toInt())
-    val offset = layout.getOffsetForHorizontal(line, adjustedX)
-    val hit = spannable.getSpans(offset, offset, YifanSegmentSpan::class.java)
+  private fun findSegmentAt(x: Float, y: Float): YifanSegmentSpan? {
+    val spannable = text as? Spannable ?: return null
+    val layout = layout ?: return null
+    val adjX = x - totalPaddingLeft + scrollX
+    val adjY = y - totalPaddingTop + scrollY
+    val line = layout.getLineForVertical(adjY.toInt())
+    val offset = layout.getOffsetForHorizontal(line, adjX)
+    return spannable
+        .getSpans(offset, offset, YifanSegmentSpan::class.java)
         .firstOrNull()
-    if (hit == null) {
-      emit("topPressText", null)
-      return
-    }
+  }
+
+  private fun dispatchSegmentEvent(hit: YifanSegmentSpan) {
     val payload = Arguments.createMap()
     when (hit.type) {
       "mention" -> {
@@ -224,7 +226,6 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
         payload.putString("href", hit.payload)
         emit("topPressLink", payload)
       }
-      else -> emit("topPressText", null)
     }
   }
 

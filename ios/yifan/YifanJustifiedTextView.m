@@ -31,7 +31,13 @@ static NSString *const kSegmentTypeLink = @"link";
         [[UITapGestureRecognizer alloc] initWithTarget:self
                                                 action:@selector(handleTap:)];
     tap.delegate = self;
-    tap.cancelsTouchesInView = NO;
+    // YES: when a segment tap is recognized we want to cancel other
+    // gestures in the hierarchy (i.e. the parent card Pressable), so
+    // tapping a @mention only navigates to the profile instead of
+    // also opening the status detail. Non-segment taps never start
+    // our gesture (see shouldReceiveTouch:) so the parent still
+    // handles them normally.
+    tap.cancelsTouchesInView = YES;
     [self addGestureRecognizer:tap];
   }
   return self;
@@ -426,6 +432,22 @@ static NSString *const kSegmentTypeLink = @"link";
 }
 
 #pragma mark - UIGestureRecognizerDelegate
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+       shouldReceiveTouch:(UITouch *)touch {
+  // Claim a tap only when it lands on a @mention / #tag / link. For
+  // plain-text taps we return NO so the gesture never starts and the
+  // outer Pressable (card) receives the tap as usual.
+  NSAttributedString *attr = self.attributedText;
+  if (attr.length == 0) return NO;
+  CGPoint point = [touch locationInView:self];
+  NSUInteger idx = [self characterIndexAtPoint:point];
+  if (idx == NSNotFound || idx >= attr.length) return NO;
+  NSString *type = [attr attribute:kYifanSegmentTypeKey
+                           atIndex:idx
+                    effectiveRange:NULL];
+  return type != nil;
+}
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
     shouldRecognizeSimultaneouslyWithGestureRecognizer:
