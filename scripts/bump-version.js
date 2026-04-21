@@ -30,14 +30,14 @@ function getNextVersion() {
 }
 
 function versionToCode(version) {
-  // yymm.dd        → yymmdd     (e.g. 260331)
+  // Always 8 digits so the code stays monotonically increasing even when
+  // a series like 2604.19.1 (26041901) is followed by 2604.20 (26042000).
+  // yymm.dd        → yymmdd00   (e.g. 26033100)
   // yymm.dd.n      → yymmdd0n   (e.g. 26033101)
   const parts = version.split('.');
   const base = parts[0] + parts[1]; // "2603" + "31" = "260331"
-  if (parts.length === 3) {
-    return parseInt(base, 10) * 100 + parseInt(parts[2], 10);
-  }
-  return parseInt(base, 10);
+  const patch = parts.length === 3 ? parseInt(parts[2], 10) : 0;
+  return parseInt(base, 10) * 100 + patch;
 }
 
 function updateFile(filePath, replacer) {
