@@ -25,6 +25,8 @@
 		C3D4E5F60718293A4B6C7D8E /* Huiwen-MinchoGBK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B6C7D8D /* Huiwen-MinchoGBK-Regular.ttf */; };
 		D4E5F6A7B8C90718293D4E5F /* AppStoreProductModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C90718293D4E5E /* AppStoreProductModule.m */; };
 		F1A2B3C4D5E60718293A4B5C /* FanfouSecretsLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */; };
+		B5C6D7E8F9A00718293B4C5D /* YifanJustifiedTextView.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */; };
+		B5C6D7E8F9A00718293B4C5E /* YifanJustifiedTextManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +80,9 @@
 		E575E65630B259AF57A231DC /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FanfouSecretsLoader.m; path = yifan/FanfouSecretsLoader.m; sourceTree = "<group>"; };
+		A5B6C7D8E9F00718293A4B5C /* YifanJustifiedTextView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = YifanJustifiedTextView.h; path = yifan/YifanJustifiedTextView.h; sourceTree = "<group>"; };
+		A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = YifanJustifiedTextView.m; path = yifan/YifanJustifiedTextView.m; sourceTree = "<group>"; };
+		A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = YifanJustifiedTextManager.m; path = yifan/YifanJustifiedTextManager.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +124,9 @@
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 				5080FB480965F660C48256DD /* SharedImageModule.m */,
 				A3B4C5D6E7F80718293A4B5C /* LivePhotoModule.m */,
+				A5B6C7D8E9F00718293A4B5C /* YifanJustifiedTextView.h */,
+				A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */,
+				A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */,
 			);
 			name = yifan;
 			sourceTree = "<group>";
@@ -412,6 +420,8 @@
 				F1A2B3C4D5E60718293A4B5C /* FanfouSecretsLoader.m in Sources */,
 				0CABF40211831DF1F9871DFE /* SharedImageModule.m in Sources */,
 				B4C5D6E7F8A90718293B4C5D /* LivePhotoModule.m in Sources */,
+				B5C6D7E8F9A00718293B4C5D /* YifanJustifiedTextView.m in Sources */,
+				B5C6D7E8F9A00718293B4C5E /* YifanJustifiedTextManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

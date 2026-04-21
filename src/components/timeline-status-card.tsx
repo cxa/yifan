@@ -9,12 +9,14 @@ import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-tra
 import { Text } from '@/components/app-text';
 import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
+import JustifiedBodyText, {
+  type JustifiedBodySegment,
+} from '@/components/justified-body-text';
 import { useAppFontFamily } from '@/settings/app-font-preference';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { formatTimestamp } from '@/utils/format-timestamp';
 import { parseHtmlToSegments, parseHtmlToText } from '@/utils/parse-html';
-import { openLink } from '@/utils/open-link';
 // Surrogate-pair emoji regex — avoids \p{} Unicode property escapes which
 // some Hermes versions parse but silently fail to match.
 const EMOJI_RE = /([\uD83C-\uD83F][\uDC00-\uDFFF]|[\u2600-\u27BF]|\u2764[\uFE0F]?)/;
@@ -131,7 +133,10 @@ const TimelineStatusCard = ({
   const cardBgColor = themePreference === APP_THEME_OPTION.PLAIN
     ? (effectiveIsDark ? '#1E1E1E' : '#FFFFFF')
     : (effectiveIsDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
-  const [danger] = useThemeColor(['danger']);
+  const [danger, accentForeground] = useThemeColor([
+    'danger',
+    'accent-foreground',
+  ]);
   const fontFamily = useAppFontFamily();
   const photoRef = useRef<View>(null);
   const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
@@ -157,17 +162,6 @@ const TimelineStatusCard = ({
   const avatarUrl = user.profile_image_url;
   const photoUrl = getStatusPhotoUrl(status);
   const segments = parseHtmlToSegments(status.text || status.status);
-  // RN iOS `textAlign: 'justify'` only does inter-character justification
-  // on a single uninterrupted attributed string. Nested `<Text>` with
-  // `onPress` (mentions / tags / links) break the attributed run into
-  // separate chunks, so the OS can't redistribute space across the
-  // chunks — affected lines render ragged while the column continues
-  // to allow justification. Fall back to left-align in that case so
-  // the card doesn't show a mix of justified and ragged lines. Android
-  // already has its own limitation handled below.
-  const bodyHasInteractiveSegments = segments.some(
-    segment => segment.type !== 'text',
-  );
   const timestamp = formatTimestamp(status.created_at);
   const sourceClient = parseHtmlToText(status.source).trim();
   const viaLabel = sourceClient ? t('statusVia', { source: sourceClient }) : '';
@@ -194,8 +188,6 @@ const TimelineStatusCard = ({
     }
     setIsDeleteDialogOpen(nextIsOpen);
   };
-  const normalizedActiveTag = activeTag?.toLowerCase();
-
   return (
     <>
       <Pressable
@@ -282,86 +274,27 @@ const TimelineStatusCard = ({
                 </View>
               </View>
             ) : null}
-            <Text
-              skipFont
-              // Android's `textAlign: 'justify'` only stretches existing
-              // whitespace (INTER_WORD), so pure CJK never justifies;
-              // JUSTIFICATION_MODE_INTER_CHARACTER would help but it
-              // landed in Android 15 (API 35) and OS penetration is
-              // still low, so left-align is the honest default.
-              // iOS CJK does inter-character justify, but only on a
-              // contiguous attributed string — disable when the body
-              // has interactive nested segments (mentions / tags /
-              // links) because those chunks prevent iOS from
-              // justifying the affected lines.
-              className={`text-[15px] leading-6 text-foreground ${
-                Platform.OS === 'ios' && !bodyHasInteractiveSegments
-                  ? 'text-justify'
-                  : ''
-              }`}
-              // app-text defaults to Android's 'balanced' break strategy,
-              // which deliberately shortens lines to make them even —
-              // leaves the body column half empty for CJK text with many
-              // break opportunities. Use 'simple' so each line fills
-              // greedily before wrapping.
-              textBreakStrategy="simple"
-              style={textColor ? { color: textColor } : undefined}
-            >
-              {segments.length > 0
-                ? segments.map((segment, segmentIndex) => {
-                  if (segment.type === 'mention') {
-                    return (
-                      <Text
-                        key={`${statusId}-${segmentIndex}`}
-                        className="text-accent"
-                        onPress={event => {
-                          event.stopPropagation();
-                          onPressMention(segment.screenName);
-                        }}
-                      >
-                        {segment.text}
-                      </Text>
-                    );
-                  }
-                  if (segment.type === 'tag') {
-                    const isActiveTag =
-                      Boolean(normalizedActiveTag) &&
-                      normalizedActiveTag === segment.tag.toLowerCase();
-                    return (
-                      <Text
-                        key={`${statusId}-${segmentIndex}`}
-                        className={
-                          isActiveTag
-                            ? ACTIVE_TAG_PILL_CLASS
-                            : TAG_PILL_CLASS
-                        }
-                        onPress={event => {
-                          event.stopPropagation();
-                          onPressTag(segment.tag);
-                        }}
-                      >
-                        {segment.text}
-                      </Text>
-                    );
-                  }
-                  if (segment.type === 'link') {
-                    return (
-                      <Text
-                        key={`${statusId}-${segmentIndex}`}
-                        className="text-accent underline"
-                        onPress={event => {
-                          event.stopPropagation();
-                          openLink(segment.href);
-                        }}
-                      >
-                        {segment.text}
-                      </Text>
-                    );
-                  }
-                  return renderTextWithEmoji(segment.text, `${statusId}-${segmentIndex}`, fontFamily);
-                })
-                : ''}
-            </Text>
+            <JustifiedBodyText
+              segments={segments as JustifiedBodySegment[]}
+              textColor={textColor ?? '#1A1208'}
+              accentColor={accent}
+              activeTag={activeTag ?? null}
+              tagActivePillClass={ACTIVE_TAG_PILL_CLASS}
+              tagInactivePillClass={TAG_PILL_CLASS}
+              tagActiveBackgroundColor={accent}
+              tagInactiveBackgroundColor={`${accent}26`}
+              tagActiveTextColor={accentForeground}
+              fontFamily={fontFamily ?? undefined}
+              fontSize={15}
+              lineHeight={24}
+              justify={Platform.OS === 'ios'}
+              onPressMention={onPressMention}
+              onPressTag={onPressTag}
+              onPressText={() => onPressStatus(statusId, shadowType)}
+              renderPlainTextSegment={(text, key) =>
+                renderTextWithEmoji(text, `${statusId}-${key}`, fontFamily)
+              }
+            />
             {photoUrl ? (
               <Pressable
                 ref={photoRef}
