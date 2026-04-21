@@ -3,6 +3,7 @@ import {
   Platform,
   StyleSheet,
   Text,
+  UIManager,
   View,
   type NativeSyntheticEvent,
   type TextStyle,
@@ -63,12 +64,21 @@ type NativeProps = {
   style?: TextStyle;
 };
 
-const NativeJustifiedText =
-  Platform.OS === 'ios'
-    ? (requireNativeComponent<NativeProps>(
-        'YifanJustifiedText',
-      ) as React.ComponentType<NativeProps>)
-    : null;
+const nativeIOSComponentIsRegistered =
+  Platform.OS === 'ios' &&
+  UIManager.getViewManagerConfig('YifanJustifiedText') != null;
+
+if (Platform.OS === 'ios' && !nativeIOSComponentIsRegistered) {
+  console.warn(
+    '[JustifiedBodyText] YifanJustifiedText native component not registered — falling back to JS <Text>. Rebuild iOS after `bundle exec pod install` to pick it up.',
+  );
+}
+
+const NativeJustifiedText = nativeIOSComponentIsRegistered
+  ? (requireNativeComponent<NativeProps>(
+      'YifanJustifiedText',
+    ) as React.ComponentType<NativeProps>)
+  : null;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
