@@ -80,9 +80,6 @@ const ACTIVE_TAG_PILL_CLASS =
 // Chinese ideographs are ~1em wide, so snapping the body column to an
 // integer multiple of the body font size keeps the right edge flush.
 const BODY_FONT_SIZE = 15;
-const FOOTER_META_GAP = 12;
-const FOOTER_META_ITEM_GAP = 4;
-const FOOTER_META_VIA_VISIBILITY_BUFFER = 6;
 const getStatusId = (status: FanfouStatus): string => status.id;
 const getStatusPhotoUrl = (status: FanfouStatus): string | null => {
   const getUrl = (...candidates: Array<string | undefined>) => {
@@ -145,17 +142,6 @@ const TimelineStatusCard = ({
     : null;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const [footerWidth, setFooterWidth] = React.useState(0);
-  const [actionsWidth, setActionsWidth] = React.useState(0);
-  const [timestampWidth, setTimestampWidth] = React.useState(0);
-  const [viaWidth, setViaWidth] = React.useState(0);
-  const updateMeasuredWidth = (
-    setWidth: React.Dispatch<React.SetStateAction<number>>,
-    value: number,
-  ) => {
-    const next = Math.round(value);
-    setWidth(previous => (previous === next ? previous : next));
-  };
   const statusId = getStatusId(status);
   const user = status.user;
   const displayName = user.screen_name || user.name;
@@ -167,7 +153,7 @@ const TimelineStatusCard = ({
   const segments = parseHtmlToSegments(status.text || status.status);
   const timestamp = formatTimestamp(status.created_at);
   const sourceClient = parseHtmlToText(status.source).trim();
-  const viaLabel = sourceClient ? `via ${sourceClient}` : '';
+  const viaLabel = sourceClient ? t('statusVia', { source: sourceClient }) : '';
   const handleDeletePress = () => {
     setIsDeleteDialogOpen(true);
   };
@@ -192,18 +178,6 @@ const TimelineStatusCard = ({
     setIsDeleteDialogOpen(nextIsOpen);
   };
   const normalizedActiveTag = activeTag?.toLowerCase();
-  const shouldWrapFooter = (() => {
-    if (!footerWidth || !actionsWidth || !timestampWidth) return false;
-    return footerWidth < actionsWidth + FOOTER_META_GAP + timestampWidth;
-  })();
-  const canShowVia = (() => {
-    if (!viaLabel) return false;
-    if (!footerWidth || !timestampWidth || !viaWidth) return false;
-    const availableWidth = shouldWrapFooter
-      ? footerWidth
-      : footerWidth - actionsWidth - FOOTER_META_GAP;
-    return availableWidth >= timestampWidth + FOOTER_META_ITEM_GAP + viaWidth + FOOTER_META_VIA_VISIBILITY_BUFFER;
-  })();
 
   return (
     <>
@@ -234,7 +208,7 @@ const TimelineStatusCard = ({
           ) : null}
 
           <View
-            className={showAvatar ? 'flex-1' : undefined}
+            className={`gap-3 ${showAvatar ? 'flex-1' : ''}`.trim()}
             style={snappedBodyWidth ? { width: snappedBodyWidth } : undefined}
             onLayout={event => {
               const next = event.nativeEvent.layout.width;
@@ -244,7 +218,7 @@ const TimelineStatusCard = ({
             }}
           >
             {showAuthor ? (
-              <View className="flex-row items-center gap-2">
+              <View>
                 <Pressable
                   onPress={event => {
                     event.stopPropagation();
@@ -252,7 +226,7 @@ const TimelineStatusCard = ({
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={`Open profile ${screenName || userId}`}
-                  className="min-w-0 shrink"
+                  className="max-w-full self-start"
                 >
                   <Text
                     className="text-[17px] font-extrabold text-foreground"
@@ -262,16 +236,36 @@ const TimelineStatusCard = ({
                     {displayName}
                   </Text>
                 </Pressable>
-                <Text
-                  className="min-w-0 shrink text-[14px] text-muted"
-                  style={mutedColor ? { color: mutedColor } : undefined}
-                  numberOfLines={1}
-                >
-                  {handle}
-                </Text>
+                <View className="flex-row items-center justify-between gap-3">
+                  <Text
+                    className="shrink text-[13px] text-muted"
+                    style={mutedColor ? { color: mutedColor } : undefined}
+                    numberOfLines={1}
+                  >
+                    {handle}
+                  </Text>
+                  <View className="shrink-0 flex-row items-center gap-1">
+                    <Text
+                      className="text-[12px] text-muted"
+                      style={mutedColor ? { color: mutedColor } : undefined}
+                    >
+                      {timestamp}
+                    </Text>
+                    {viaLabel ? (
+                      <Text
+                        className="max-w-[140px] text-[12px] text-muted"
+                        style={mutedColor ? { color: mutedColor } : undefined}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {viaLabel}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
               </View>
             ) : null}
-            <Text skipFont className="mt-1 text-[15px] leading-6 text-foreground text-justify" style={textColor ? { color: textColor } : undefined}>
+            <Text skipFont className="text-[15px] leading-6 text-foreground text-justify" style={textColor ? { color: textColor } : undefined}>
               {segments.length > 0
                 ? segments.map((segment, segmentIndex) => {
                   if (segment.type === 'mention') {
@@ -339,7 +333,7 @@ const TimelineStatusCard = ({
                     onOpenPhoto(photoUrl, null);
                   }
                 }}
-                className="mt-3 overflow-hidden rounded-lg"
+                className="overflow-hidden rounded-lg"
                 accessibilityRole="button"
                 accessibilityLabel="Open photo"
               >
@@ -367,58 +361,8 @@ const TimelineStatusCard = ({
                 </View>
               </Pressable>
             ) : null}
-            <View className="absolute opacity-0" pointerEvents="none">
-              <View
-                className="flex-row items-center"
-                onLayout={event => {
-                  updateMeasuredWidth(
-                    setTimestampWidth,
-                    event.nativeEvent.layout.width,
-                  );
-                }}
-              >
-                <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
-              </View>
-              {viaLabel ? (
-                <View
-                  className="flex-row items-center"
-                  onLayout={event => {
-                    updateMeasuredWidth(
-                      setViaWidth,
-                      event.nativeEvent.layout.width,
-                    );
-                  }}
-                >
-                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
-                </View>
-              ) : null}
-            </View>
-            <View
-              className={`mt-3 ${shouldWrapFooter ? 'items-end gap-2' : 'flex-row items-center justify-between'}`}
-              onLayout={event => {
-                updateMeasuredWidth(
-                  setFooterWidth,
-                  event.nativeEvent.layout.width,
-                );
-              }}
-            >
-              {shouldWrapFooter ? (
-                <View className="flex-row items-center gap-1">
-                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
-                  {canShowVia ? (
-                    <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
-                  ) : null}
-                </View>
-              ) : null}
-              <View
-                className="flex-row items-center gap-3"
-                onLayout={event => {
-                  updateMeasuredWidth(
-                    setActionsWidth,
-                    event.nativeEvent.layout.width,
-                  );
-                }}
-              >
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-3">
                 <Pressable
                   onPress={() => onReply(status)}
                   className="p-1.5"
@@ -469,14 +413,19 @@ const TimelineStatusCard = ({
                   </Pressable>
                 ) : null}
               </View>
-              {!shouldWrapFooter ? (
-                <View className="ml-3 flex-1 min-w-0 items-end">
-                  <View className="flex-row items-center gap-1">
-                    <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
-                    {canShowVia ? (
-                      <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{viaLabel}</Text>
-                    ) : null}
-                  </View>
+              {!showAuthor ? (
+                <View className="ml-3 flex-1 min-w-0 flex-row items-center justify-end gap-1">
+                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
+                  {viaLabel ? (
+                    <Text
+                      className="shrink text-[12px] text-muted"
+                      style={mutedColor ? { color: mutedColor } : undefined}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {viaLabel}
+                    </Text>
+                  ) : null}
                 </View>
               ) : null}
             </View>

@@ -133,6 +133,7 @@ type BaseTranslations = {
   conversationLoadFailed: string;
   statusMissingId: string;
   conversationLoading: string;
+  statusVia: string;
 
   // Search screen
   searchPlaceholder: string;
@@ -454,6 +455,7 @@ const enUS: BaseTranslations = {
   conversationLoadFailed: 'Failed to load conversation',
   statusMissingId: 'Missing post ID.',
   conversationLoading: 'Loading conversation…',
+  statusVia: 'via {{source}}',
 
   // Search screen
   searchPlaceholder: 'Search posts…',
@@ -775,6 +777,7 @@ const zhCN: BaseTranslations = {
   conversationLoadFailed: '加载对话失败',
   statusMissingId: '缺少动态 ID。',
   conversationLoading: '加载对话中…',
+  statusVia: '来自{{source}}',
 
   // Search screen
   searchPlaceholder: '搜索消息…',
