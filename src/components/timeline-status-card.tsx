@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
 import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
@@ -137,6 +137,12 @@ const TimelineStatusCard = ({
   const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
   const [photoLoaded, setPhotoLoaded] = useState(false);
   const [bodyColumnWidth, setBodyColumnWidth] = useState<number | null>(null);
+  // Snap the body column to a multiple of the body font size so CJK
+  // text reaches the same right edge on every line. iOS uses the
+  // snapped width for inter-character justify; Android can't justify
+  // CJK but the snap still narrows the right-edge gap because rows of
+  // full-width glyphs tile cleanly into a column that's an integer
+  // multiple of one glyph wide.
   const snappedBodyWidth = bodyColumnWidth
     ? Math.floor(bodyColumnWidth / BODY_FONT_SIZE) * BODY_FONT_SIZE
     : null;
@@ -151,6 +157,17 @@ const TimelineStatusCard = ({
   const avatarUrl = user.profile_image_url;
   const photoUrl = getStatusPhotoUrl(status);
   const segments = parseHtmlToSegments(status.text || status.status);
+  // RN iOS `textAlign: 'justify'` only does inter-character justification
+  // on a single uninterrupted attributed string. Nested `<Text>` with
+  // `onPress` (mentions / tags / links) break the attributed run into
+  // separate chunks, so the OS can't redistribute space across the
+  // chunks — affected lines render ragged while the column continues
+  // to allow justification. Fall back to left-align in that case so
+  // the card doesn't show a mix of justified and ragged lines. Android
+  // already has its own limitation handled below.
+  const bodyHasInteractiveSegments = segments.some(
+    segment => segment.type !== 'text',
+  );
   const timestamp = formatTimestamp(status.created_at);
   const sourceClient = parseHtmlToText(status.source).trim();
   const viaLabel = sourceClient ? t('statusVia', { source: sourceClient }) : '';
@@ -265,7 +282,31 @@ const TimelineStatusCard = ({
                 </View>
               </View>
             ) : null}
-            <Text skipFont className="text-[15px] leading-6 text-foreground text-justify" style={textColor ? { color: textColor } : undefined}>
+            <Text
+              skipFont
+              // Android's `textAlign: 'justify'` only stretches existing
+              // whitespace (INTER_WORD), so pure CJK never justifies;
+              // JUSTIFICATION_MODE_INTER_CHARACTER would help but it
+              // landed in Android 15 (API 35) and OS penetration is
+              // still low, so left-align is the honest default.
+              // iOS CJK does inter-character justify, but only on a
+              // contiguous attributed string — disable when the body
+              // has interactive nested segments (mentions / tags /
+              // links) because those chunks prevent iOS from
+              // justifying the affected lines.
+              className={`text-[15px] leading-6 text-foreground ${
+                Platform.OS === 'ios' && !bodyHasInteractiveSegments
+                  ? 'text-justify'
+                  : ''
+              }`}
+              // app-text defaults to Android's 'balanced' break strategy,
+              // which deliberately shortens lines to make them even —
+              // leaves the body column half empty for CJK text with many
+              // break opportunities. Use 'simple' so each line fills
+              // greedily before wrapping.
+              textBreakStrategy="simple"
+              style={textColor ? { color: textColor } : undefined}
+            >
               {segments.length > 0
                 ? segments.map((segment, segmentIndex) => {
                   if (segment.type === 'mention') {
