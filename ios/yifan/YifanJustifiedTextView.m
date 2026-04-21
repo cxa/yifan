@@ -164,8 +164,11 @@ static NSString *const kSegmentTypeLink = @"link";
 
   if (attr.length > 0) {
     NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
-    ps.alignment =
-        self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
+    // Always .natural — the per-line kerning pass below does all the
+    // horizontal distribution. If we left this as .justified, iOS would
+    // already have whitespace-stretched mixed CJK+Latin lines before we
+    // measured them, making gap ≈ 0 and our kerning a no-op.
+    ps.alignment = NSTextAlignmentNatural;
     CGFloat lh = self.lineHeight > 0 ? self.lineHeight : self.fontSize * 1.4;
     ps.minimumLineHeight = lh;
     ps.maximumLineHeight = lh;
@@ -178,8 +181,7 @@ static NSString *const kSegmentTypeLink = @"link";
   self.baseAttributedText = [attr copy];
   self.renderedAttributedText = attr;
   self.lastJustifyWidth = -1; // force re-kerning on next layout
-  self.label.textAlignment =
-      self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
+  self.label.textAlignment = NSTextAlignmentNatural;
   self.label.attributedText = attr;
   [self invalidateIntrinsicContentSize];
   [self setNeedsLayout];
