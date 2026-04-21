@@ -13,10 +13,7 @@ static NSString *const kSegmentTypeLink = @"link";
 
 @interface YifanJustifiedTextView () <UIGestureRecognizerDelegate>
 @property (nonatomic, strong) UILabel *label;
-@property (nonatomic, copy) NSAttributedString *baseAttributedText;
 @property (nonatomic, copy) NSAttributedString *renderedAttributedText;
-@property (nonatomic, assign) CGFloat lastKernedWidth;
-@property (nonatomic, assign) BOOL isApplyingKern;
 @end
 
 @implementation YifanJustifiedTextView
@@ -164,11 +161,8 @@ static NSString *const kSegmentTypeLink = @"link";
 
   if (attr.length > 0) {
     NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
-    // .natural because the kerning pass below owns horizontal
-    // distribution. If we left .justified here, iOS would already
-    // whitespace-stretch mixed CJK+Latin lines and our per-line
-    // measurement would see gap ≈ 0 — defeating the point.
-    ps.alignment = NSTextAlignmentNatural;
+    ps.alignment =
+        self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
     CGFloat lh = self.lineHeight > 0 ? self.lineHeight : self.fontSize * 1.4;
     ps.minimumLineHeight = lh;
     ps.maximumLineHeight = lh;
@@ -178,74 +172,12 @@ static NSString *const kSegmentTypeLink = @"link";
                  range:NSMakeRange(0, attr.length)];
   }
 
-  self.baseAttributedText = [attr copy];
   self.renderedAttributedText = attr;
-  self.lastKernedWidth = -1;
-  self.label.textAlignment = NSTextAlignmentNatural;
+  self.label.textAlignment =
+      self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
   self.label.attributedText = attr;
   [self invalidateIntrinsicContentSize];
   [self setNeedsLayout];
-}
-
-// iOS's built-in `.justified` alignment only stretches inter-word
-// whitespace once a line contains any Latin character — which is why
-// bodies with @mentions / #tags / links never reach the right edge
-// while pure-CJK bodies do. We own the distribution: measure each
-// non-last line via CTFramesetter and write `NSKernAttributeName` onto
-// the single attributed string (no text splitting, no view splitting)
-// so every glyph shares the remaining gap evenly. Last line stays
-// left-aligned (book typography). A per-char cap keeps short lines
-// from becoming haiku.
-- (void)applyPerLineJustifyKerningIfNeeded {
-  if (!self.justify) return;
-  if (self.isApplyingKern) return;
-  NSAttributedString *base = self.baseAttributedText;
-  if (base.length == 0) return;
-  CGFloat width = self.label.bounds.size.width;
-  if (width <= 0) return;
-  if (ABS(width - self.lastKernedWidth) < 0.5) return;
-
-  CTFramesetterRef fs = CTFramesetterCreateWithAttributedString(
-      (__bridge CFAttributedStringRef)base);
-  CGPathRef path =
-      CGPathCreateWithRect(CGRectMake(0, 0, width, CGFLOAT_MAX), NULL);
-  CTFrameRef frame = CTFramesetterCreateFrame(
-      fs, CFRangeMake(0, (CFIndex)base.length), path, NULL);
-  CFArrayRef lines = CTFrameGetLines(frame);
-  CFIndex lineCount = CFArrayGetCount(lines);
-
-  NSMutableAttributedString *mutable = [base mutableCopy];
-  CGFloat maxKern = self.fontSize * 0.6;
-
-  for (CFIndex i = 0; i + 1 < lineCount; i++) {
-    CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
-    CFRange range = CTLineGetStringRange(line);
-    if (range.length < 2) continue;
-    CGFloat natural = CTLineGetTypographicBounds(line, NULL, NULL, NULL);
-    CGFloat gap = width - natural;
-    if (gap < 0.5) continue;
-    CGFloat kern = gap / (CGFloat)(range.length - 1);
-    if (kern > maxKern) kern = maxKern;
-    // NSKern is trailing spacing — apply to chars [0..N-2] so the
-    // accumulated offset pushes the final glyph to the right edge
-    // without spilling past it.
-    NSRange kernRange =
-        NSMakeRange((NSUInteger)range.location,
-                    (NSUInteger)(range.length - 1));
-    [mutable addAttribute:NSKernAttributeName
-                    value:@(kern)
-                    range:kernRange];
-  }
-
-  CFRelease(frame);
-  CFRelease(fs);
-  CGPathRelease(path);
-
-  self.isApplyingKern = YES;
-  self.renderedAttributedText = mutable;
-  self.label.attributedText = mutable;
-  self.lastKernedWidth = width;
-  self.isApplyingKern = NO;
 }
 
 - (CGSize)intrinsicContentSize {
@@ -258,7 +190,6 @@ static NSString *const kSegmentTypeLink = @"link";
 
 - (void)layoutSubviews {
   [super layoutSubviews];
-  [self applyPerLineJustifyKerningIfNeeded];
   [self reportContentSize];
 }
 
