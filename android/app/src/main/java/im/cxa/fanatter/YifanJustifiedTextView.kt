@@ -17,6 +17,7 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import com.facebook.react.common.assets.ReactFontManager
 
 // A non-null-ish segment marker we put on the spannable alongside the
 // visual spans. Hit-testing reads this back to figure out what the tap
@@ -77,6 +78,10 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
     // HIGH_QUALITY break strategy gives the justify code the best
     // chance to distribute cleanly; default SIMPLE breaks greedy.
     breakStrategy = Layout.BREAK_STRATEGY_HIGH_QUALITY
+    // OpenType `halt` (Alternate Half Widths) swaps full-width CJK
+    // punctuation for compact glyphs at justification time — the
+    // Android sibling of what we turned on in iOS resolveFont.
+    fontFeatureSettings = "'halt'"
     applyJustification()
   }
 
@@ -93,10 +98,15 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
   }
 
   private fun applyFont() {
-    typeface = customFontFamily?.let { name ->
-      runCatching { Typeface.createFromAsset(context.assets, "fonts/$name.ttf") }
-          .getOrNull()
-    } ?: Typeface.DEFAULT
+    val family = customFontFamily
+    typeface = if (family.isNullOrEmpty()) {
+      Typeface.DEFAULT
+    } else {
+      runCatching {
+        ReactFontManager.getInstance()
+            .getTypeface(family, Typeface.NORMAL, context.assets)
+      }.getOrNull() ?: Typeface.DEFAULT
+    }
   }
 
   private fun applyLineHeight() {
@@ -243,8 +253,7 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
 
   private fun emit(eventName: String, data: WritableMap?) {
     val reactContext = context as? ReactContext ?: return
-    val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, id)
-        ?: return
+    val dispatcher = UIManagerHelper.getEventDispatcher(reactContext) ?: return
     val surfaceId = UIManagerHelper.getSurfaceId(this)
     dispatcher.dispatchEvent(
         YifanJustifiedTextEvent(surfaceId, id, eventName, data))
