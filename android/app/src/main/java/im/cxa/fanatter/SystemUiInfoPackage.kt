@@ -14,5 +14,5 @@ class SystemUiInfoPackage : ReactPackage {
   @Suppress("OVERRIDE_DEPRECATION")
   override fun createViewManagers(
       reactContext: ReactApplicationContext,
-  ): List<ViewManager<*, *>> = emptyList()
+  ): List<ViewManager<*, *>> = listOf(YifanJustifiedTextManager())
 }

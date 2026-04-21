@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Platform,
   StyleSheet,
   Text,
   UIManager,
@@ -25,7 +24,7 @@ type JustifiedBodyTextProps = {
   textColor: string;
   accentColor: string;
   activeTag?: string | null;
-  tagActivePillClass?: string; // unused on iOS native path; JS fallback uses it
+  tagActivePillClass?: string; // unused on native path; JS fallback uses it
   tagInactivePillClass?: string;
   tagActiveBackgroundColor?: string;
   tagInactiveBackgroundColor?: string;
@@ -64,17 +63,16 @@ type NativeProps = {
   style?: TextStyle;
 };
 
-const nativeIOSComponentIsRegistered =
-  Platform.OS === 'ios' &&
+const nativeComponentIsRegistered =
   UIManager.getViewManagerConfig('YifanJustifiedText') != null;
 
-if (Platform.OS === 'ios' && !nativeIOSComponentIsRegistered) {
+if (!nativeComponentIsRegistered) {
   console.warn(
-    '[JustifiedBodyText] YifanJustifiedText native component not registered — falling back to JS <Text>. Rebuild iOS after `bundle exec pod install` to pick it up.',
+    '[JustifiedBodyText] YifanJustifiedText native component not registered — falling back to JS <Text>. Rebuild the app to pick up native changes.',
   );
 }
 
-const NativeJustifiedText = nativeIOSComponentIsRegistered
+const NativeJustifiedText = nativeComponentIsRegistered
   ? (requireNativeComponent<NativeProps>(
       'YifanJustifiedText',
     ) as React.ComponentType<NativeProps>)
@@ -85,7 +83,7 @@ const styles = StyleSheet.create({
   linkText: { textDecorationLine: 'underline' },
 });
 
-type IOSProps = {
+type NativeViewProps = {
   segments: JustifiedBodySegment[];
   textColor: string;
   accentColor: string;
@@ -102,7 +100,7 @@ type IOSProps = {
   onPressText: () => void;
 };
 
-const IOSJustifiedBodyText = ({
+const NativeJustifiedBodyText = ({
   segments,
   textColor,
   accentColor,
@@ -117,7 +115,7 @@ const IOSJustifiedBodyText = ({
   onPressMention,
   onPressTag,
   onPressText,
-}: IOSProps) => {
+}: NativeViewProps) => {
   // Native view reports its required height back via onContentSizeChange.
   // Estimate 2 lines on first render to keep the layout from jumping by
   // a visible amount for typical short posts.
@@ -171,13 +169,16 @@ const JustifiedBodyText = ({
   onPressText,
   renderPlainTextSegment,
 }: JustifiedBodyTextProps) => {
-  if (Platform.OS === 'ios' && NativeJustifiedText) {
-    // The native iOS view builds one NSAttributedString so mentions /
-    // tags / links are attributes rather than nested <Text>, which lets
-    // iOS's CJK inter-character justify span an entire line instead of
-    // collapsing at each interactive run.
+  if (NativeJustifiedText) {
+    // Single flattened attributed string on both platforms — mentions /
+    // tags / links are attributes, not nested <Text>. That's what lets
+    // iOS's CJK inter-character justify (via CoreText) and Android's
+    // JUSTIFICATION_MODE_INTER_CHARACTER (API 35+) stretch glyphs
+    // across the whole line instead of collapsing at each interactive
+    // run. Pre-API-35 Android falls back to left-aligned here, which
+    // is the honest default.
     return (
-      <IOSJustifiedBodyText
+      <NativeJustifiedBodyText
         segments={segments}
         textColor={textColor}
         accentColor={accentColor}
@@ -196,9 +197,9 @@ const JustifiedBodyText = ({
     );
   }
 
-  // Android (and any platform without the native view) stays on the
-  // stock nested Text path. CJK justify can't work reliably there
-  // anyway until API 35, so left-align is the honest default.
+  // Last-resort JS fallback — native view didn't register (stale
+  // binary). Nested <Text> is the only thing the platform gives us
+  // here; no justify.
   return (
     <AppText
       skipFont
