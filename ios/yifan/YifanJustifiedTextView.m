@@ -109,26 +109,19 @@ static NSString *const kSegmentTypeLink = @"link";
   NSArray *segments = self.segments ?: @[];
   UIFont *font = [self resolveFont];
   UIColor *baseColor = self.textColor ?: [UIColor blackColor];
-  UIColor *accentColor = self.accentColor ?: [UIColor systemBlueColor];
 
-  // Phase 1: concatenate every segment's text into one NSString and
-  // remember each segment's range in the final string — no attributed-
-  // string stitching.
+  // DEBUG: concatenate text only, attach font + paragraph style across
+  // the whole string as one flat run. No per-segment foreground color,
+  // background, underline, or custom keys — we want to see whether the
+  // attribute *runs* themselves are what confuses justify.
   NSMutableString *fullText = [NSMutableString string];
-  NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
-  NSMutableArray<NSDictionary *> *segs = [NSMutableArray array];
   for (NSDictionary *segment in segments) {
     if (![segment isKindOfClass:[NSDictionary class]]) continue;
     NSString *text = segment[@"text"] ?: @"";
     if (text.length == 0) continue;
-    NSUInteger start = fullText.length;
     [fullText appendString:text];
-    [ranges addObject:[NSValue valueWithRange:NSMakeRange(start, text.length)]];
-    [segs addObject:segment];
   }
 
-  // Phase 2: build ONE attributed string with base attributes across
-  // the whole string, then decorate per segment via addAttribute:range:.
   NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
   ps.alignment =
       self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
@@ -146,57 +139,6 @@ static NSString *const kSegmentTypeLink = @"link";
   NSMutableAttributedString *attr =
       [[NSMutableAttributedString alloc] initWithString:fullText
                                              attributes:baseAttrs];
-
-  for (NSUInteger i = 0; i < segs.count; i++) {
-    NSDictionary *segment = segs[i];
-    NSRange range = [ranges[i] rangeValue];
-    NSString *type = segment[@"type"] ?: @"text";
-
-    if ([type isEqualToString:@"mention"]) {
-      [attr addAttribute:NSForegroundColorAttributeName
-                   value:accentColor
-                   range:range];
-      [attr addAttribute:kYifanSegmentTypeKey
-                   value:kSegmentTypeMention
-                   range:range];
-      [attr addAttribute:kYifanSegmentPayloadKey
-                   value:(segment[@"screenName"] ?: @"")
-                   range:range];
-    } else if ([type isEqualToString:@"tag"]) {
-      NSString *tag = segment[@"tag"] ?: @"";
-      BOOL isActive = self.activeTag.length > 0 &&
-                      [self.activeTag.lowercaseString
-                          isEqualToString:tag.lowercaseString];
-      UIColor *fg = isActive
-                        ? (self.tagActiveColor ?: [UIColor whiteColor])
-                        : accentColor;
-      UIColor *bg = isActive ? self.tagActiveBackgroundColor
-                             : self.tagInactiveBackgroundColor;
-      [attr addAttribute:NSForegroundColorAttributeName value:fg range:range];
-      if (bg) {
-        [attr addAttribute:NSBackgroundColorAttributeName
-                     value:bg
-                     range:range];
-      }
-      [attr addAttribute:kYifanSegmentTypeKey
-                   value:kSegmentTypeTag
-                   range:range];
-      [attr addAttribute:kYifanSegmentPayloadKey value:tag range:range];
-    } else if ([type isEqualToString:@"link"]) {
-      [attr addAttribute:NSForegroundColorAttributeName
-                   value:accentColor
-                   range:range];
-      [attr addAttribute:NSUnderlineStyleAttributeName
-                   value:@(NSUnderlineStyleSingle)
-                   range:range];
-      [attr addAttribute:kYifanSegmentTypeKey
-                   value:kSegmentTypeLink
-                   range:range];
-      [attr addAttribute:kYifanSegmentPayloadKey
-                   value:(segment[@"href"] ?: @"")
-                   range:range];
-    }
-  }
 
   self.attributedText = attr;
   [self invalidateIntrinsicContentSize];
