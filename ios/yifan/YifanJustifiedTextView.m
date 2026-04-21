@@ -13,7 +13,10 @@ static NSString *const kSegmentTypeLink = @"link";
 
 @interface YifanJustifiedTextView () <UIGestureRecognizerDelegate>
 @property (nonatomic, strong) UILabel *label;
+@property (nonatomic, copy) NSAttributedString *baseAttributedText;
 @property (nonatomic, copy) NSAttributedString *renderedAttributedText;
+@property (nonatomic, assign) CGFloat lastJustifyWidth;
+@property (nonatomic, assign) BOOL isApplyingJustifyKerning;
 @end
 
 @implementation YifanJustifiedTextView
@@ -172,12 +175,76 @@ static NSString *const kSegmentTypeLink = @"link";
                  range:NSMakeRange(0, attr.length)];
   }
 
+  self.baseAttributedText = [attr copy];
   self.renderedAttributedText = attr;
+  self.lastJustifyWidth = -1; // force re-kerning on next layout
   self.label.textAlignment =
       self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
   self.label.attributedText = attr;
   [self invalidateIntrinsicContentSize];
   [self setNeedsLayout];
+}
+
+// iOS's built-in `.justified` alignment only stretches existing
+// whitespace for CJK; pure Chinese/Japanese/Korean lines never reach
+// the right edge, and lines mixing narrow ASCII chars end raggedly.
+// We take over: measure each line via CTFramesetter, compute the gap
+// between its natural width and the target column width, and apply
+// `NSKernAttributeName` evenly across the interior characters of that
+// line so the glyphs spread out to fill the column. The last line is
+// left alone (conventional book typography). A per-line kern cap
+// prevents especially short lines from turning into a haiku.
+- (void)applyPerLineJustifyKerningIfNeeded {
+  if (!self.justify) return;
+  if (self.isApplyingJustifyKerning) return;
+  NSAttributedString *base = self.baseAttributedText;
+  if (base.length == 0) return;
+  CGFloat width = self.label.bounds.size.width;
+  if (width <= 0) return;
+  if (ABS(width - self.lastJustifyWidth) < 0.5) return;
+
+  CFAttributedStringRef cfAttr = (__bridge CFAttributedStringRef)base;
+  CTFramesetterRef fs = CTFramesetterCreateWithAttributedString(cfAttr);
+  CGPathRef path =
+      CGPathCreateWithRect(CGRectMake(0, 0, width, CGFLOAT_MAX), NULL);
+  CTFrameRef frame = CTFramesetterCreateFrame(
+      fs, CFRangeMake(0, (CFIndex)base.length), path, NULL);
+  CFArrayRef lines = CTFrameGetLines(frame);
+  CFIndex lineCount = CFArrayGetCount(lines);
+
+  NSMutableAttributedString *mutable = [base mutableCopy];
+  CGFloat maxKern = self.fontSize * 0.6;
+
+  for (CFIndex i = 0; i + 1 < lineCount; i++) {
+    CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
+    CFRange range = CTLineGetStringRange(line);
+    if (range.length < 2) continue;
+    CGFloat natural = CTLineGetTypographicBounds(line, NULL, NULL, NULL);
+    CGFloat gap = width - natural;
+    if (gap < 0.5) continue;
+    CGFloat kern = gap / (CGFloat)(range.length - 1);
+    if (kern > maxKern) kern = maxKern;
+    // NSKernAttributeName sets trailing spacing after each character in
+    // the attributed range. Apply to all but the last char of the line
+    // so the kern accumulates *between* chars without pushing the final
+    // glyph off the right edge.
+    NSRange kernRange =
+        NSMakeRange((NSUInteger)range.location,
+                    (NSUInteger)(range.length - 1));
+    [mutable addAttribute:NSKernAttributeName
+                    value:@(kern)
+                    range:kernRange];
+  }
+
+  CFRelease(frame);
+  CFRelease(fs);
+  CGPathRelease(path);
+
+  self.isApplyingJustifyKerning = YES;
+  self.renderedAttributedText = mutable;
+  self.label.attributedText = mutable;
+  self.lastJustifyWidth = width;
+  self.isApplyingJustifyKerning = NO;
 }
 
 - (CGSize)intrinsicContentSize {
@@ -190,6 +257,7 @@ static NSString *const kSegmentTypeLink = @"link";
 
 - (void)layoutSubviews {
   [super layoutSubviews];
+  [self applyPerLineJustifyKerningIfNeeded];
   [self reportContentSize];
 }
 
