@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Pressable, Image, useWindowDimensions, Platform } from 'react-native';
+import { View, Pressable, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useThemeColor } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +42,33 @@ import {
 
 const CALLBACK_URL = 'yifan://authorize_callback';
 
+// Three dots that fade in one by one then reset — replaces the static
+// ellipsis in the signing-in label so the button feels alive while the
+// OAuth handshake is in flight.
+const DOT_FADE_STYLES = StyleSheet.create({
+  on: { opacity: 1 },
+  off: { opacity: 0.25 },
+});
+const LoadingDots = () => {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep(prev => (prev + 1) % 4), 400);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <>
+      <Text style={step >= 1 ? DOT_FADE_STYLES.on : DOT_FADE_STYLES.off}>.</Text>
+      <Text style={step >= 2 ? DOT_FADE_STYLES.on : DOT_FADE_STYLES.off}>.</Text>
+      <Text style={step >= 3 ? DOT_FADE_STYLES.on : DOT_FADE_STYLES.off}>.</Text>
+    </>
+  );
+};
+
+// Strip any trailing ellipsis (either the "…" glyph or the "..." ASCII
+// variant) from the signing-in label so LoadingDots can take over.
+const stripTrailingEllipsis = (value: string) =>
+  value.replace(/[…\u2026]+$/u, '').replace(/\.{1,}$/u, '').trimEnd();
+
 const LoginView = () => {
   const { t, i18n } = useTranslation();
   const poemPath = i18n.resolvedLanguage?.startsWith('zh')
@@ -64,17 +91,19 @@ const LoginView = () => {
   const formTranslateY = useSharedValue(50);
 
   useEffect(() => {
-    // 1.5s splash screen entry
+    // 1.5s splash screen, then the logo rises first and the form follows
+    // 100ms later — the small stagger reads as a wave instead of a single
+    // beat where both elements move in lockstep.
     logoTranslateY.value = withDelay(
       1500,
       withTiming(0, { duration: 800, easing: Easing.out(Easing.exp) })
     );
     formOpacity.value = withDelay(
-      1500,
+      1600,
       withTiming(1, { duration: 800, easing: Easing.out(Easing.exp) })
     );
     formTranslateY.value = withDelay(
-      1500,
+      1600,
       withTiming(0, { duration: 800, easing: Easing.out(Easing.exp) })
     );
   }, [logoTranslateY, formOpacity, formTranslateY]);
@@ -230,7 +259,7 @@ const LoginView = () => {
             <View className="mb-4 w-full">
               <Pressable
                 onPress={handleCancelSignIn}
-                className={`w-full h-12 items-center justify-center rounded-full border shadow-sm ${
+                className={`w-full h-12 items-center justify-center rounded-full border shadow-sm active:scale-[0.96] ${
                   isDark ? 'border-[#F5EED7]/30 bg-white/10 active:bg-white/20' : 'border-[#2A3B4C]/30 bg-white/40 active:bg-white/70'
                 }`}
               >
@@ -244,12 +273,15 @@ const LoginView = () => {
           <Pressable
             onPress={handleSignIn}
             disabled={isSigningIn}
-            className={`w-full bg-accent h-14 items-center justify-center rounded-full active:opacity-80 shadow-sm ${
+            className={`w-full bg-accent h-14 flex-row items-center justify-center rounded-full active:opacity-80 active:scale-[0.96] shadow-sm ${
               isSigningIn ? 'opacity-70' : ''
             }`}
           >
             <Text className="text-accent-foreground text-[16px] font-bold tracking-wide">
-              {isSigningIn ? t('loginLoading') : t('loginButton')}
+              {isSigningIn
+                ? stripTrailingEllipsis(t('loginLoading'))
+                : t('loginButton')}
+              {isSigningIn ? <LoadingDots /> : null}
             </Text>
           </Pressable>
         </View>
