@@ -1,11 +1,9 @@
 #import "YifanJustifiedTextView.h"
 
-// Custom attributed-string keys that carry the segment kind and payload
-// without falling back to NSLinkAttributeName. UITextView treats
-// NSLinkAttributeName as a semantic link and takes the link-flavoured
-// layout path, which — like RN's nested <Text onPress> — fragments the
-// attributed run and defeats CJK inter-character justify. Taps are
-// resolved manually below.
+#import <CoreText/CoreText.h>
+
+// Custom attributed-string keys so we don't have to lean on
+// NSLinkAttributeName and its link-flavoured gesture machinery.
 static NSAttributedStringKey const kYifanSegmentTypeKey = @"YifanSegmentType";
 static NSAttributedStringKey const kYifanSegmentPayloadKey = @"YifanSegmentPayload";
 
@@ -14,7 +12,8 @@ static NSString *const kSegmentTypeTag = @"tag";
 static NSString *const kSegmentTypeLink = @"link";
 
 @interface YifanJustifiedTextView () <UIGestureRecognizerDelegate>
-@property (nonatomic, strong) UITextView *textView;
+@property (nonatomic, strong) UILabel *label;
+@property (nonatomic, copy) NSAttributedString *renderedAttributedText;
 @end
 
 @implementation YifanJustifiedTextView
@@ -25,25 +24,18 @@ static NSString *const kSegmentTypeLink = @"link";
     _lineHeight = 24;
     _justify = YES;
 
-    _textView = [[UITextView alloc] initWithFrame:self.bounds];
-    _textView.editable = NO;
-    _textView.selectable = NO;
-    _textView.scrollEnabled = NO;
-    _textView.backgroundColor = [UIColor clearColor];
-    _textView.textContainerInset = UIEdgeInsetsZero;
-    _textView.textContainer.lineFragmentPadding = 0;
-    _textView.dataDetectorTypes = UIDataDetectorTypeNone;
-    _textView.showsVerticalScrollIndicator = NO;
-    _textView.showsHorizontalScrollIndicator = NO;
-    _textView.autocorrectionType = UITextAutocorrectionTypeNo;
-    _textView.spellCheckingType = UITextSpellCheckingTypeNo;
-    _textView.translatesAutoresizingMaskIntoConstraints = NO;
-    [self addSubview:_textView];
+    _label = [[UILabel alloc] initWithFrame:self.bounds];
+    _label.numberOfLines = 0;
+    _label.lineBreakMode = NSLineBreakByWordWrapping;
+    _label.backgroundColor = [UIColor clearColor];
+    _label.translatesAutoresizingMaskIntoConstraints = NO;
+    _label.userInteractionEnabled = YES;
+    [self addSubview:_label];
     [NSLayoutConstraint activateConstraints:@[
-      [_textView.topAnchor constraintEqualToAnchor:self.topAnchor],
-      [_textView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-      [_textView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-      [_textView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+      [_label.topAnchor constraintEqualToAnchor:self.topAnchor],
+      [_label.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+      [_label.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
+      [_label.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
     ]];
 
     UITapGestureRecognizer *tap =
@@ -51,7 +43,7 @@ static NSString *const kSegmentTypeLink = @"link";
                                                 action:@selector(handleTap:)];
     tap.delegate = self;
     tap.cancelsTouchesInView = NO;
-    [self addGestureRecognizer:tap];
+    [_label addGestureRecognizer:tap];
   }
   return self;
 }
@@ -174,26 +166,25 @@ static NSString *const kSegmentTypeLink = @"link";
     CGFloat lh = self.lineHeight > 0 ? self.lineHeight : self.fontSize * 1.4;
     ps.minimumLineHeight = lh;
     ps.maximumLineHeight = lh;
+    ps.lineBreakMode = NSLineBreakByWordWrapping;
     [attr addAttribute:NSParagraphStyleAttributeName
                  value:ps
                  range:NSMakeRange(0, attr.length)];
   }
 
-  // UITextView's textAlignment property can override per-range paragraph
-  // styles depending on ordering; set it explicitly in addition to the
-  // attribute so the justify alignment is applied reliably.
-  self.textView.textAlignment =
+  self.renderedAttributedText = attr;
+  self.label.textAlignment =
       self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
-  self.textView.attributedText = attr;
+  self.label.attributedText = attr;
   [self invalidateIntrinsicContentSize];
   [self setNeedsLayout];
 }
 
 - (CGSize)intrinsicContentSize {
-  CGFloat width = self.textView.frame.size.width;
-  if (width <= 0) width = self.frame.size.width;
+  CGFloat width = self.bounds.size.width;
   if (width <= 0) return CGSizeMake(UIViewNoIntrinsicMetric, UIViewNoIntrinsicMetric);
-  CGSize fitted = [self.textView sizeThatFits:CGSizeMake(width, CGFLOAT_MAX)];
+  CGSize fitted =
+      [self.label sizeThatFits:CGSizeMake(width, CGFLOAT_MAX)];
   return CGSizeMake(UIViewNoIntrinsicMetric, ceil(fitted.height));
 }
 
@@ -207,42 +198,94 @@ static NSString *const kSegmentTypeLink = @"link";
   CGFloat width = self.bounds.size.width;
   if (width <= 0) return;
   CGSize fitted =
-      [self.textView sizeThatFits:CGSizeMake(width, CGFLOAT_MAX)];
+      [self.label sizeThatFits:CGSizeMake(width, CGFLOAT_MAX)];
   self.onContentSizeChange(
       @{@"width" : @(width), @"height" : @(ceil(fitted.height))});
 }
 
-#pragma mark - Tap handling
+#pragma mark - Tap handling via CoreText hit-test
+
+- (NSUInteger)characterIndexAtPoint:(CGPoint)point {
+  NSAttributedString *attrString = self.renderedAttributedText;
+  CGFloat width = self.label.bounds.size.width;
+  if (attrString.length == 0 || width <= 0) {
+    return NSNotFound;
+  }
+
+  CFAttributedStringRef cfAttr = (__bridge CFAttributedStringRef)attrString;
+  CTFramesetterRef framesetter =
+      CTFramesetterCreateWithAttributedString(cfAttr);
+  CGPathRef path = CGPathCreateWithRect(
+      CGRectMake(0, 0, width, CGFLOAT_MAX), NULL);
+  CTFrameRef frame = CTFramesetterCreateFrame(
+      framesetter, CFRangeMake(0, (CFIndex)attrString.length), path, NULL);
+
+  CFArrayRef lines = CTFrameGetLines(frame);
+  CFIndex lineCount = CFArrayGetCount(lines);
+  NSUInteger result = NSNotFound;
+  if (lineCount == 0) {
+    CFRelease(frame);
+    CFRelease(framesetter);
+    CGPathRelease(path);
+    return result;
+  }
+
+  CGPoint origins[lineCount];
+  CTFrameGetLineOrigins(frame, CFRangeMake(0, lineCount), origins);
+  CGFloat ascent = 0, descent = 0, leading = 0;
+  CTLineGetTypographicBounds((CTLineRef)CFArrayGetValueAtIndex(lines, 0),
+                             &ascent, &descent, &leading);
+  CGFloat lineHeight = ascent + descent + leading;
+  CGFloat firstLineBaseline = origins[0].y;
+  // Text block height (topmost baseline to bottom of last line descent):
+  CGFloat blockHeight = firstLineBaseline + descent +
+                        (origins[0].y - origins[lineCount - 1].y);
+  CGFloat labelHeight = self.label.bounds.size.height;
+  // UILabel with numberOfLines=0 centres its content block vertically only
+  // if the label is taller than the block. In our RN-driven auto-size the
+  // label hugs the content, so topOffset is typically 0.
+  CGFloat topOffset = MAX(0, (labelHeight - blockHeight) / 2.0);
+
+  for (CFIndex i = 0; i < lineCount; i++) {
+    CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
+    CGFloat lineTopInView =
+        topOffset + (firstLineBaseline - origins[i].y) - ascent;
+    CGFloat lineBottomInView = lineTopInView + lineHeight;
+    BOOL lastLine = (i == lineCount - 1);
+    BOOL inYRange =
+        (point.y >= lineTopInView) && (point.y < lineBottomInView);
+    if (!inYRange && !(lastLine && point.y >= lineBottomInView)) continue;
+
+    CGPoint relative = CGPointMake(point.x - origins[i].x, 0);
+    CFIndex idx = CTLineGetStringIndexForPosition(line, relative);
+    if (idx == kCFNotFound) continue;
+    CFRange lineRange = CTLineGetStringRange(line);
+    if (idx < lineRange.location) idx = lineRange.location;
+    CFIndex maxIdx = lineRange.location + lineRange.length - 1;
+    if (idx > maxIdx) idx = maxIdx;
+    if (idx >= 0) result = (NSUInteger)idx;
+    break;
+  }
+
+  CFRelease(frame);
+  CFRelease(framesetter);
+  CGPathRelease(path);
+  return result;
+}
 
 - (void)handleTap:(UITapGestureRecognizer *)recognizer {
   if (recognizer.state != UIGestureRecognizerStateEnded) return;
-  CGPoint point = [recognizer locationInView:self.textView];
-  NSAttributedString *storage = self.textView.textStorage;
+  CGPoint point = [recognizer locationInView:self.label];
+  NSAttributedString *storage = self.renderedAttributedText;
   if (storage.length == 0) {
     if (self.onPressText) self.onPressText(@{});
     return;
   }
-
-  NSLayoutManager *lm = self.textView.layoutManager;
-  NSTextContainer *tc = self.textView.textContainer;
-  // Use the glyph index so we don't accidentally land on a trailing
-  // newline or whitespace mid-layout.
-  CGFloat fraction = 0;
-  NSUInteger glyphIndex =
-      [lm glyphIndexForPoint:point
-             inTextContainer:tc
-        fractionOfDistanceThroughGlyph:&fraction];
-  if (glyphIndex >= [lm numberOfGlyphs]) {
+  NSUInteger charIndex = [self characterIndexAtPoint:point];
+  if (charIndex == NSNotFound || charIndex >= storage.length) {
     if (self.onPressText) self.onPressText(@{});
     return;
   }
-  NSUInteger charIndex =
-      [lm characterIndexForGlyphAtIndex:glyphIndex];
-  if (charIndex >= storage.length) {
-    if (self.onPressText) self.onPressText(@{});
-    return;
-  }
-
   NSString *type = [storage attribute:kYifanSegmentTypeKey
                               atIndex:charIndex
                        effectiveRange:NULL];
@@ -272,7 +315,6 @@ static NSString *const kSegmentTypeLink = @"link";
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
     shouldRecognizeSimultaneouslyWithGestureRecognizer:
         (UIGestureRecognizer *)otherGestureRecognizer {
-  // Let the tap coexist with whatever list/scroll gesture is above us.
   return YES;
 }
 
