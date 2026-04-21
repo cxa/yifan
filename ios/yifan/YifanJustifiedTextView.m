@@ -3,8 +3,7 @@
 #import <CoreText/CoreText.h>
 
 // Custom keys so we don't lean on NSLinkAttributeName and its
-// link-flavoured gesture machinery. Just plain markers the hit-test
-// reads back.
+// link-flavoured gesture machinery.
 static NSAttributedStringKey const kYifanSegmentTypeKey = @"YifanSegmentType";
 static NSAttributedStringKey const kYifanSegmentPayloadKey = @"YifanSegmentPayload";
 
@@ -155,10 +154,8 @@ static NSString *const kSegmentTypeLink = @"link";
 
   if (attr.length > 0) {
     NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
-    // Alignment stays .natural — we're rendering the frame ourselves
-    // and distributing the gap per-line in drawRect:, so we don't want
-    // iOS's own justify pass to pre-stretch whitespace underneath us.
-    ps.alignment = NSTextAlignmentNatural;
+    ps.alignment =
+        self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
     CGFloat lh = self.lineHeight > 0 ? self.lineHeight : self.fontSize * 1.4;
     ps.minimumLineHeight = lh;
     ps.maximumLineHeight = lh;
@@ -175,72 +172,6 @@ static NSString *const kSegmentTypeLink = @"link";
 }
 
 #pragma mark - Drawing
-
-// Build a justified version of a non-last line by computing the gap
-// between the line's effective (glyphs minus trailing whitespace)
-// width and the column width, then distributing it as NSKern across
-// the line's substring. The returned CTLine draws glyphs that fill the
-// column. Caller owns the returned reference.
-- (CTLineRef)copyJustifiedLineFor:(CTLineRef)line
-                          columnW:(CGFloat)columnW
-                       attributes:(NSAttributedString *)attr CF_RETURNS_RETAINED {
-  CFRange range = CTLineGetStringRange(line);
-  if (range.length < 2) return NULL;
-
-  CGFloat natural = CTLineGetTypographicBounds(line, NULL, NULL, NULL);
-  CGFloat trailingWS = CTLineGetTrailingWhitespaceWidth(line);
-  CGFloat gap = columnW - (natural - trailingWS);
-  if (gap < 0.5) return NULL;
-
-  CGFloat kern = gap / (CGFloat)(range.length - 1);
-  // Cap per-character kern to avoid short lines turning into haiku.
-  CGFloat maxKern = self.fontSize * 0.6;
-  if (kern > maxKern) kern = maxKern;
-
-  NSRange nsRange =
-      NSMakeRange((NSUInteger)range.location, (NSUInteger)range.length);
-  NSMutableAttributedString *sub =
-      [[attr attributedSubstringFromRange:nsRange] mutableCopy];
-  // NSKern is trailing spacing — apply to chars [0..N-2] so offsets
-  // accumulate *between* glyphs and the final glyph lands at the edge.
-  [sub addAttribute:NSKernAttributeName
-              value:@(kern)
-              range:NSMakeRange(0, nsRange.length - 1)];
-  return CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)sub);
-}
-
-// Paint any NSBackgroundColorAttributeName runs for this line, then
-// the glyphs. CoreText's CTLineDraw doesn't paint the tag-pill
-// background attribute, so we iterate runs and fill manually.
-static void DrawLineWithBackgrounds(CGContextRef ctx,
-                                    CTLineRef line,
-                                    CGPoint origin) {
-  CFArrayRef runs = CTLineGetGlyphRuns(line);
-  CFIndex runCount = CFArrayGetCount(runs);
-  for (CFIndex r = 0; r < runCount; r++) {
-    CTRunRef run = (CTRunRef)CFArrayGetValueAtIndex(runs, r);
-    NSDictionary *attrs = (__bridge NSDictionary *)CTRunGetAttributes(run);
-    UIColor *bg = attrs[NSBackgroundColorAttributeName];
-    if (!bg) continue;
-
-    CFRange runRange = CTRunGetStringRange(run);
-    CGFloat startX =
-        CTLineGetOffsetForStringIndex(line, runRange.location, NULL);
-    CGFloat endX = CTLineGetOffsetForStringIndex(
-        line, runRange.location + runRange.length, NULL);
-    CGFloat ascent = 0, descent = 0;
-    CTRunGetTypographicBounds(run, CFRangeMake(0, 0), &ascent, &descent, NULL);
-    CGRect bgRect = CGRectMake(origin.x + startX,
-                               origin.y - descent,
-                               endX - startX,
-                               ascent + descent);
-    CGContextSetFillColorWithColor(ctx, bg.CGColor);
-    CGContextFillRect(ctx, bgRect);
-  }
-
-  CGContextSetTextPosition(ctx, origin.x, origin.y);
-  CTLineDraw(line, ctx);
-}
 
 - (void)drawRect:(CGRect)rect {
   NSAttributedString *attr = self.attributedText;
@@ -261,24 +192,7 @@ static void DrawLineWithBackgrounds(CGContextRef ctx,
   CTFrameRef frame = CTFramesetterCreateFrame(
       fs, CFRangeMake(0, 0), path, NULL);
 
-  CFArrayRef lines = CTFrameGetLines(frame);
-  CFIndex lineCount = CFArrayGetCount(lines);
-  if (lineCount > 0) {
-    CGPoint origins[lineCount];
-    CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), origins);
-
-    for (CFIndex i = 0; i < lineCount; i++) {
-      CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
-      CTLineRef toDraw = line;
-      CTLineRef justified = NULL;
-      if (self.justify && (i + 1 < lineCount)) {
-        justified = [self copyJustifiedLineFor:line columnW:W attributes:attr];
-        if (justified) toDraw = justified;
-      }
-      DrawLineWithBackgrounds(ctx, toDraw, origins[i]);
-      if (justified) CFRelease(justified);
-    }
-  }
+  CTFrameDraw(frame, ctx);
 
   CFRelease(frame);
   CFRelease(fs);
@@ -337,7 +251,6 @@ static void DrawLineWithBackgrounds(CGContextRef ctx,
   CGFloat H = self.bounds.size.height;
   if (W <= 0 || H <= 0) return NSNotFound;
 
-  // UIKit coords have origin top-left; CT coords are bottom-left.
   CGFloat ctY = H - point.y;
 
   CTFramesetterRef fs = CTFramesetterCreateWithAttributedString(
@@ -355,40 +268,27 @@ static void DrawLineWithBackgrounds(CGContextRef ctx,
 
     for (CFIndex i = 0; i < lineCount; i++) {
       CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
-      CGFloat ascent = 0, descent = 0, leading = 0;
-      CTLineGetTypographicBounds(line, &ascent, &descent, &leading);
+      CGFloat ascent = 0, descent = 0;
+      CTLineGetTypographicBounds(line, &ascent, &descent, NULL);
       CGFloat lineTop = origins[i].y + ascent;
       CGFloat lineBottom = origins[i].y - descent;
       BOOL isLast = (i == lineCount - 1);
       BOOL inY = (ctY >= lineBottom) && (ctY <= lineTop);
-      // Let taps above the first line or below the last line snap in.
       if (!inY) {
         BOOL aboveFirst = (i == 0 && ctY > lineTop);
         BOOL belowLast = (isLast && ctY < lineBottom);
         if (!(aboveFirst || belowLast)) continue;
       }
 
-      CFRange range = CTLineGetStringRange(line);
-      CTLineRef hitLine = line;
-      CTLineRef justified = NULL;
-      if (self.justify && !isLast) {
-        justified = [self copyJustifiedLineFor:line columnW:W attributes:attr];
-        if (justified) hitLine = justified;
-      }
-
       CGPoint relative = CGPointMake(point.x - origins[i].x, 0);
-      CFIndex idx = CTLineGetStringIndexForPosition(hitLine, relative);
+      CFIndex idx = CTLineGetStringIndexForPosition(line, relative);
       if (idx != kCFNotFound) {
-        // A line built from an attributedSubstring reports indices
-        // starting at 0; re-anchor to the original string.
-        if (justified) idx += range.location;
+        CFRange range = CTLineGetStringRange(line);
         if (idx < range.location) idx = range.location;
         CFIndex maxIdx = range.location + range.length - 1;
         if (idx > maxIdx) idx = maxIdx;
         if (idx >= 0) result = (NSUInteger)idx;
       }
-
-      if (justified) CFRelease(justified);
       break;
     }
   }
