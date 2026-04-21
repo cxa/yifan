@@ -107,62 +107,95 @@ static NSString *const kSegmentTypeLink = @"link";
 
 - (void)rebuildAttributedText {
   NSArray *segments = self.segments ?: @[];
-  NSMutableAttributedString *attr = [[NSMutableAttributedString alloc] init];
   UIFont *font = [self resolveFont];
   UIColor *baseColor = self.textColor ?: [UIColor blackColor];
   UIColor *accentColor = self.accentColor ?: [UIColor systemBlueColor];
 
+  // Phase 1: concatenate every segment's text into one NSString and
+  // remember each segment's range in the final string — no attributed-
+  // string stitching.
+  NSMutableString *fullText = [NSMutableString string];
+  NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
+  NSMutableArray<NSDictionary *> *segs = [NSMutableArray array];
   for (NSDictionary *segment in segments) {
     if (![segment isKindOfClass:[NSDictionary class]]) continue;
-    NSString *type = segment[@"type"] ?: @"text";
     NSString *text = segment[@"text"] ?: @"";
     if (text.length == 0) continue;
+    NSUInteger start = fullText.length;
+    [fullText appendString:text];
+    [ranges addObject:[NSValue valueWithRange:NSMakeRange(start, text.length)]];
+    [segs addObject:segment];
+  }
 
-    NSMutableDictionary<NSAttributedStringKey, id> *attrs = [NSMutableDictionary dictionary];
-    attrs[NSFontAttributeName] = font;
-    attrs[NSForegroundColorAttributeName] = baseColor;
+  // Phase 2: build ONE attributed string with base attributes across
+  // the whole string, then decorate per segment via addAttribute:range:.
+  NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
+  ps.alignment =
+      self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
+  CGFloat lh = self.lineHeight > 0 ? self.lineHeight : self.fontSize * 1.4;
+  ps.minimumLineHeight = lh;
+  ps.maximumLineHeight = lh;
+  ps.lineBreakMode = NSLineBreakByWordWrapping;
+
+  NSDictionary<NSAttributedStringKey, id> *baseAttrs = @{
+    NSFontAttributeName : font,
+    NSForegroundColorAttributeName : baseColor,
+    NSParagraphStyleAttributeName : ps,
+  };
+
+  NSMutableAttributedString *attr =
+      [[NSMutableAttributedString alloc] initWithString:fullText
+                                             attributes:baseAttrs];
+
+  for (NSUInteger i = 0; i < segs.count; i++) {
+    NSDictionary *segment = segs[i];
+    NSRange range = [ranges[i] rangeValue];
+    NSString *type = segment[@"type"] ?: @"text";
 
     if ([type isEqualToString:@"mention"]) {
-      NSString *screenName = segment[@"screenName"] ?: @"";
-      attrs[NSForegroundColorAttributeName] = accentColor;
-      attrs[kYifanSegmentTypeKey] = kSegmentTypeMention;
-      attrs[kYifanSegmentPayloadKey] = screenName;
+      [attr addAttribute:NSForegroundColorAttributeName
+                   value:accentColor
+                   range:range];
+      [attr addAttribute:kYifanSegmentTypeKey
+                   value:kSegmentTypeMention
+                   range:range];
+      [attr addAttribute:kYifanSegmentPayloadKey
+                   value:(segment[@"screenName"] ?: @"")
+                   range:range];
     } else if ([type isEqualToString:@"tag"]) {
       NSString *tag = segment[@"tag"] ?: @"";
       BOOL isActive = self.activeTag.length > 0 &&
                       [self.activeTag.lowercaseString
                           isEqualToString:tag.lowercaseString];
-      UIColor *fg = isActive ? (self.tagActiveColor ?: [UIColor whiteColor]) : accentColor;
+      UIColor *fg = isActive
+                        ? (self.tagActiveColor ?: [UIColor whiteColor])
+                        : accentColor;
       UIColor *bg = isActive ? self.tagActiveBackgroundColor
                              : self.tagInactiveBackgroundColor;
-      attrs[NSForegroundColorAttributeName] = fg;
-      if (bg) attrs[NSBackgroundColorAttributeName] = bg;
-      attrs[kYifanSegmentTypeKey] = kSegmentTypeTag;
-      attrs[kYifanSegmentPayloadKey] = tag;
+      [attr addAttribute:NSForegroundColorAttributeName value:fg range:range];
+      if (bg) {
+        [attr addAttribute:NSBackgroundColorAttributeName
+                     value:bg
+                     range:range];
+      }
+      [attr addAttribute:kYifanSegmentTypeKey
+                   value:kSegmentTypeTag
+                   range:range];
+      [attr addAttribute:kYifanSegmentPayloadKey value:tag range:range];
     } else if ([type isEqualToString:@"link"]) {
-      NSString *href = segment[@"href"] ?: @"";
-      attrs[NSForegroundColorAttributeName] = accentColor;
-      attrs[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
-      attrs[kYifanSegmentTypeKey] = kSegmentTypeLink;
-      attrs[kYifanSegmentPayloadKey] = href;
+      [attr addAttribute:NSForegroundColorAttributeName
+                   value:accentColor
+                   range:range];
+      [attr addAttribute:NSUnderlineStyleAttributeName
+                   value:@(NSUnderlineStyleSingle)
+                   range:range];
+      [attr addAttribute:kYifanSegmentTypeKey
+                   value:kSegmentTypeLink
+                   range:range];
+      [attr addAttribute:kYifanSegmentPayloadKey
+                   value:(segment[@"href"] ?: @"")
+                   range:range];
     }
-
-    [attr appendAttributedString:[[NSAttributedString alloc]
-                                     initWithString:text
-                                         attributes:attrs]];
-  }
-
-  if (attr.length > 0) {
-    NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
-    ps.alignment =
-        self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
-    CGFloat lh = self.lineHeight > 0 ? self.lineHeight : self.fontSize * 1.4;
-    ps.minimumLineHeight = lh;
-    ps.maximumLineHeight = lh;
-    ps.lineBreakMode = NSLineBreakByWordWrapping;
-    [attr addAttribute:NSParagraphStyleAttributeName
-                 value:ps
-                 range:NSMakeRange(0, attr.length)];
   }
 
   self.attributedText = attr;
