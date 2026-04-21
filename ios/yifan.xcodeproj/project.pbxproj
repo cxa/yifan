@@ -22,11 +22,11 @@
 		B1C2D3E4F5A60718293B4C5D /* EnvSecrets.m in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60718293E4F5A /* EnvSecrets.m */; };
 		B2C3D4E5F60718293A4B6C7D /* HuiwenHKHei-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B6C7C /* HuiwenHKHei-Regular.ttf */; };
 		B4C5D6E7F8A90718293B4C5D /* LivePhotoModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A3B4C5D6E7F80718293A4B5C /* LivePhotoModule.m */; };
+		B5C6D7E8F9A00718293B4C5D /* YifanJustifiedTextView.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */; };
+		B5C6D7E8F9A00718293B4C5E /* YifanJustifiedTextManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */; };
 		C3D4E5F60718293A4B6C7D8E /* Huiwen-MinchoGBK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B6C7D8D /* Huiwen-MinchoGBK-Regular.ttf */; };
 		D4E5F6A7B8C90718293D4E5F /* AppStoreProductModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C90718293D4E5E /* AppStoreProductModule.m */; };
 		F1A2B3C4D5E60718293A4B5C /* FanfouSecretsLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */; };
-		B5C6D7E8F9A00718293B4C5D /* YifanJustifiedTextView.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */; };
-		B5C6D7E8F9A00718293B4C5E /* YifanJustifiedTextManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +71,9 @@
 		A1B2C3D4E5F60718293A4B6D /* Xiaolai.ttf */ = {isa = PBXFileReference; lastKnownFileType = file.ttf; name = Xiaolai.ttf; path = ../assets/shared/fonts/Xiaolai.ttf; sourceTree = "<group>"; };
 		A2B3C4D5E6F70718293A4B5C /* ReadableContentGuideModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ReadableContentGuideModule.m; path = yifan/ReadableContentGuideModule.m; sourceTree = "<group>"; };
 		A3B4C5D6E7F80718293A4B5C /* LivePhotoModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = LivePhotoModule.m; path = yifan/LivePhotoModule.m; sourceTree = "<group>"; };
+		A5B6C7D8E9F00718293A4B5C /* YifanJustifiedTextView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = YifanJustifiedTextView.h; path = yifan/YifanJustifiedTextView.h; sourceTree = "<group>"; };
+		A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = YifanJustifiedTextView.m; path = yifan/YifanJustifiedTextView.m; sourceTree = "<group>"; };
+		A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = YifanJustifiedTextManager.m; path = yifan/YifanJustifiedTextManager.m; sourceTree = "<group>"; };
 		B2C3D4E5F60718293A4B6C7C /* HuiwenHKHei-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file.ttf; name = "HuiwenHKHei-Regular.ttf"; path = "../assets/shared/fonts/HuiwenHKHei-Regular.ttf"; sourceTree = "<group>"; };
 		C395182AF1374F046B9545D0 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B6C7D8D /* Huiwen-MinchoGBK-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file.ttf; name = "Huiwen-MinchoGBK-Regular.ttf"; path = "../assets/shared/fonts/Huiwen-MinchoGBK-Regular.ttf"; sourceTree = "<group>"; };
@@ -80,9 +83,6 @@
 		E575E65630B259AF57A231DC /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FanfouSecretsLoader.m; path = yifan/FanfouSecretsLoader.m; sourceTree = "<group>"; };
-		A5B6C7D8E9F00718293A4B5C /* YifanJustifiedTextView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = YifanJustifiedTextView.h; path = yifan/YifanJustifiedTextView.h; sourceTree = "<group>"; };
-		A5B6C7D8E9F00718293A4B5D /* YifanJustifiedTextView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = YifanJustifiedTextView.m; path = yifan/YifanJustifiedTextView.m; sourceTree = "<group>"; };
-		A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = YifanJustifiedTextManager.m; path = yifan/YifanJustifiedTextManager.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

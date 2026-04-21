@@ -1,9 +1,19 @@
 #import "YifanJustifiedTextView.h"
 
-static NSString *const kMentionScheme = @"yifan-mention";
-static NSString *const kTagScheme = @"yifan-tag";
+// Custom attributed-string keys that carry the segment kind and payload
+// without falling back to NSLinkAttributeName. UITextView treats
+// NSLinkAttributeName as a semantic link and takes the link-flavoured
+// layout path, which — like RN's nested <Text onPress> — fragments the
+// attributed run and defeats CJK inter-character justify. Taps are
+// resolved manually below.
+static NSAttributedStringKey const kYifanSegmentTypeKey = @"YifanSegmentType";
+static NSAttributedStringKey const kYifanSegmentPayloadKey = @"YifanSegmentPayload";
 
-@interface YifanJustifiedTextView () <UITextViewDelegate>
+static NSString *const kSegmentTypeMention = @"mention";
+static NSString *const kSegmentTypeTag = @"tag";
+static NSString *const kSegmentTypeLink = @"link";
+
+@interface YifanJustifiedTextView () <UIGestureRecognizerDelegate>
 @property (nonatomic, strong) UITextView *textView;
 @end
 
@@ -14,29 +24,19 @@ static NSString *const kTagScheme = @"yifan-tag";
     _fontSize = 15;
     _lineHeight = 24;
     _justify = YES;
+
     _textView = [[UITextView alloc] initWithFrame:self.bounds];
     _textView.editable = NO;
-    _textView.selectable = YES; // Required for NSLinkAttributeName taps to fire
+    _textView.selectable = NO;
     _textView.scrollEnabled = NO;
     _textView.backgroundColor = [UIColor clearColor];
     _textView.textContainerInset = UIEdgeInsetsZero;
     _textView.textContainer.lineFragmentPadding = 0;
-    _textView.delegate = self;
     _textView.dataDetectorTypes = UIDataDetectorTypeNone;
     _textView.showsVerticalScrollIndicator = NO;
     _textView.showsHorizontalScrollIndicator = NO;
     _textView.autocorrectionType = UITextAutocorrectionTypeNo;
     _textView.spellCheckingType = UITextSpellCheckingTypeNo;
-    // Suppress the long-press selection gestures; selectable=YES is only
-    // kept alive so that link taps fire reliably.
-    for (UIGestureRecognizer *recognizer in _textView.gestureRecognizers) {
-      if ([recognizer isKindOfClass:[UILongPressGestureRecognizer class]]) {
-        recognizer.enabled = NO;
-      }
-      if ([NSStringFromClass(recognizer.class) containsString:@"PanGesture"]) {
-        recognizer.enabled = NO;
-      }
-    }
     _textView.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:_textView];
     [NSLayoutConstraint activateConstraints:@[
@@ -45,11 +45,13 @@ static NSString *const kTagScheme = @"yifan-tag";
       [_textView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
       [_textView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
     ]];
-    UITapGestureRecognizer *plainTap =
+
+    UITapGestureRecognizer *tap =
         [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                action:@selector(handlePlainTap:)];
-    plainTap.cancelsTouchesInView = NO;
-    [_textView addGestureRecognizer:plainTap];
+                                                action:@selector(handleTap:)];
+    tap.delegate = self;
+    tap.cancelsTouchesInView = NO;
+    [self addGestureRecognizer:tap];
   }
   return self;
 }
@@ -138,13 +140,8 @@ static NSString *const kTagScheme = @"yifan-tag";
     if ([type isEqualToString:@"mention"]) {
       NSString *screenName = segment[@"screenName"] ?: @"";
       attrs[NSForegroundColorAttributeName] = accentColor;
-      NSString *urlString = [NSString
-          stringWithFormat:@"%@://%@", kMentionScheme,
-                           [screenName
-                               stringByAddingPercentEncodingWithAllowedCharacters:
-                                   [NSCharacterSet URLPathAllowedCharacterSet]]];
-      NSURL *url = [NSURL URLWithString:urlString];
-      if (url) attrs[NSLinkAttributeName] = url;
+      attrs[kYifanSegmentTypeKey] = kSegmentTypeMention;
+      attrs[kYifanSegmentPayloadKey] = screenName;
     } else if ([type isEqualToString:@"tag"]) {
       NSString *tag = segment[@"tag"] ?: @"";
       BOOL isActive = self.activeTag.length > 0 &&
@@ -155,18 +152,14 @@ static NSString *const kTagScheme = @"yifan-tag";
                              : self.tagInactiveBackgroundColor;
       attrs[NSForegroundColorAttributeName] = fg;
       if (bg) attrs[NSBackgroundColorAttributeName] = bg;
-      NSString *urlString = [NSString
-          stringWithFormat:@"%@://%@", kTagScheme,
-                           [tag stringByAddingPercentEncodingWithAllowedCharacters:
-                                    [NSCharacterSet URLPathAllowedCharacterSet]]];
-      NSURL *url = [NSURL URLWithString:urlString];
-      if (url) attrs[NSLinkAttributeName] = url;
+      attrs[kYifanSegmentTypeKey] = kSegmentTypeTag;
+      attrs[kYifanSegmentPayloadKey] = tag;
     } else if ([type isEqualToString:@"link"]) {
       NSString *href = segment[@"href"] ?: @"";
       attrs[NSForegroundColorAttributeName] = accentColor;
       attrs[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
-      NSURL *url = [NSURL URLWithString:href];
-      if (url) attrs[NSLinkAttributeName] = url;
+      attrs[kYifanSegmentTypeKey] = kSegmentTypeLink;
+      attrs[kYifanSegmentPayloadKey] = href;
     }
 
     [attr appendAttributedString:[[NSAttributedString alloc]
@@ -186,13 +179,14 @@ static NSString *const kTagScheme = @"yifan-tag";
                  range:NSMakeRange(0, attr.length)];
   }
 
-  // Keep link tint hidden — we're colouring inline already — and remove the
-  // default blue link underline that UITextView otherwise layers on top.
-  self.textView.linkTextAttributes = @{
-    NSUnderlineStyleAttributeName : @(NSUnderlineStyleNone),
-  };
+  // UITextView's textAlignment property can override per-range paragraph
+  // styles depending on ordering; set it explicitly in addition to the
+  // attribute so the justify alignment is applied reliably.
+  self.textView.textAlignment =
+      self.justify ? NSTextAlignmentJustified : NSTextAlignmentNatural;
   self.textView.attributedText = attr;
   [self invalidateIntrinsicContentSize];
+  [self setNeedsLayout];
 }
 
 - (CGSize)intrinsicContentSize {
@@ -218,45 +212,68 @@ static NSString *const kTagScheme = @"yifan-tag";
       @{@"width" : @(width), @"height" : @(ceil(fitted.height))});
 }
 
-- (void)handlePlainTap:(UITapGestureRecognizer *)recognizer {
+#pragma mark - Tap handling
+
+- (void)handleTap:(UITapGestureRecognizer *)recognizer {
   if (recognizer.state != UIGestureRecognizerStateEnded) return;
-  if (!self.onPressText) return;
   CGPoint point = [recognizer locationInView:self.textView];
-  // If the tap landed on an NSLinkAttribute glyph, UITextView's own handler
-  // fires first and we don't forward. Only surface genuine plain-text taps.
-  NSUInteger charIndex = [self.textView.layoutManager
-      characterIndexForPoint:point
-             inTextContainer:self.textView.textContainer
-      fractionOfDistanceBetweenInsertionPoints:NULL];
-  if (charIndex < self.textView.textStorage.length) {
-    id link = [self.textView.textStorage attribute:NSLinkAttributeName
-                                           atIndex:charIndex
-                                    effectiveRange:NULL];
-    if (link) return;
+  NSAttributedString *storage = self.textView.textStorage;
+  if (storage.length == 0) {
+    if (self.onPressText) self.onPressText(@{});
+    return;
   }
-  self.onPressText(@{});
+
+  NSLayoutManager *lm = self.textView.layoutManager;
+  NSTextContainer *tc = self.textView.textContainer;
+  // Use the glyph index so we don't accidentally land on a trailing
+  // newline or whitespace mid-layout.
+  CGFloat fraction = 0;
+  NSUInteger glyphIndex =
+      [lm glyphIndexForPoint:point
+             inTextContainer:tc
+        fractionOfDistanceThroughGlyph:&fraction];
+  if (glyphIndex >= [lm numberOfGlyphs]) {
+    if (self.onPressText) self.onPressText(@{});
+    return;
+  }
+  NSUInteger charIndex =
+      [lm characterIndexForGlyphAtIndex:glyphIndex];
+  if (charIndex >= storage.length) {
+    if (self.onPressText) self.onPressText(@{});
+    return;
+  }
+
+  NSString *type = [storage attribute:kYifanSegmentTypeKey
+                              atIndex:charIndex
+                       effectiveRange:NULL];
+  if (!type) {
+    if (self.onPressText) self.onPressText(@{});
+    return;
+  }
+  id payload = [storage attribute:kYifanSegmentPayloadKey
+                          atIndex:charIndex
+                   effectiveRange:NULL];
+  NSString *payloadString = [payload isKindOfClass:[NSString class]]
+                                ? (NSString *)payload
+                                : @"";
+  if ([type isEqualToString:kSegmentTypeMention] && self.onPressMention) {
+    self.onPressMention(@{@"screenName" : payloadString});
+  } else if ([type isEqualToString:kSegmentTypeTag] && self.onPressTag) {
+    self.onPressTag(@{@"tag" : payloadString});
+  } else if ([type isEqualToString:kSegmentTypeLink] && self.onPressLink) {
+    self.onPressLink(@{@"href" : payloadString});
+  } else if (self.onPressText) {
+    self.onPressText(@{});
+  }
 }
 
-#pragma mark - UITextViewDelegate
+#pragma mark - UIGestureRecognizerDelegate
 
-- (BOOL)textView:(UITextView *)textView
-    shouldInteractWithURL:(NSURL *)URL
-                  inRange:(NSRange)characterRange
-              interaction:(UITextItemInteraction)interaction {
-  if (interaction != UITextItemInteractionInvokeDefaultAction) return NO;
-  NSString *scheme = URL.scheme;
-  if ([scheme isEqualToString:kMentionScheme] && self.onPressMention) {
-    self.onPressMention(@{@"screenName" : URL.host ?: @""});
-    return NO;
-  }
-  if ([scheme isEqualToString:kTagScheme] && self.onPressTag) {
-    self.onPressTag(@{@"tag" : URL.host ?: @""});
-    return NO;
-  }
-  if (self.onPressLink) {
-    self.onPressLink(@{@"href" : URL.absoluteString ?: @""});
-  }
-  return NO;
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+    shouldRecognizeSimultaneouslyWithGestureRecognizer:
+        (UIGestureRecognizer *)otherGestureRecognizer {
+  // Let the tap coexist with whatever list/scroll gesture is above us.
+  return YES;
 }
 
 @end
