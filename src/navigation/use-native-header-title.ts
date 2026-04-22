@@ -40,6 +40,11 @@ const useNativeHeaderTitle = ({ title }: UseNativeHeaderTitleOptions) => {
     };
 
     navigation.setOptions(headerOptions);
+    // When the screen lives inside a nested stack whose header is
+    // hidden (e.g. TagStack), the visible header belongs to the
+    // parent navigator, so mirror the title up so the parent header
+    // picks up the dynamic value too.
+    navigation.getParent()?.setOptions({ title });
   }, [foreground, headerFontFamily, navigation, title]);
 };
 

@@ -72,11 +72,13 @@ const AUTH_NATIVE_HEADER_ROUTES = new Set<keyof AuthStackParamList>([
   AUTH_STACK_ROUTE.PROFILE,
   AUTH_STACK_ROUTE.EDIT_PROFILE,
   AUTH_STACK_ROUTE.STATUS,
+  // Tag is a nested single-screen stack; surfacing the header on the
+  // outer AuthStack is what gives us the native back button, since the
+  // inner stack's DETAIL is always the initial route and has nothing
+  // to pop.
+  AUTH_STACK_ROUTE.TAG_TIMELINE,
   AUTH_STACK_ROUTE.PUBLIC_TIMELINE,
   AUTH_STACK_ROUTE.SEARCH,
-]);
-const TAG_NATIVE_HEADER_ROUTES = new Set<keyof AuthTagStackParamList>([
-  AUTH_TAG_TIMELINE_ROUTE.DETAIL,
 ]);
 
 const buildNativeHeaderOptions = (
@@ -147,27 +149,14 @@ const StatusStackNavigator = () => (
   </StatusStack.Navigator>
 );
 
-const TagStackNavigator = () => {
-  const headerFontFamily = useAppFontFamily();
-  const [foreground] = useThemeColor(['foreground']);
-
-  return (
-    <TagStack.Navigator
-      screenOptions={({ route }) =>
-        buildNativeHeaderOptions(
-          TAG_NATIVE_HEADER_ROUTES.has(route.name),
-          headerFontFamily,
-          foreground,
-        )
-      }
-    >
-      <TagStack.Screen
-        name={AUTH_TAG_TIMELINE_ROUTE.DETAIL}
-        component={AuthTagRoute}
-      />
-    </TagStack.Navigator>
-  );
-};
+const TagStackNavigator = () => (
+  <TagStack.Navigator screenOptions={{ headerShown: false }}>
+    <TagStack.Screen
+      name={AUTH_TAG_TIMELINE_ROUTE.DETAIL}
+      component={AuthTagRoute}
+    />
+  </TagStack.Navigator>
+);
 
 const ShareIntentComposer = () => {
   const { t } = useTranslation();
