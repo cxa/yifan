@@ -22,6 +22,8 @@ type TimelineSkeletonCardProps = {
   index?: number;
   lineCount?: number;
   message?: string;
+  showAvatar?: boolean;
+  showAuthor?: boolean;
 };
 
 // One sweep per cycle: slow drift + long rest. Rest dominates the cycle so
@@ -118,6 +120,8 @@ const TimelineSkeletonCard = ({
   index = 0,
   lineCount = 2,
   message,
+  showAvatar = true,
+  showAuthor = true,
 }: TimelineSkeletonCardProps) => {
   const isDark = useEffectiveIsDark();
   const themePreference = useAppThemePreference();
@@ -130,7 +134,31 @@ const TimelineSkeletonCard = ({
   const barColor = isPlain
     ? undefined
     : (isDark ? CARD_BAR_DARK : CARD_BAR_LIGHT)[shadowType];
-  const shimmerIndex = Math.floor(Math.random() * (lineCount + 1));
+  const avatarFallback = barColor
+    ?? (isDark ? SKELETON_BAR_FALLBACK_DARK : SKELETON_BAR_FALLBACK_LIGHT);
+  const barCount = (showAuthor ? 1 : 0) + lineCount;
+  const shimmerIndex = Math.floor(Math.random() * Math.max(barCount, 1));
+
+  const bodyLines = (
+    <View className="gap-2">
+      {showAuthor ? (
+        <ShimmerBar
+          className="h-3 w-28"
+          barColor={barColor}
+          isActive={shimmerIndex === 0}
+        />
+      ) : null}
+      {Array.from({ length: lineCount }).map((_, i) => (
+        <ShimmerBar
+          key={`line-${i}`}
+          className="h-3 w-full"
+          barColor={barColor}
+          style={{ opacity: 0.7 - i * 0.15 }}
+          isActive={shimmerIndex === (showAuthor ? i + 1 : i)}
+        />
+      ))}
+    </View>
+  );
 
   return (
     <View
@@ -139,32 +167,16 @@ const TimelineSkeletonCard = ({
     >
       {message ? (
         <Text className="text-[14px] text-muted">{message}</Text>
-      ) : (
+      ) : showAvatar ? (
         <View className="flex-row gap-3">
           <View
             className="size-10 rounded-full"
-            style={{
-              backgroundColor:
-                barColor ?? (isDark ? SKELETON_BAR_FALLBACK_DARK : SKELETON_BAR_FALLBACK_LIGHT),
-            }}
+            style={{ backgroundColor: avatarFallback }}
           />
-          <View className="flex-1 gap-2">
-            <ShimmerBar
-              className="h-3 w-28"
-              barColor={barColor}
-              isActive={shimmerIndex === 0}
-            />
-            {Array.from({ length: lineCount }).map((_, i) => (
-              <ShimmerBar
-                key={`line-${i}`}
-                className="h-3 w-full"
-                barColor={barColor}
-                style={{ opacity: 0.7 - i * 0.15 }}
-                isActive={shimmerIndex === i + 1}
-              />
-            ))}
-          </View>
+          <View className="flex-1">{bodyLines}</View>
         </View>
+      ) : (
+        bodyLines
       )}
     </View>
   );

@@ -36,6 +36,8 @@ type TimelineSkeletonListProps = {
   availableHeight?: number;
   className?: string;
   style?: StyleProp<ViewStyle>;
+  showAvatar?: boolean;
+  showAuthor?: boolean;
 };
 
 const TimelineSkeletonList = ({
@@ -44,6 +46,8 @@ const TimelineSkeletonList = ({
   availableHeight,
   className = '',
   style,
+  showAvatar = true,
+  showAuthor = true,
 }: TimelineSkeletonListProps) => {
   const resolvedCount =
     count ??
@@ -63,6 +67,8 @@ const TimelineSkeletonList = ({
           key={`${keyPrefix}-${index}`}
           index={index}
           lineCount={index % 2 === 0 ? 2 : 3}
+          showAvatar={showAvatar}
+          showAuthor={showAuthor}
         />
       ))}
     </View>

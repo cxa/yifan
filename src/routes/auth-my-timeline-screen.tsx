@@ -277,6 +277,8 @@ const MyTimelineRouteContent = ({
                   <TimelineSkeletonList
                     keyPrefix="my-timeline-skeleton"
                     availableHeight={skeletonAvailableHeight}
+                    showAvatar={false}
+                    showAuthor={false}
                   />
                 ) : (
                   <TimelineEmptyPlaceholder icon={Feather} message={t('myTimelineEmpty')} />

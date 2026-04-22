@@ -1172,6 +1172,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                       keyPrefix="profile-status-skeleton"
                       count={3}
                       className=""
+                      showAvatar={false}
+                      showAuthor={false}
                     />
                   ) : null}
 
