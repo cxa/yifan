@@ -143,29 +143,11 @@ static NSString *const kSegmentTypeLink = @"link";
 
 - (UIFont *)resolveFont {
   CGFloat size = self.fontSize > 0 ? self.fontSize : 15;
-  UIFont *baseFont = nil;
   if (self.fontFamily.length > 0) {
-    baseFont = [UIFont fontWithName:self.fontFamily size:size];
+    UIFont *custom = [UIFont fontWithName:self.fontFamily size:size];
+    if (custom) return custom;
   }
-  if (!baseFont) baseFont = [UIFont systemFontOfSize:size];
-
-  // Enable OpenType `halt` (Alternate Half Widths) — the feature is
-  // spec-designed "for use in justification" and swaps full-width CJK
-  // punctuation like 。 ， 、 for compact variants so lines hug the
-  // right edge cleanly. Closest thing to hanging punctuation we get
-  // without per-line custom drawing. Fonts that don't ship a `halt`
-  // table silently ignore it.
-  UIFontDescriptor *desc = [baseFont.fontDescriptor
-      fontDescriptorByAddingAttributes:@{
-        UIFontDescriptorFeatureSettingsAttribute : @[
-          @{
-            (id)kCTFontOpenTypeFeatureTag : @"halt",
-            (id)kCTFontOpenTypeFeatureValue : @1,
-          },
-        ],
-      }];
-  UIFont *haltFont = [UIFont fontWithDescriptor:desc size:size];
-  return haltFont ?: baseFont;
+  return [UIFont systemFontOfSize:size];
 }
 
 - (void)rebuildAttributedText {

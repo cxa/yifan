@@ -91,13 +91,6 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
     // HIGH_QUALITY break strategy gives the justify code the best
     // chance to distribute cleanly; default SIMPLE breaks greedy.
     breakStrategy = Layout.BREAK_STRATEGY_HIGH_QUALITY
-    // `halt` (Alternate Half Widths) + `chws` (Contextual Half-Width
-    // Spacing) together normalize CJK punctuation widths so the
-    // JUSTIFICATION_MODE_INTER_CHARACTER pass doesn't stack extra
-    // inter-char space on top of the punctuation's natural em-box
-    // whitespace, which is what produces those big gaps around 逗号
-    // / 句号. Silent no-op on fonts that don't ship the tables.
-    fontFeatureSettings = "'halt', 'chws'"
     applyJustification()
   }
 
