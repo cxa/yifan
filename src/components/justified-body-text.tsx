@@ -72,11 +72,23 @@ if (!nativeComponentIsRegistered) {
   );
 }
 
-const NativeJustifiedText = nativeComponentIsRegistered
-  ? (requireNativeComponent<NativeProps>(
-      'YifanJustifiedText',
-    ) as React.ComponentType<NativeProps>)
-  : null;
+// Cache on globalThis so HMR re-evaluating this module doesn't call
+// requireNativeComponent a second time — the RN view registry throws
+// `Tried to register two views with the same name` on the second call.
+// No effect in production (module runs once).
+const NATIVE_CACHE_KEY = '__YifanJustifiedTextNativeComponent__';
+type NativeCache = {
+  [NATIVE_CACHE_KEY]?: React.ComponentType<NativeProps> | null;
+};
+const nativeCache = globalThis as NativeCache;
+if (!(NATIVE_CACHE_KEY in nativeCache)) {
+  nativeCache[NATIVE_CACHE_KEY] = nativeComponentIsRegistered
+    ? (requireNativeComponent<NativeProps>(
+        'YifanJustifiedText',
+      ) as React.ComponentType<NativeProps>)
+    : null;
+}
+const NativeJustifiedText = nativeCache[NATIVE_CACHE_KEY] ?? null;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
