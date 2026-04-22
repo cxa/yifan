@@ -5,11 +5,11 @@ const SERVICE = 'app.my-profile-theme-preference';
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
-// Default OFF on the More tab — the user's own Fanfou theme often clashes
-// with the app's coral accent and can make the settings page hard to read.
-// The profile screen still defaults to ON via its own preference so that
-// browsing any profile (including your own) respects the author's theme.
-let followMyProfileTheme = false;
+// Default ON: the More tab picks up your Fanfou profile's palette so
+// the app feels like yours out of the box. Anyone whose palette
+// clashes with the settings rows can toggle it off via
+// `Follow My Color Settings` in More itself.
+let followMyProfileTheme = true;
 let hydrationPromise: Promise<void> | null = null;
 
 const emitChange = () => {
