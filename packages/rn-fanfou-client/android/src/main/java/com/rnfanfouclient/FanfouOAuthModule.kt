@@ -12,18 +12,37 @@ import com.github.scribejava.core.model.OAuth1RequestToken
 import com.github.scribejava.core.model.OAuthRequest
 import com.github.scribejava.core.model.Verb
 import com.github.scribejava.core.oauth.OAuth10aService
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.util.Base64
 import com.github.scribejava.core.model.Response as OAuthResponse
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.Charset
+import kotlin.math.max
+import kotlin.math.sqrt
 
 class FanfouOAuthModule(
   private val reactContext: ReactApplicationContext,
 ) : ReactContextBaseJavaModule(reactContext) {
+  companion object {
+    // Mirrors ios/yifan/LivePhotoModule.m's photo-upload rule:
+    //   - cap encoded file at 2MB
+    //   - initial long-edge 1920px, JPEG quality 0.85
+    //   - if still too big, scale by sqrt(targetSize / actualSize) * 0.9
+    //     and retry a few times, never below 320px
+    private const val MAX_PHOTO_BYTES = 2 * 1024 * 1024
+    private const val MAX_STILL_DIMENSION = 1920
+    private const val MIN_STILL_DIMENSION = 320
+    private const val JPEG_QUALITY = 85
+    private const val MAX_COMPRESSION_ATTEMPTS = 3
+  }
   override fun getName(): String = "FanfouOAuthModule"
 
   private val uploadPhotoUrl = "http://api.fanfou.com/photos/upload.json"
@@ -199,13 +218,14 @@ class FanfouOAuthModule(
           promise.reject("photo_invalid", "Invalid photo data")
           return@Thread
         }
+        val prepared = compressForUpload(imageBytes, mimeType, fileName)
         sendPhotoMultipart(
           token = token,
           tokenSecret = tokenSecret,
-          imageBytes = imageBytes,
+          imageBytes = prepared.bytes,
           status = status,
-          mimeType = mimeType,
-          fileName = fileName,
+          mimeType = prepared.mimeType,
+          fileName = prepared.fileName,
           params = params,
           promise = promise,
         )
@@ -238,13 +258,14 @@ class FanfouOAuthModule(
           promise.reject("photo_invalid", "Empty photo at URI: $photoUri")
           return@Thread
         }
+        val prepared = compressForUpload(imageBytes, mimeType, fileName)
         sendPhotoMultipart(
           token = token,
           tokenSecret = tokenSecret,
-          imageBytes = imageBytes,
+          imageBytes = prepared.bytes,
           status = status,
-          mimeType = mimeType,
-          fileName = fileName,
+          mimeType = prepared.mimeType,
+          fileName = prepared.fileName,
           params = params,
           promise = promise,
         )
@@ -252,6 +273,136 @@ class FanfouOAuthModule(
         promise.reject("photo_upload_failed", e)
       }
     }.start()
+  }
+
+  private data class PreparedPhoto(
+    val bytes: ByteArray,
+    val mimeType: String,
+    val fileName: String,
+  )
+
+  /**
+   * Ports the iOS [YFUploadableImageResult] rule to Android: clamp still
+   * photos to [MAX_STILL_DIMENSION] / [JPEG_QUALITY] JPEG, and if the
+   * resulting file is still over [MAX_PHOTO_BYTES] re-run with a dimension
+   * scaled by `sqrt(MAX / current) * 0.9` up to [MAX_COMPRESSION_ATTEMPTS]
+   * times. GIFs bypass compression so animation survives.
+   */
+  private fun compressForUpload(
+    rawBytes: ByteArray,
+    mimeType: String,
+    fileName: String,
+  ): PreparedPhoto {
+    val normalizedMime = mimeType.lowercase()
+    if (normalizedMime == "image/gif") {
+      return PreparedPhoto(rawBytes, mimeType, fileName)
+    }
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.size, bounds)
+    val sourceW = bounds.outWidth
+    val sourceH = bounds.outHeight
+    if (sourceW <= 0 || sourceH <= 0) {
+      // Unreadable image data; let the server reject it with its own error.
+      return PreparedPhoto(rawBytes, mimeType, fileName)
+    }
+
+    // Pass-through for small-enough JPEGs that already fit the cap.
+    val sourceLongest = max(sourceW, sourceH)
+    val alreadyFits =
+      rawBytes.size <= MAX_PHOTO_BYTES &&
+        sourceLongest <= MAX_STILL_DIMENSION &&
+        normalizedMime == "image/jpeg"
+    if (alreadyFits) {
+      return PreparedPhoto(rawBytes, mimeType, fileName)
+    }
+
+    val orientation = readExifOrientation(rawBytes)
+    var maxDim = MAX_STILL_DIMENSION
+    var lastJpeg: ByteArray? = null
+    for (attempt in 0 until MAX_COMPRESSION_ATTEMPTS) {
+      val targetLongest = maxDim
+      val scale =
+        if (sourceLongest > targetLongest) targetLongest.toFloat() / sourceLongest else 1f
+      val targetW = max(1, (sourceW * scale).toInt())
+      val targetH = max(1, (sourceH * scale).toInt())
+
+      val sample = computeInSampleSize(sourceW, sourceH, targetW, targetH)
+      val decodeOpts = BitmapFactory.Options().apply {
+        inSampleSize = sample
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+      }
+      val decoded =
+        BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.size, decodeOpts)
+          ?: return PreparedPhoto(rawBytes, mimeType, fileName)
+
+      val rotated = applyExifRotation(decoded, orientation)
+      val finalBitmap = if (rotated.width != targetW || rotated.height != targetH) {
+        val scaled = Bitmap.createScaledBitmap(rotated, targetW, targetH, true)
+        if (rotated !== decoded) rotated.recycle()
+        if (scaled !== decoded) decoded.recycle()
+        scaled
+      } else {
+        if (rotated !== decoded) decoded.recycle()
+        rotated
+      }
+
+      val out = ByteArrayOutputStream()
+      finalBitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+      finalBitmap.recycle()
+      val bytes = out.toByteArray()
+      lastJpeg = bytes
+      if (bytes.size <= MAX_PHOTO_BYTES) break
+
+      val ratio = sqrt(MAX_PHOTO_BYTES.toDouble() / bytes.size.toDouble()) * 0.9
+      val next = max((maxDim * ratio).toInt(), MIN_STILL_DIMENSION)
+      if (next >= maxDim) break
+      maxDim = next
+    }
+
+    val finalBytes = lastJpeg ?: return PreparedPhoto(rawBytes, mimeType, fileName)
+    val finalName = replaceExtension(fileName, "jpg")
+    return PreparedPhoto(finalBytes, "image/jpeg", finalName)
+  }
+
+  private fun readExifOrientation(bytes: ByteArray): Int =
+    try {
+      ByteArrayInputStream(bytes).use { stream ->
+        ExifInterface(stream).getAttributeInt(
+          ExifInterface.TAG_ORIENTATION,
+          ExifInterface.ORIENTATION_NORMAL,
+        )
+      }
+    } catch (_: Exception) {
+      ExifInterface.ORIENTATION_NORMAL
+    }
+
+  private fun applyExifRotation(bitmap: Bitmap, orientation: Int): Bitmap {
+    val matrix = Matrix()
+    when (orientation) {
+      ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+      ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+      ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+      ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+      ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+      else -> return bitmap
+    }
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+  }
+
+  private fun computeInSampleSize(srcW: Int, srcH: Int, targetW: Int, targetH: Int): Int {
+    var sample = 1
+    while (srcW / (sample * 2) >= targetW && srcH / (sample * 2) >= targetH) {
+      sample *= 2
+    }
+    return sample
+  }
+
+  private fun replaceExtension(fileName: String, newExt: String): String {
+    if (fileName.isBlank()) return "image.$newExt"
+    val dot = fileName.lastIndexOf('.')
+    val base = if (dot > 0) fileName.substring(0, dot) else fileName
+    return "$base.$newExt"
   }
 
   private fun readBytesFromUri(photoUri: String): ByteArray {
