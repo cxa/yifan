@@ -132,7 +132,11 @@ const ComposerModal = ({
   const charCount = value.length;
   const isOverLimit = charCount > MAX_STATUS_LENGTH;
   const hasText = value.trim().length > 0;
-  const canSubmit = !isSubmitting && !isPhotoPicking && (allowEmptyText || hasText) && !isOverLimit;
+  const canSubmit =
+    !isSubmitting &&
+    !isPhotoPicking &&
+    (allowEmptyText || hasText || Boolean(photoUri)) &&
+    !isOverLimit;
 
   useEffect(() => {
     if (!visible) {
