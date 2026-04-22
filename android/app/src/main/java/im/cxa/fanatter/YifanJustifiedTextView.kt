@@ -1,11 +1,17 @@
 package im.cxa.fanatter
 
 import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Typeface
 import android.os.Build
 import android.text.Layout
 import android.text.Spannable
 import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.UnderlineSpan
@@ -17,6 +23,7 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import com.facebook.react.uimanager.events.NativeGestureUtil
 import com.facebook.react.common.assets.ReactFontManager
 
 // A non-null-ish segment marker we put on the spannable alongside the
@@ -70,6 +77,12 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
 
   private var lastReportedWidth: Int = -1
   private var lastReportedHeight: Int = -1
+
+  // Currently pressed segment (non-null between ACTION_DOWN on a
+  // segment and the matching UP/CANCEL). Drives the tap highlight.
+  private var pressedSpan: YifanSegmentSpan? = null
+  private val highlightPaint = Paint().apply { isAntiAlias = true }
+  private val highlightPath = Path()
 
   init {
     setPadding(0, 0, 0, 0)
@@ -184,29 +197,82 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
 
   override fun onTouchEvent(event: MotionEvent): Boolean {
     when (event.action) {
-      MotionEvent.ACTION_DOWN ->
-          // Claim the touch only if it's on a segment. When we return
-          // false here the parent ViewGroup (the card Pressable) gets
-          // the DOWN instead and handles the tap normally.
-          return findSegmentAt(event.x, event.y) != null
-      MotionEvent.ACTION_UP -> {
+      MotionEvent.ACTION_DOWN -> {
         val hit = findSegmentAt(event.x, event.y)
+        if (hit != null) {
+          // Tell RN's JS gesture system that a native gesture has
+          // taken over — this cancels JS-side responders like the
+          // card Pressable so tapping a @mention doesn't also open
+          // the status detail.
+          NativeGestureUtil.notifyNativeGestureStarted(this, event)
+          parent?.requestDisallowInterceptTouchEvent(true)
+          pressedSpan = hit
+          invalidate()
+          return true
+        }
+        // Plain-text hit: let the parent ViewGroup (card Pressable)
+        // receive DOWN and handle the tap as a status open.
+        return false
+      }
+      MotionEvent.ACTION_UP -> {
+        val hit = pressedSpan
+        pressedSpan = null
+        invalidate()
         if (hit != null) dispatchSegmentEvent(hit)
         return true
       }
-      MotionEvent.ACTION_CANCEL -> return true
+      MotionEvent.ACTION_CANCEL -> {
+        pressedSpan = null
+        invalidate()
+        return true
+      }
     }
     return super.onTouchEvent(event)
   }
 
+  override fun onDraw(canvas: Canvas) {
+    val span = pressedSpan
+    val spanned = text as? Spanned
+    val layout = layout
+    if (span != null && spanned != null && layout != null) {
+      val start = spanned.getSpanStart(span)
+      val end = spanned.getSpanEnd(span)
+      if (start in 0 until end) {
+        highlightPaint.color = resolvedHighlightColor()
+        highlightPath.reset()
+        // Layout.getSelectionPath handles multi-line spans, bidi
+        // runs, and line-end whitespace; rolling our own line-by-line
+        // rects with getPrimaryHorizontal breaks when the span starts
+        // mid-line (we ended up covering preceding text on the first
+        // line).
+        layout.getSelectionPath(start, end, highlightPath)
+        canvas.save()
+        canvas.translate(totalPaddingLeft.toFloat(), totalPaddingTop.toFloat())
+        canvas.drawPath(highlightPath, highlightPaint)
+        canvas.restore()
+      }
+    }
+    super.onDraw(canvas)
+  }
+
+  private fun resolvedHighlightColor(): Int {
+    val isDark = (resources.configuration.uiMode and
+        Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    val base = if (isDark) Color.WHITE else Color.BLACK
+    return (base and 0x00FFFFFF) or (0x2E shl 24) // ~18% alpha
+  }
+
   private fun findSegmentAt(x: Float, y: Float): YifanSegmentSpan? {
-    val spannable = text as? Spannable ?: return null
+    // TextView's default BufferType converts our SpannableStringBuilder
+    // into a SpannedString on setText — that's Spanned but not
+    // Spannable, so we read spans via the Spanned interface.
+    val spanned = text as? Spanned ?: return null
     val layout = layout ?: return null
     val adjX = x - totalPaddingLeft + scrollX
     val adjY = y - totalPaddingTop + scrollY
     val line = layout.getLineForVertical(adjY.toInt())
     val offset = layout.getOffsetForHorizontal(line, adjX)
-    return spannable
+    return spanned
         .getSpans(offset, offset, YifanSegmentSpan::class.java)
         .firstOrNull()
   }
@@ -229,31 +295,38 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
     }
   }
 
-  override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-    super.onSizeChanged(w, h, oldw, oldh)
-    reportContentSize(w, h)
-  }
-
   override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
     super.onLayout(changed, l, t, r, b)
-    reportContentSize(width, height)
+    reportContentSize(r - l)
   }
 
-  private fun reportContentSize(w: Int, h: Int) {
+  private fun reportContentSize(w: Int) {
     if (w <= 0) return
-    if (w == lastReportedWidth && h == lastReportedHeight) return
+    // Layout.height is the actual text-block height (line count × line
+    // height). `height` on the view itself just mirrors whatever JS
+    // already set, so reporting that back creates a feedback loop and
+    // the wrapper never shrinks to fit single-line content.
+    val textLayout = layout ?: return
+    val contentHeight = textLayout.height + paddingTop + paddingBottom
+    if (w == lastReportedWidth && contentHeight == lastReportedHeight) return
     lastReportedWidth = w
-    lastReportedHeight = h
+    lastReportedHeight = contentHeight
     val density = resources.displayMetrics.density
     val map = Arguments.createMap().apply {
       putDouble("width", w / density.toDouble())
-      putDouble("height", h / density.toDouble())
+      putDouble("height", contentHeight / density.toDouble())
     }
     emit("topContentSizeChange", map)
   }
 
   private fun emit(eventName: String, data: WritableMap?) {
-    val reactContext = context as? ReactContext ?: return
+    // AppCompatTextView wraps the construction Context in a
+    // TintContextWrapper, so `context as? ReactContext` is null at
+    // runtime — use UIManagerHelper.getReactContext which unwraps the
+    // wrapper chain before casting.
+    val reactContext =
+        runCatching { UIManagerHelper.getReactContext(this) }.getOrNull()
+            ?: return
     val dispatcher = UIManagerHelper.getEventDispatcher(reactContext) ?: return
     val surfaceId = UIManagerHelper.getSurfaceId(this)
     dispatcher.dispatchEvent(
