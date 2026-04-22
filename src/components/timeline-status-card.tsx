@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
 import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
@@ -281,7 +281,7 @@ const TimelineStatusCard = ({
               fontFamily={fontFamily ?? undefined}
               fontSize={bodyFontSize}
               lineHeight={bodyLineHeight}
-              justify={Platform.OS === 'ios'}
+              justify
               onPressMention={onPressMention}
               onPressTag={onPressTag}
               onPressText={() => onPressStatus(statusId, shadowType)}
