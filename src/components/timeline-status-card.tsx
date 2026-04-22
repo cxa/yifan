@@ -13,6 +13,7 @@ import JustifiedBodyText, {
   type JustifiedBodySegment,
 } from '@/components/justified-body-text';
 import { useAppFontFamily } from '@/settings/app-font-preference';
+import { useAppFontSizeScale } from '@/settings/app-font-size-preference';
 import { APP_THEME_OPTION, useAppThemePreference } from '@/settings/app-theme-preference';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import { formatTimestamp } from '@/utils/format-timestamp';
@@ -138,6 +139,13 @@ const TimelineStatusCard = ({
     'accent-foreground',
   ]);
   const fontFamily = useAppFontFamily();
+  const fontSizeScale = useAppFontSizeScale();
+  // Body column / CJK snap / justify-text all reference this effective
+  // size. Multiply the base size by the user's in-app font scale so
+  // the native view matches every surrounding AppText (which applies
+  // the same multiplier via sizeOverride in app-text.tsx).
+  const bodyFontSize = Math.round(BODY_FONT_SIZE * fontSizeScale);
+  const bodyLineHeight = Math.round(24 * fontSizeScale);
   const photoRef = useRef<View>(null);
   const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
   const [photoLoaded, setPhotoLoaded] = useState(false);
@@ -149,7 +157,7 @@ const TimelineStatusCard = ({
   // full-width glyphs tile cleanly into a column that's an integer
   // multiple of one glyph wide.
   const snappedBodyWidth = bodyColumnWidth
-    ? Math.floor(bodyColumnWidth / BODY_FONT_SIZE) * BODY_FONT_SIZE
+    ? Math.floor(bodyColumnWidth / bodyFontSize) * bodyFontSize
     : null;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -193,7 +201,7 @@ const TimelineStatusCard = ({
       <Pressable
         onPress={() => onPressStatus(statusId, shadowType)}
         unstable_pressDelay={100}
-        className="rounded-3xl p-4 shadow-card active:opacity-75 dark:shadow-none"
+        className="rounded-3xl p-4 shadow-card active:scale-[0.98] active:opacity-75 dark:shadow-none"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
         <View className={showAvatar ? 'flex-row gap-4' : undefined}>
@@ -217,73 +225,48 @@ const TimelineStatusCard = ({
           ) : null}
 
           <View
-            className={[
-              'gap-3',
-              showAvatar ? 'flex-1' : '',
-              // Snap leaves a sub-glyph sliver of leftover width on
-              // one side; `self-center` splits it symmetrically. Only
-              // applies after we've measured and when there's no
-              // avatar (with avatar, flex-row + flex-1 keeps the body
-              // flush with the avatar column).
-              !showAvatar && snappedBodyWidth ? 'self-center' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={snappedBodyWidth ? { width: snappedBodyWidth } : undefined}
+            className={showAvatar ? 'flex-1' : undefined}
             onLayout={event => {
+              // Measure the *available* column width here, never
+              // the snapped content width — otherwise the measured
+              // value collapses to the previous snap and changing
+              // font size (which changes the snap multiple) can't
+              // grow back to the full available width.
               const next = event.nativeEvent.layout.width;
               setBodyColumnWidth(previous =>
                 previous === next ? previous : next,
               );
             }}
           >
+            <View
+              className={`gap-3${snappedBodyWidth ? ' self-center' : ''}`}
+              style={snappedBodyWidth ? { width: snappedBodyWidth } : undefined}
+            >
             {showAuthor ? (
-              <View>
-                <Pressable
-                  onPress={event => {
-                    event.stopPropagation();
-                    onPressProfile(userId);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open profile ${screenName || userId}`}
-                  className="max-w-full self-start"
+              <Pressable
+                onPress={event => {
+                  event.stopPropagation();
+                  onPressProfile(userId);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Open profile ${screenName || userId}`}
+                className="flex-row items-baseline gap-2"
+              >
+                <Text
+                  className="shrink text-[17px] font-extrabold text-foreground"
+                  style={textColor ? { color: textColor } : undefined}
+                  numberOfLines={1}
                 >
-                  <Text
-                    className="text-[17px] font-extrabold text-foreground"
-                    style={textColor ? { color: textColor } : undefined}
-                    numberOfLines={1}
-                  >
-                    {displayName}
-                  </Text>
-                </Pressable>
-                <View className="flex-row items-center justify-between gap-3">
-                  <Text
-                    className="shrink text-[13px] text-muted"
-                    style={mutedColor ? { color: mutedColor } : undefined}
-                    numberOfLines={1}
-                  >
-                    {handle}
-                  </Text>
-                  <View className="shrink-0 flex-row items-center gap-1">
-                    <Text
-                      className="text-[12px] text-muted"
-                      style={mutedColor ? { color: mutedColor } : undefined}
-                    >
-                      {timestamp}
-                    </Text>
-                    {viaLabel ? (
-                      <Text
-                        className="max-w-[140px] text-[12px] text-muted"
-                        style={mutedColor ? { color: mutedColor } : undefined}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {viaLabel}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              </View>
+                  {displayName}
+                </Text>
+                <Text
+                  className="shrink-0 text-[13px] text-muted"
+                  style={mutedColor ? { color: mutedColor } : undefined}
+                  numberOfLines={1}
+                >
+                  {handle}
+                </Text>
+              </Pressable>
             ) : null}
             <JustifiedBodyText
               segments={segments as JustifiedBodySegment[]}
@@ -296,8 +279,8 @@ const TimelineStatusCard = ({
               tagInactiveBackgroundColor={`${accent}26`}
               tagActiveTextColor={accentForeground}
               fontFamily={fontFamily ?? undefined}
-              fontSize={15}
-              lineHeight={24}
+              fontSize={bodyFontSize}
+              lineHeight={bodyLineHeight}
               justify={Platform.OS === 'ios'}
               onPressMention={onPressMention}
               onPressTag={onPressTag}
@@ -318,7 +301,7 @@ const TimelineStatusCard = ({
                     onOpenPhoto(photoUrl, null);
                   }
                 }}
-                className="overflow-hidden rounded-lg"
+                className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10"
                 accessibilityRole="button"
                 accessibilityLabel="Open photo"
               >
@@ -398,21 +381,28 @@ const TimelineStatusCard = ({
                   </Pressable>
                 ) : null}
               </View>
-              {!showAuthor ? (
-                <View className="ml-3 flex-1 min-w-0 flex-row items-center justify-end gap-1">
-                  <Text className="text-[12px] text-muted" style={mutedColor ? { color: mutedColor } : undefined}>{timestamp}</Text>
-                  {viaLabel ? (
-                    <Text
-                      className="shrink text-[12px] text-muted"
-                      style={mutedColor ? { color: mutedColor } : undefined}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {viaLabel}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
+              <View className="ml-3 shrink-0 items-end">
+                <Text
+                  className="text-[11px] leading-[14px] text-muted"
+                  style={mutedColor ? { color: mutedColor } : undefined}
+                >
+                  {timestamp}
+                </Text>
+                {viaLabel ? (
+                  <Text
+                    className="text-[11px] leading-[14px] text-muted"
+                    style={[
+                      { maxWidth: 160 * fontSizeScale },
+                      mutedColor ? { color: mutedColor } : null,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {viaLabel}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
             </View>
           </View>
         </View>
