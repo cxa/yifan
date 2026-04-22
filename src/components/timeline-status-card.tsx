@@ -156,7 +156,14 @@ const TimelineStatusCard = ({
   // CJK but the snap still narrows the right-edge gap because rows of
   // full-width glyphs tile cleanly into a column that's an integer
   // multiple of one glyph wide.
-  const snappedBodyWidth = bodyColumnWidth
+  // Only snap the body column when an author header is rendered.
+  // Snap shaves sub-glyph leftover off the right edge for tighter CJK
+  // justify, but on headerless cards (profile recent activity / my
+  // timeline) it also splits that leftover into visible left+right
+  // padding that doesn't match the card's 16dp p-4. Without an author
+  // anchoring the top, the card reads better when every edge stays at
+  // exactly p-4.
+  const snappedBodyWidth = showAuthor && bodyColumnWidth
     ? Math.floor(bodyColumnWidth / bodyFontSize) * bodyFontSize
     : null;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
@@ -270,9 +277,18 @@ const TimelineStatusCard = ({
             ) : null}
             {/* Body / photo / actions share the regular 12dp rhythm;
                 the author block sits outside this wrapper so its
-                gap to the body can be tighter (mt-1 = 4dp) without
-                making every sibling gap tight too. */}
-            <View className={`gap-3${showAuthor ? ' mt-1' : ''}`}>
+                gap to *text* body can stay tight (mt-1 = 4dp) while
+                pure-photo cards still get the normal 12dp separation
+                between the author header and the image. */}
+            <View
+              className={`gap-3${
+                showAuthor
+                  ? segments.length > 0
+                    ? ' mt-1'
+                    : ' mt-3'
+                  : ''
+              }`}
+            >
             {segments.length > 0 ? (
               <JustifiedBodyText
                 segments={segments as JustifiedBodySegment[]}
@@ -309,6 +325,7 @@ const TimelineStatusCard = ({
                   }
                 }}
                 className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10"
+                style={styles.photo}
                 accessibilityRole="button"
                 accessibilityLabel="Open photo"
               >
@@ -476,6 +493,11 @@ const TimelineStatusCard = ({
 };
 const styles = StyleSheet.create({
   card: {
+    borderCurve: 'continuous',
+  },
+  // Match the card's superellipse curve — default circular corners
+  // at 16dp look visibly less smooth than the card around them.
+  photo: {
     borderCurve: 'continuous',
   },
   photoPlaceholder: {
