@@ -18,4 +18,29 @@ buildscript {
     }
 }
 
+// AGP 8.10+ refuses to configure an Android library project that
+// doesn't explicitly declare `compileSdk`. A few RN native modules
+// (most notably react-native-gesture-handler 2.31.x) still use the
+// legacy `compileSdkVersion safeExtGet(...)` DSL call, which AGP
+// treats as "unset" during strict-mode validation. Register the
+// hook before the react rootproject plugin so we still have a
+// window to patch subprojects before they're evaluated — no-op for
+// modules that already declare compileSdk explicitly.
+subprojects { subproject ->
+    subproject.plugins.withId("com.android.library") {
+        subproject.extensions.findByName("android")?.with {
+            if (compileSdk == null) {
+                compileSdk rootProject.ext.compileSdkVersion
+            }
+        }
+    }
+    subproject.plugins.withId("com.android.application") {
+        subproject.extensions.findByName("android")?.with {
+            if (compileSdk == null) {
+                compileSdk rootProject.ext.compileSdkVersion
+            }
+        }
+    }
+}
+
 apply plugin: "com.facebook.react.rootproject"
