@@ -268,40 +268,42 @@ const TimelineStatusCard = ({
                 </Text>
               </Pressable>
             ) : null}
-            <JustifiedBodyText
-              segments={segments as JustifiedBodySegment[]}
-              textColor={textColor ?? '#1A1208'}
-              accentColor={accent}
-              activeTag={activeTag ?? null}
-              tagActivePillClass={ACTIVE_TAG_PILL_CLASS}
-              tagInactivePillClass={TAG_PILL_CLASS}
-              tagActiveBackgroundColor={accent}
-              tagInactiveBackgroundColor={`${accent}26`}
-              tagActiveTextColor={accentForeground}
-              fontFamily={fontFamily ?? undefined}
-              fontSize={bodyFontSize}
-              lineHeight={bodyLineHeight}
-              justify
-              onPressMention={onPressMention}
-              onPressTag={onPressTag}
-              onPressText={() => onPressStatus(statusId, shadowType)}
-              renderPlainTextSegment={(text, key) =>
-                renderTextWithEmoji(text, `${statusId}-${key}`, fontFamily)
-              }
-            />
+            {segments.length > 0 ? (
+              <JustifiedBodyText
+                segments={segments as JustifiedBodySegment[]}
+                textColor={textColor ?? '#1A1208'}
+                accentColor={accent}
+                activeTag={activeTag ?? null}
+                tagActivePillClass={ACTIVE_TAG_PILL_CLASS}
+                tagInactivePillClass={TAG_PILL_CLASS}
+                tagActiveBackgroundColor={accent}
+                tagInactiveBackgroundColor={`${accent}26`}
+                tagActiveTextColor={accentForeground}
+                fontFamily={fontFamily ?? undefined}
+                fontSize={bodyFontSize}
+                lineHeight={bodyLineHeight}
+                justify
+                onPressMention={onPressMention}
+                onPressTag={onPressTag}
+                onPressText={() => onPressStatus(statusId, shadowType)}
+                renderPlainTextSegment={(text, key) =>
+                  renderTextWithEmoji(text, `${statusId}-${key}`, fontFamily)
+                }
+              />
+            ) : null}
             {photoUrl ? (
               <Pressable
                 ref={photoRef}
                 onPress={() => {
                   if (photoRef.current) {
                     photoRef.current.measureInWindow((x, y, width, height) => {
-                      onOpenPhoto(photoUrl, { x, y, width, height, borderRadius: 8 });
+                      onOpenPhoto(photoUrl, { x, y, width, height, borderRadius: 16 });
                     });
                   } else {
                     onOpenPhoto(photoUrl, null);
                   }
                 }}
-                className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10"
+                className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10"
                 accessibilityRole="button"
                 accessibilityLabel="Open photo"
               >
