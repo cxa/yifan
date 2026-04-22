@@ -5,3 +5,4 @@
 • Name and @handle share one line — tighter status cards
 • Time / via on cards without an author stay out of the way instead of truncating on small screens
 • Loading skeletons match the card shape they stand in for
+• The More tab now follows your Fanfou profile colors by default — toggle it off anytime from "Follow My Color Settings"
