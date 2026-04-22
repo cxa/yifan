@@ -186,7 +186,7 @@ const ShareIntentComposer = () => {
     setInitialText('');
   };
   const handleSubmit = ({ text, photo }: ComposerModalSubmitPayload) => {
-    const hasPhoto = Boolean(photo?.base64);
+    const hasPhoto = Boolean(photo?.uri);
     const trimmedText = validateComposerContent(text, hasPhoto, t('postFailedTitle'));
     if (trimmedText === null) return;
     setVisible(false);
@@ -195,8 +195,8 @@ const ShareIntentComposer = () => {
     executeComposerSend(
       () =>
         statusUpdateMutation.mutateAsync({
-          status: photo?.base64 ? trimmedText || undefined : trimmedText,
-          photoBase64: photo?.base64,
+          status: photo ? trimmedText || undefined : trimmedText,
+          photoUri: photo?.uri,
           photoMimeType: photo?.mimeType,
           photoFileName: photo?.fileName,
         }),

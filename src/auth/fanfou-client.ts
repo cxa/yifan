@@ -65,13 +65,15 @@ export const post = async (
 };
 
 export const uploadPhoto = async ({
+  photoUri,
   photoBase64,
   status,
   mimeType,
   fileName,
   params,
 }: {
-  photoBase64: string;
+  photoUri?: string;
+  photoBase64?: string;
   status?: string;
   mimeType?: string;
   fileName?: string;
@@ -80,6 +82,7 @@ export const uploadPhoto = async ({
   const client = getFanfouClient();
   try {
     return await client.uploadPhoto({
+      photoUri,
       photoBase64,
       status: status ?? '',
       mimeType,

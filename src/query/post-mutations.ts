@@ -11,6 +11,7 @@ export const postMutationKeys = {
 
 export type StatusUpdateMutationVariables = {
   status?: string;
+  photoUri?: string;
   photoBase64?: string;
   photoMimeType?: string;
   photoFileName?: string;
@@ -19,13 +20,15 @@ export type StatusUpdateMutationVariables = {
 
 const sendStatusUpdate = async ({
   status,
+  photoUri,
   photoBase64,
   photoMimeType,
   photoFileName,
   params,
 }: StatusUpdateMutationVariables): Promise<unknown> => {
-  if (photoBase64) {
+  if (photoUri || photoBase64) {
     return uploadPhoto({
+      photoUri,
       photoBase64,
       status,
       mimeType: photoMimeType,

@@ -44,6 +44,15 @@ type NativeOAuthModule = {
     fileName: string,
     params: Record<string, string>,
   ) => Promise<NativeRequestResponse>;
+  uploadPhotoFromUri: (
+    token: string,
+    tokenSecret: string,
+    photoUri: string,
+    status: string | null,
+    mimeType: string,
+    fileName: string,
+    params: Record<string, string>,
+  ) => Promise<NativeRequestResponse>;
   uploadProfileImage: (
     token: string,
     tokenSecret: string,
@@ -80,6 +89,7 @@ const isNativeOAuthModule = (value: unknown): value is NativeOAuthModule =>
   typeof value.getAccessToken === 'function' &&
   typeof value.request === 'function' &&
   typeof value.uploadPhoto === 'function' &&
+  typeof value.uploadPhotoFromUri === 'function' &&
   typeof value.uploadProfileImage === 'function';
 
 const getNativeModule = (): NativeOAuthModule => {
@@ -374,40 +384,65 @@ export class FanfouClient {
   };
 
   public uploadPhoto = async ({
+    photoUri,
     photoBase64,
     status,
     mimeType = 'image/jpeg',
     fileName = 'image.jpg',
     params,
   }: {
-    photoBase64: string;
+    photoUri?: string;
+    photoBase64?: string;
     status?: string;
     mimeType?: string;
     fileName?: string;
     params?: Record<string, string | number | boolean | undefined>;
   }): Promise<unknown> => {
+    // data: URIs can't be opened by the native URI path — extract the
+    // base64 payload and treat them as the base64 path instead.
+    const dataUriMatch = photoUri?.match(/^data:[^;]+;base64,(.+)$/);
+    const usableUri = dataUriMatch ? undefined : photoUri;
+    const usableBase64 = dataUriMatch ? dataUriMatch[1] : photoBase64;
+    if (!usableUri && !usableBase64) {
+      throw new Error('uploadPhoto requires either photoUri or photoBase64');
+    }
     const token = requireAccessToken(this.accessToken);
     const normalized = normalizeParams(params);
+    const native = getNativeModule();
+    const source = usableUri ? 'uri' : 'base64';
     const uploadDebug = {
+      source,
       mimeType,
       fileName,
-      estimatedBytes: estimateBase64Bytes(photoBase64),
-      magic: base64MagicHex(photoBase64),
+      estimatedBytes: usableBase64
+        ? estimateBase64Bytes(usableBase64)
+        : undefined,
+      magic: usableBase64 ? base64MagicHex(usableBase64) : undefined,
       statusLength: status?.length ?? 0,
       params: Object.keys(normalized),
     };
     console.info(
       `[FanfouUpload] JS request ${JSON.stringify(uploadDebug)}`,
     );
-    const response = await getNativeModule().uploadPhoto(
-      token.key,
-      token.secret,
-      photoBase64,
-      status ?? '',
-      mimeType,
-      fileName,
-      normalized,
-    );
+    const response = usableUri
+      ? await native.uploadPhotoFromUri(
+          token.key,
+          token.secret,
+          usableUri,
+          status ?? '',
+          mimeType,
+          fileName,
+          normalized,
+        )
+      : await native.uploadPhoto(
+          token.key,
+          token.secret,
+          usableBase64 as string,
+          status ?? '',
+          mimeType,
+          fileName,
+          normalized,
+        );
     console.info(
       `[FanfouUpload] JS response status=${response.status} body=${response.body.slice(0, 1000)}`,
     );

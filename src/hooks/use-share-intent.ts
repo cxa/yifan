@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { AppState, Linking, NativeModules, Platform } from 'react-native';
-import RNBlobUtil from 'react-native-blob-util';
 import { setShareIntentPhoto, setShareIntentText } from '@/stores/share-intent-store';
 
 const SHARE_IMAGE_SCHEME = 'yifan://share-image';
@@ -46,11 +45,13 @@ async function checkIOSPending(): Promise<void> {
       const result = await mod.readAndClearPending();
       if (result) {
         // The share extension converts Live Photos to GIF directly,
-        // so we just use whatever file it saved (gif or jpg).
+        // so we just use whatever file it saved (gif or jpg). When
+        // the extension doesn't hand back a file URL we fall back to
+        // a data URI — the native upload layer unpacks that format
+        // so we never have to carry raw base64 in JS.
         const uri = result.fileUrl ?? `data:${result.mimeType};base64,${result.base64}`;
         setShareIntentPhoto({
           uri,
-          base64: result.base64,
           mimeType: result.mimeType,
           fileName: result.fileName,
           livePhotoStaticFallback: result.livePhotoStaticFallback,
@@ -82,11 +83,10 @@ async function resolveAndroidShareURL(url: string): Promise<void> {
       const parsed = new URL(url);
       const filePath = parsed.searchParams.get('file');
       if (!filePath) return;
-      const base64 = await RNBlobUtil.fs.readFile(filePath, 'base64');
-      const uri = `data:image/jpeg;base64,${base64}`;
-      // Clean up cache file after reading
-      RNBlobUtil.fs.unlink(filePath).catch(() => {});
-      setShareIntentPhoto({ uri, base64, mimeType: 'image/jpeg', fileName: 'shared.jpg' });
+      // Hand the native upload layer a file:// URI directly so it can
+      // stream off disk — no round-trip through base64 in JS.
+      const uri = filePath.startsWith('file://') ? filePath : `file://${filePath}`;
+      setShareIntentPhoto({ uri, mimeType: 'image/jpeg', fileName: 'shared.jpg' });
     } catch {
       // Silently ignore; user can pick photo manually.
     }

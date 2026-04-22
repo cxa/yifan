@@ -471,30 +471,16 @@ RCT_EXPORT_METHOD(
               rejecter:rejecter];
 }
 
-RCT_EXPORT_METHOD(
-    uploadPhoto : (NSString *)token tokenSecret : (NSString *)
-        tokenSecret photoBase64 : (NSString *)photoBase64 status : (NSString *)
-            status mimeType : (NSString *)mimeType fileName : (NSString *)
-                fileName params : (NSDictionary *)
-                    params resolver : (RCTPromiseResolveBlock)
-                        resolver rejecter : (RCTPromiseRejectBlock)rejecter) {
-  NSString *resolvedKey = nil;
-  NSString *resolvedSecret = nil;
-  if (!FFResolveConsumer(rejecter, &resolvedKey, &resolvedSecret)) {
-    return;
-  }
-  NSData *imageData = [[NSData alloc] initWithBase64EncodedString:photoBase64
-                                                          options:0];
-  if (imageData.length == 0) {
-    rejecter(@"photo_invalid", @"Invalid photo data", nil);
-    return;
-  }
-  NSLog(@"[FanfouUpload] uploadPhoto native input mime=%@ file=%@ bytes=%lu magic=%@ statusLength=%lu",
-        mimeType,
-        fileName,
-        (unsigned long)imageData.length,
-        FFDataPrefixHex(imageData, 12),
-        (unsigned long)status.length);
+static void FFPerformPhotoUpload(NSString *resolvedKey, NSString *resolvedSecret,
+                                 NSString *token, NSString *tokenSecret,
+                                 NSData *imageData, NSString *status,
+                                 NSString *mimeType, NSString *fileName,
+                                 NSDictionary *params,
+                                 RCTPromiseResolveBlock resolver,
+                                 RCTPromiseRejectBlock rejecter) {
+  NSLog(@"[FanfouUpload] native upload mime=%@ file=%@ bytes=%lu magic=%@ statusLength=%lu",
+        mimeType, fileName, (unsigned long)imageData.length,
+        FFDataPrefixHex(imageData, 12), (unsigned long)status.length);
 
   NSMutableDictionary<NSString *, NSString *> *stringParams =
       [NSMutableDictionary dictionary];
@@ -536,8 +522,7 @@ RCT_EXPORT_METHOD(
   request.HTTPBody = FFMultipartBodyData(
       stringParams, imageData, kMultipartBoundary, @"photo", fileName, mimeType);
   NSLog(@"[FanfouUpload] multipart bytes=%lu params=%@",
-        (unsigned long)request.HTTPBody.length,
-        stringParams.allKeys);
+        (unsigned long)request.HTTPBody.length, stringParams.allKeys);
 
   NSURLSessionDataTask *task = [[NSURLSession sharedSession]
       dataTaskWithRequest:request
@@ -553,13 +538,77 @@ RCT_EXPORT_METHOD(
                                                   encoding:NSUTF8StringEncoding]
                           : @"";
           NSLog(@"[FanfouUpload] response status=%ld body=%@",
-                (long)httpResponse.statusCode,
-                body ?: @"");
+                (long)httpResponse.statusCode, body ?: @"");
           resolver(
               @{@"status" : @(httpResponse.statusCode),
                 @"body" : body ?: @""});
         }];
   [task resume];
+}
+
+RCT_EXPORT_METHOD(
+    uploadPhoto : (NSString *)token tokenSecret : (NSString *)
+        tokenSecret photoBase64 : (NSString *)photoBase64 status : (NSString *)
+            status mimeType : (NSString *)mimeType fileName : (NSString *)
+                fileName params : (NSDictionary *)
+                    params resolver : (RCTPromiseResolveBlock)
+                        resolver rejecter : (RCTPromiseRejectBlock)rejecter) {
+  NSString *resolvedKey = nil;
+  NSString *resolvedSecret = nil;
+  if (!FFResolveConsumer(rejecter, &resolvedKey, &resolvedSecret)) {
+    return;
+  }
+  NSData *imageData = [[NSData alloc] initWithBase64EncodedString:photoBase64
+                                                          options:0];
+  if (imageData.length == 0) {
+    rejecter(@"photo_invalid", @"Invalid photo data", nil);
+    return;
+  }
+  FFPerformPhotoUpload(resolvedKey, resolvedSecret, token, tokenSecret,
+                       imageData, status, mimeType, fileName, params,
+                       resolver, rejecter);
+}
+
+RCT_EXPORT_METHOD(
+    uploadPhotoFromUri : (NSString *)token tokenSecret : (NSString *)
+        tokenSecret photoUri : (NSString *)photoUri status : (NSString *)
+            status mimeType : (NSString *)mimeType fileName : (NSString *)
+                fileName params : (NSDictionary *)
+                    params resolver : (RCTPromiseResolveBlock)
+                        resolver rejecter : (RCTPromiseRejectBlock)rejecter) {
+  NSString *resolvedKey = nil;
+  NSString *resolvedSecret = nil;
+  if (!FFResolveConsumer(rejecter, &resolvedKey, &resolvedSecret)) {
+    return;
+  }
+  NSURL *fileURL = nil;
+  if ([photoUri hasPrefix:@"/"]) {
+    fileURL = [NSURL fileURLWithPath:photoUri];
+  } else {
+    fileURL = [NSURL URLWithString:photoUri];
+  }
+  if (fileURL == nil) {
+    rejecter(@"photo_invalid",
+             [NSString stringWithFormat:@"Invalid photo URI: %@", photoUri],
+             nil);
+    return;
+  }
+  NSError *readError = nil;
+  // dataWithContentsOfURL:options:error: memory-maps large files via
+  // NSDataReadingMappedIfSafe, so we don't hold two full-size copies.
+  NSData *imageData =
+      [NSData dataWithContentsOfURL:fileURL
+                            options:NSDataReadingMappedIfSafe
+                              error:&readError];
+  if (imageData.length == 0) {
+    rejecter(@"photo_invalid",
+             readError.localizedDescription ?: @"Empty photo at URI",
+             readError);
+    return;
+  }
+  FFPerformPhotoUpload(resolvedKey, resolvedSecret, token, tokenSecret,
+                       imageData, status, mimeType, fileName, params,
+                       resolver, rejecter);
 }
 
 RCT_EXPORT_METHOD(

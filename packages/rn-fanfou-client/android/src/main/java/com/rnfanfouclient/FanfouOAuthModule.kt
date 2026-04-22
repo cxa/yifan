@@ -12,10 +12,14 @@ import com.github.scribejava.core.model.OAuth1RequestToken
 import com.github.scribejava.core.model.OAuthRequest
 import com.github.scribejava.core.model.Verb
 import com.github.scribejava.core.oauth.OAuth10aService
+import android.net.Uri
+import android.util.Base64
+import com.github.scribejava.core.model.Response as OAuthResponse
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.Charset
-import android.util.Base64
 
 class FanfouOAuthModule(
   private val reactContext: ReactApplicationContext,
@@ -189,57 +193,132 @@ class FanfouOAuthModule(
   ) {
     Thread {
       try {
-        val resolved = resolveConsumer(promise) ?: return@Thread
         val imageBytes = try {
           Base64.decode(photoBase64, Base64.DEFAULT)
         } catch (e: IllegalArgumentException) {
           promise.reject("photo_invalid", "Invalid photo data")
           return@Thread
         }
-
-        val extraParams = mutableMapOf<String, String>()
-        if (!status.isNullOrBlank()) {
-          extraParams["status"] = status
-        }
-        params.toHashMap().forEach { (key, value) ->
-          if (key.isNotBlank()) {
-            extraParams[key] = value?.toString() ?: ""
-          }
-        }
-
-        val resolvedMimeType = mimeType.ifBlank { "image/jpeg" }
-        val resolvedFileName = fileName.ifBlank { "image.jpg" }
-        val body = ByteArrayOutputStream()
-        extraParams.forEach { (key, value) ->
-          val part =
-            "--$multipartBoundary\r\nContent-Disposition: form-data; name=\"$key\"\r\n\r\n$value\r\n"
-          body.write(part.toByteArray(Charset.forName("UTF-8")))
-        }
-        val header =
-          "--$multipartBoundary\r\nContent-Disposition: form-data; name=\"photo\"; filename=\"$resolvedFileName\"\r\nContent-Length: ${imageBytes.size}\r\nContent-Type: $resolvedMimeType\r\n\r\n"
-        body.write(header.toByteArray(Charset.forName("UTF-8")))
-        body.write(imageBytes)
-        body.write(("\r\n--$multipartBoundary--\r\n").toByteArray(Charset.forName("UTF-8")))
-
-        val service = buildService(resolved.first, resolved.second, null)
-        val accessToken = OAuth1AccessToken(token, tokenSecret)
-        val request = OAuthRequest(Verb.POST, uploadPhotoUrl)
-        request.addHeader(
-          "Content-Type",
-          "multipart/form-data; boundary=$multipartBoundary",
+        sendPhotoMultipart(
+          token = token,
+          tokenSecret = tokenSecret,
+          imageBytes = imageBytes,
+          status = status,
+          mimeType = mimeType,
+          fileName = fileName,
+          params = params,
+          promise = promise,
         )
-        request.setPayload(body.toByteArray())
-        service.signRequest(accessToken, request)
-        val response = service.execute(request)
-        val result = Arguments.createMap().apply {
-          putInt("status", response.code)
-          putString("body", response.body)
-        }
-        promise.resolve(result)
       } catch (e: Exception) {
         promise.reject("photo_upload_failed", e)
       }
     }.start()
+  }
+
+  @ReactMethod
+  fun uploadPhotoFromUri(
+    token: String,
+    tokenSecret: String,
+    photoUri: String,
+    status: String?,
+    mimeType: String,
+    fileName: String,
+    params: ReadableMap,
+    promise: Promise,
+  ) {
+    Thread {
+      try {
+        val imageBytes = try {
+          readBytesFromUri(photoUri)
+        } catch (e: Exception) {
+          promise.reject("photo_invalid", "Unable to read photo from URI: $photoUri", e)
+          return@Thread
+        }
+        if (imageBytes.isEmpty()) {
+          promise.reject("photo_invalid", "Empty photo at URI: $photoUri")
+          return@Thread
+        }
+        sendPhotoMultipart(
+          token = token,
+          tokenSecret = tokenSecret,
+          imageBytes = imageBytes,
+          status = status,
+          mimeType = mimeType,
+          fileName = fileName,
+          params = params,
+          promise = promise,
+        )
+      } catch (e: Exception) {
+        promise.reject("photo_upload_failed", e)
+      }
+    }.start()
+  }
+
+  private fun readBytesFromUri(photoUri: String): ByteArray {
+    val uri = Uri.parse(photoUri)
+    val stream: InputStream? = when (uri.scheme) {
+      null, "file" -> {
+        val path = uri.path ?: throw IllegalArgumentException("Missing path in URI")
+        File(path).inputStream()
+      }
+      "content" -> reactContext.contentResolver.openInputStream(uri)
+      else -> throw IllegalArgumentException("Unsupported URI scheme: ${uri.scheme}")
+    }
+    return stream?.use { it.readBytes() }
+      ?: throw java.io.IOException("Cannot open URI: $photoUri")
+  }
+
+  private fun sendPhotoMultipart(
+    token: String,
+    tokenSecret: String,
+    imageBytes: ByteArray,
+    status: String?,
+    mimeType: String,
+    fileName: String,
+    params: ReadableMap,
+    promise: Promise,
+  ) {
+    val resolved = resolveConsumer(promise) ?: return
+
+    val extraParams = mutableMapOf<String, String>()
+    if (!status.isNullOrBlank()) {
+      extraParams["status"] = status
+    }
+    params.toHashMap().forEach { (key, value) ->
+      if (key.isNotBlank()) {
+        extraParams[key] = value?.toString() ?: ""
+      }
+    }
+
+    val resolvedMimeType = mimeType.ifBlank { "image/jpeg" }
+    val resolvedFileName = fileName.ifBlank { "image.jpg" }
+    val body = ByteArrayOutputStream()
+    extraParams.forEach { (key, value) ->
+      val part =
+        "--$multipartBoundary\r\nContent-Disposition: form-data; name=\"$key\"\r\n\r\n$value\r\n"
+      body.write(part.toByteArray(Charset.forName("UTF-8")))
+    }
+    val header =
+      "--$multipartBoundary\r\nContent-Disposition: form-data; name=\"photo\"; filename=\"$resolvedFileName\"\r\nContent-Length: ${imageBytes.size}\r\nContent-Type: $resolvedMimeType\r\n\r\n"
+    body.write(header.toByteArray(Charset.forName("UTF-8")))
+    body.write(imageBytes)
+    body.write(("\r\n--$multipartBoundary--\r\n").toByteArray(Charset.forName("UTF-8")))
+
+    val service = buildService(resolved.first, resolved.second, null)
+    val accessToken = OAuth1AccessToken(token, tokenSecret)
+    val request = OAuthRequest(Verb.POST, uploadPhotoUrl)
+    request.addHeader(
+      "Content-Type",
+      "multipart/form-data; boundary=$multipartBoundary",
+    )
+    request.setPayload(body.toByteArray())
+    service.signRequest(accessToken, request)
+    val response: OAuthResponse = service.execute(request)
+    val result = Arguments.createMap().apply {
+      putInt("status", response.code)
+      putString("body", response.body)
+    }
+    promise.resolve(result)
   }
 
   @ReactMethod

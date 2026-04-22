@@ -2,8 +2,11 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { NativeModules, Platform } from 'react-native';
 
 export type PickedImageData = {
+  // For camera-roll picks this is a file:// path the native upload
+  // module streams from disk. For iOS LivePhotoModule picks without a
+  // fileUrl, it's a data: URI — the native client extracts the base64
+  // payload itself, so the upload path is uniform on the JS side.
   uri: string;
-  base64: string;
   mimeType: string;
   fileName: string;
 };
@@ -16,7 +19,10 @@ export type PickedImage = PickedImageData & {
 const IMAGE_PICKER_OPTIONS = {
   mediaType: 'photo',
   selectionLimit: 1,
-  includeBase64: true,
+  // Skip base64 encoding in JS — we pass the file URI to native and
+  // let it stream bytes off disk. Saves a ~4x memory blowup and a
+  // huge string crossing the RN bridge.
+  includeBase64: false,
   quality: 1,
 } as const;
 
@@ -71,7 +77,6 @@ const inferFileName = (
 const toPickedImage = (image: LivePhotoResult): PickedImage => {
   const result: PickedImage = {
     uri: image.fileUrl ?? `data:${image.mimeType};base64,${image.base64}`,
-    base64: image.base64,
     mimeType: image.mimeType,
     fileName: image.fileName,
   };
@@ -80,7 +85,6 @@ const toPickedImage = (image: LivePhotoResult): PickedImage => {
       uri:
         image.stillImage.fileUrl ??
         `data:${image.stillImage.mimeType};base64,${image.stillImage.base64}`,
-      base64: image.stillImage.base64,
       mimeType: image.stillImage.mimeType,
       fileName: image.stillImage.fileName,
     };
@@ -110,16 +114,11 @@ export const pickImageFromLibrary = async (): Promise<PickedImage | null> => {
     throw new Error('Unable to read selected photo.');
   }
 
-  if (!asset.base64) {
-    throw new Error('Selected photo is missing base64 data.');
-  }
-
   const mimeType = inferMimeType(asset.type, asset.fileName);
   const fileName = inferFileName(asset.fileName, mimeType);
 
   return {
     uri: asset.uri,
-    base64: asset.base64,
     mimeType,
     fileName,
   };

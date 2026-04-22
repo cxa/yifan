@@ -91,7 +91,7 @@ const useTimelineStatusInteractions = ({
 
   const handleSendComposer = ({ text, photo }: ComposerModalSubmitPayload) => {
     if (!composeMode) return;
-    const hasPhoto = Boolean(photo?.base64);
+    const hasPhoto = Boolean(photo?.uri);
 
     if (composeMode === 'reply' && !composeReplyTarget) {
       showVariantToast('danger', t('cannotReplyTitle'), t('replyMissingTarget'));
@@ -121,8 +121,8 @@ const useTimelineStatusInteractions = ({
     let failedTitle: string;
     if (composeMode === 'reply' && composeReplyTarget) {
       const payload: StatusUpdateMutationVariables = {
-        status: photo?.base64 ? trimmedText || undefined : trimmedText,
-        photoBase64: photo?.base64,
+        status: photo ? trimmedText || undefined : trimmedText,
+        photoUri: photo?.uri,
         photoMimeType: photo?.mimeType,
         photoFileName: photo?.fileName,
         params: {

@@ -557,7 +557,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     photo,
   }: ComposerModalSubmitPayload) => {
     if (!user || !composeMode) return;
-    const hasPhoto = Boolean(photo?.base64);
+    const hasPhoto = Boolean(photo?.uri);
 
     // Validate — keep composer open on error
     if (composeMode === 'dm' && !text.trim()) {
@@ -592,8 +592,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     if (composeMode === 'mention') {
       const userId = user.id;
       sendFn = () => statusUpdateMutation.mutateAsync({
-        status: photo?.base64 ? trimmedText || undefined : trimmedText,
-        photoBase64: photo?.base64,
+        status: photo ? trimmedText || undefined : trimmedText,
+        photoUri: photo?.uri,
         photoMimeType: photo?.mimeType,
         photoFileName: photo?.fileName,
         params: { in_reply_to_user_id: userId },
@@ -602,8 +602,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     } else if (composeMode === 'reply' && composeReplyTarget) {
       const replyTarget = composeReplyTarget;
       sendFn = () => statusUpdateMutation.mutateAsync({
-        status: photo?.base64 ? trimmedText || undefined : trimmedText,
-        photoBase64: photo?.base64,
+        status: photo ? trimmedText || undefined : trimmedText,
+        photoUri: photo?.uri,
         photoMimeType: photo?.mimeType,
         photoFileName: photo?.fileName,
         params: {

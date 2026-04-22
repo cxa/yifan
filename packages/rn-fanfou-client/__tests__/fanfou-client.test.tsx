@@ -2,6 +2,7 @@ const mockGetRequestToken = jest.fn();
 const mockGetAccessToken = jest.fn();
 const mockRequest = jest.fn();
 const mockUploadPhoto = jest.fn();
+const mockUploadPhotoFromUri = jest.fn();
 const mockUploadProfileImage = jest.fn();
 const mockOpenAuth = jest.fn();
 
@@ -12,6 +13,8 @@ jest.mock('react-native', () => ({
       getAccessToken: (...args: unknown[]) => mockGetAccessToken(...args),
       request: (...args: unknown[]) => mockRequest(...args),
       uploadPhoto: (...args: unknown[]) => mockUploadPhoto(...args),
+      uploadPhotoFromUri: (...args: unknown[]) =>
+        mockUploadPhotoFromUri(...args),
       uploadProfileImage: (...args: unknown[]) =>
         mockUploadProfileImage(...args),
     },
