@@ -217,7 +217,18 @@ const TimelineStatusCard = ({
           ) : null}
 
           <View
-            className={`gap-3 ${showAvatar ? 'flex-1' : ''}`.trim()}
+            className={[
+              'gap-3',
+              showAvatar ? 'flex-1' : '',
+              // Snap leaves a sub-glyph sliver of leftover width on
+              // one side; `self-center` splits it symmetrically. Only
+              // applies after we've measured and when there's no
+              // avatar (with avatar, flex-row + flex-1 keeps the body
+              // flush with the avatar column).
+              !showAvatar && snappedBodyWidth ? 'self-center' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             style={snappedBodyWidth ? { width: snappedBodyWidth } : undefined}
             onLayout={event => {
               const next = event.nativeEvent.layout.width;
