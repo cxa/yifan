@@ -13,6 +13,19 @@ static NSString *const kSegmentTypeLink = @"link";
 
 @interface YifanJustifiedTextView () <UIGestureRecognizerDelegate>
 @property (nonatomic, copy) NSAttributedString *attributedText;
+@property (nonatomic, strong) UITapGestureRecognizer *tap;
+// Range of the currently pressed segment, or {NSNotFound, 0} if no
+// press is active. Drives the tap highlight in drawRect:.
+@property (nonatomic, assign) NSRange pressedRange;
+// Weak refs to RN's root-level gesture recognizers
+// (RCTSurfaceTouchHandler + RCTSurfacePointerHandler on Fabric). We
+// toggle their `enabled` to force them into `reset`, which dispatches
+// a touchCancel to JS — that's what actually prevents the outer card
+// Pressable from firing onPressStatus when we claim a segment tap.
+// requireGestureRecognizerToFail: is explicitly rejected by RN's
+// handlers (canBePreventedByGestureRecognizer: returns NO for
+// descendant gestures), so it has no effect here.
+@property (nonatomic, strong) NSMutableArray<UIGestureRecognizer *> *rnRootHandlers;
 @end
 
 @implementation YifanJustifiedTextView
@@ -22,25 +35,51 @@ static NSString *const kSegmentTypeLink = @"link";
     _fontSize = 15;
     _lineHeight = 24;
     _justify = YES;
+    _pressedRange = NSMakeRange(NSNotFound, 0);
     self.backgroundColor = [UIColor clearColor];
     self.opaque = NO;
     self.contentMode = UIViewContentModeRedraw;
     self.userInteractionEnabled = YES;
 
-    UITapGestureRecognizer *tap =
-        [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                action:@selector(handleTap:)];
-    tap.delegate = self;
-    // YES: when a segment tap is recognized we want to cancel other
-    // gestures in the hierarchy (i.e. the parent card Pressable), so
-    // tapping a @mention only navigates to the profile instead of
-    // also opening the status detail. Non-segment taps never start
-    // our gesture (see shouldReceiveTouch:) so the parent still
-    // handles them normally.
-    tap.cancelsTouchesInView = YES;
-    [self addGestureRecognizer:tap];
+    _tap = [[UITapGestureRecognizer alloc] initWithTarget:self
+                                                   action:@selector(handleTap:)];
+    _tap.delegate = self;
+    _tap.cancelsTouchesInView = YES;
+    [self addGestureRecognizer:_tap];
   }
   return self;
+}
+
+- (void)didMoveToWindow {
+  [super didMoveToWindow];
+  if (!self.window) return;
+  // Collect RN's root-level touch & pointer gesture recognizers so we
+  // can cancel them at touchesBegan when the user lands on a segment.
+  NSMutableArray<UIGestureRecognizer *> *handlers = [NSMutableArray array];
+  UIView *ancestor = self.superview;
+  while (ancestor) {
+    for (UIGestureRecognizer *gr in ancestor.gestureRecognizers) {
+      NSString *cls = NSStringFromClass([gr class]);
+      if ([cls containsString:@"TouchHandler"] ||
+          [cls containsString:@"PointerHandler"]) {
+        [handlers addObject:gr];
+      }
+    }
+    ancestor = ancestor.superview;
+  }
+  self.rnRootHandlers = handlers;
+}
+
+- (void)cancelRNRootHandlers {
+  // Toggling enabled forces UIGestureRecognizer.reset, which in RN's
+  // handlers dispatches touchCancel / pointerCancel to JS. That
+  // cancels Pressability's in-flight tap tracking cleanly.
+  for (UIGestureRecognizer *gr in self.rnRootHandlers) {
+    if (gr.enabled) {
+      gr.enabled = NO;
+      gr.enabled = YES;
+    }
+  }
 }
 
 #pragma mark - Prop setters
@@ -259,6 +298,8 @@ static NSString *const kSegmentTypeLink = @"link";
   if (lineCount > 0) {
     CGPoint origins[lineCount];
     CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), origins);
+
+    // Pass 1: tag pill backgrounds.
     for (CFIndex i = 0; i < lineCount; i++) {
       CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
       CFArrayRef runs = CTLineGetGlyphRuns(line);
@@ -283,6 +324,42 @@ static NSString *const kSegmentTypeLink = @"link";
                                    ascent + descent);
         CGContextSetFillColorWithColor(ctx, bg.CGColor);
         CGContextFillRect(ctx, bgRect);
+      }
+    }
+
+    // Pass 2: press-state highlight over the actively-pressed segment.
+    if (self.pressedRange.location != NSNotFound && self.pressedRange.length > 0) {
+      UIColor *hlColor = [UIColor
+          colorWithDynamicProvider:^UIColor *(UITraitCollection *tc) {
+            CGFloat alpha = 0.18;
+            if (tc.userInterfaceStyle == UIUserInterfaceStyleDark) {
+              return [UIColor colorWithWhite:1.0 alpha:alpha];
+            }
+            return [UIColor colorWithWhite:0.0 alpha:alpha];
+          }];
+      CGColorRef hlCG =
+          [hlColor resolvedColorWithTraitCollection:self.traitCollection].CGColor;
+      NSInteger pStart = (NSInteger)self.pressedRange.location;
+      NSInteger pEnd = pStart + (NSInteger)self.pressedRange.length;
+      for (CFIndex i = 0; i < lineCount; i++) {
+        CTLineRef line = (CTLineRef)CFArrayGetValueAtIndex(lines, i);
+        CFRange lineRange = CTLineGetStringRange(line);
+        NSInteger lStart = (NSInteger)lineRange.location;
+        NSInteger lEnd = lStart + (NSInteger)lineRange.length;
+        NSInteger s = MAX(pStart, lStart);
+        NSInteger e = MIN(pEnd, lEnd);
+        if (e <= s) continue;
+        CGFloat startX = CTLineGetOffsetForStringIndex(line, s, NULL);
+        CGFloat endX = CTLineGetOffsetForStringIndex(line, e, NULL);
+        CGFloat ascent = 0, descent = 0;
+        CTLineGetTypographicBounds(line, &ascent, &descent, NULL);
+        CGRect hlRect = CGRectMake(origins[i].x + startX,
+                                   origins[i].y - descent,
+                                   endX - startX,
+                                   ascent + descent);
+        hlRect = CGRectInset(hlRect, -1, -1);
+        CGContextSetFillColorWithColor(ctx, hlCG);
+        CGContextFillRect(ctx, hlRect);
       }
     }
   }
@@ -335,6 +412,52 @@ static NSString *const kSegmentTypeLink = @"link";
   if (width <= 0) return;
   CGSize s = [self measuredSizeForWidth:width];
   self.onContentSizeChange(@{@"width" : @(width), @"height" : @(s.height)});
+}
+
+#pragma mark - Press-state tracking
+
+// touchesBegan fires even when the gesture recognizer is tracking the
+// touch, as long as delaysTouchesBegan stays NO (the default). We use
+// it to set the press highlight range; the gesture itself fires later
+// on touch-up via handleTap:.
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+  [super touchesBegan:touches withEvent:event];
+  NSAttributedString *attr = self.attributedText;
+  if (attr.length == 0) return;
+  UITouch *touch = touches.anyObject;
+  CGPoint point = [touch locationInView:self];
+  NSUInteger idx = [self characterIndexAtPoint:point];
+  if (idx == NSNotFound || idx >= attr.length) return;
+  NSRange effective = NSMakeRange(NSNotFound, 0);
+  NSString *type = [attr attribute:kYifanSegmentTypeKey
+                           atIndex:idx
+             longestEffectiveRange:&effective
+                           inRange:NSMakeRange(0, attr.length)];
+  if (type && effective.length > 0) {
+    self.pressedRange = effective;
+    [self setNeedsDisplay];
+    // Cancel RN's root touch/pointer handlers *now* so the outer card
+    // Pressable gets a touchCancel in JS and doesn't fire onPress at
+    // the eventual touch-up. We still receive touchesEnded ourselves
+    // because UIKit delivers touches directly to our view.
+    [self cancelRNRootHandlers];
+  }
+}
+
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+  [super touchesEnded:touches withEvent:event];
+  [self clearPressedRange];
+}
+
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+  [super touchesCancelled:touches withEvent:event];
+  [self clearPressedRange];
+}
+
+- (void)clearPressedRange {
+  if (self.pressedRange.location == NSNotFound) return;
+  self.pressedRange = NSMakeRange(NSNotFound, 0);
+  [self setNeedsDisplay];
 }
 
 #pragma mark - Tap handling via CoreText hit-test
