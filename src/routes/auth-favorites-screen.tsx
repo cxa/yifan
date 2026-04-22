@@ -78,10 +78,9 @@ const FavoritesRoute = () => {
     insets.top -
     TIMELINE_TOP_CONTENT_GAP -
     getTabBarOccludedHeight(insets.bottom);
-  const [accent, background, muted] = useThemeColor([
+  const [accent, background] = useThemeColor([
     'accent',
     'background',
-    'muted',
   ]);
   const queryKey: [string, string] = ['favorites', resolvedUserId ?? ''];
   const headerHeight = useHeaderHeight();
@@ -300,7 +299,6 @@ const FavoritesRoute = () => {
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 isBookmarkPending={pendingBookmarkIds.has(item.id)}
                 onOpenPhoto={handlePhotoPress}

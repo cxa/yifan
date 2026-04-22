@@ -81,10 +81,9 @@ const MyTimelineRouteContent = ({
     insets.top -
     TIMELINE_TOP_CONTENT_GAP -
     getTabBarOccludedHeight(insets.bottom);
-  const [accent, background, muted] = useThemeColor([
+  const [accent, background] = useThemeColor([
     'accent',
     'background',
-    'muted',
   ]);
   const queryKey: [string, string] = ['my-timeline', userId];
   const headerHeight = useHeaderHeight();
@@ -291,7 +290,6 @@ const MyTimelineRouteContent = ({
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 showAvatar={false}
                 showAuthor={false}

@@ -107,10 +107,9 @@ const TagTimelineRoute = () => {
     useRoute<
       RouteProp<AuthTagStackParamList, typeof AUTH_TAG_TIMELINE_ROUTE.DETAIL>
     >();
-  const [accent, background, muted] = useThemeColor([
+  const [accent, background] = useThemeColor([
     'accent',
     'background',
-    'muted',
   ]);
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -384,7 +383,6 @@ const TagTimelineRoute = () => {
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
                 activeTag={routeTag}

@@ -86,7 +86,7 @@ const PublicTimelineRoute = () => {
   const authUserId = auth.accessToken?.userId ?? null;
   const queryClient = useQueryClient();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
-  const [accent, background, muted] = useThemeColor(['accent', 'background', 'muted']);
+  const [accent, background] = useThemeColor(['accent', 'background']);
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -312,7 +312,6 @@ const PublicTimelineRoute = () => {
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
                 onOpenPhoto={handlePhotoPress}

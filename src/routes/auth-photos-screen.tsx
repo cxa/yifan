@@ -74,10 +74,9 @@ const PhotosRouteContent = ({
   const queryClient = useQueryClient();
   const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const insets = useSafeAreaInsets();
-  const [accent, background, muted] = useThemeColor([
+  const [accent, background] = useThemeColor([
     'accent',
     'background',
-    'muted',
   ]);
   const queryKey: [string, string] = ['photos', userId];
   const headerHeight = useHeaderHeight();
@@ -308,7 +307,6 @@ const PhotosRouteContent = ({
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 showAvatar={false}
                 showAuthor={false}

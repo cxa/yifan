@@ -93,10 +93,9 @@ const MentionsRoute = () => {
   const authUserId = auth.accessToken?.userId ?? null;
   const queryClient = useQueryClient();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
-  const [accent, background, muted] = useThemeColor([
+  const [accent, background] = useThemeColor([
     'accent',
     'background',
-    'muted',
   ]);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -407,7 +406,6 @@ const MentionsRoute = () => {
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
                 onOpenPhoto={handlePhotoPress}

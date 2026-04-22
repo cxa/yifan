@@ -167,10 +167,9 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const queryClient = useQueryClient();
   const auth = useAuthSession();
   const accessToken = auth.accessToken;
-  const [accent, background, muted, foregroundIconColor] = useThemeColor([
+  const [accent, background, foregroundIconColor] = useThemeColor([
     'accent',
     'background',
-    'muted',
     'foreground',
   ]);
   const headerTitleVisible = useSharedValue(false);
@@ -846,7 +845,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
   const pageBackgroundColor =
     profileThemePalette.pageBackgroundColor ?? background;
   const timelineAccentColor = profileThemePalette.linkColor ?? accent;
-  const timelineMutedColor = profileThemePalette.mutedTextColor ?? muted;
   const heroFollowersLabel = t(
     isSelf ? 'profileStatFollowers' : 'profileStatFollowersOther',
   );
@@ -1198,7 +1196,6 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
                           <TimelineStatusCard
                             status={status}
                             accent={timelineAccentColor}
-                            muted={timelineMutedColor}
                             shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                             showAvatar={false}
                             showAuthor={false}

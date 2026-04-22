@@ -315,7 +315,6 @@ const SearchRoute = () => {
               <TimelineStatusCard
                 status={item}
                 accent={accent}
-                muted={muted}
                 shadowType={CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length]}
                 isBookmarkPending={pendingBookmarkIds.has(getStatusId(item))}
                 onOpenPhoto={handlePhotoPress}

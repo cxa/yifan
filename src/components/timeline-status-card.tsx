@@ -52,7 +52,6 @@ const renderTextWithEmoji = (
 type TimelineStatusCardProps = {
   status: FanfouStatus;
   accent: string;
-  muted: string;
   showAvatar?: boolean;
   showAuthor?: boolean;
   shadowType?: DropShadowBoxType;
@@ -102,7 +101,6 @@ const getStatusPhotoUrl = (status: FanfouStatus): string | null => {
 const TimelineStatusCard = ({
   status,
   accent,
-  muted,
   showAvatar = true,
   showAuthor = true,
   shadowType = 'default',
@@ -123,13 +121,12 @@ const TimelineStatusCard = ({
   const { t } = useTranslation();
   const isDark = useEffectiveIsDark();
   const effectiveIsDark = invertColorScheme ? !isDark : isDark;
-  const textColor = invertColorScheme
-    ? isDark ? FOREGROUND_LIGHT : FOREGROUND_DARK
-    : undefined;
-  const mutedColor = invertColorScheme
-    ? isDark ? MUTED_LIGHT : MUTED_DARK
-    : undefined;
-  const effectiveMuted = mutedColor ?? muted;
+  // Pastel card fills need a specific contrast-safe pair; derive the
+  // effective foreground directly from the effective dark mode so the
+  // JS <Text> instances and the native JustifiedBodyText both get the
+  // same concrete hex — no `undefined` fallbacks.
+  const textColor = effectiveIsDark ? FOREGROUND_DARK : FOREGROUND_LIGHT;
+  const mutedColor = effectiveIsDark ? MUTED_DARK : MUTED_LIGHT;
   const themePreference = useAppThemePreference();
   const cardBgColor = themePreference === APP_THEME_OPTION.PLAIN
     ? (effectiveIsDark ? '#1E1E1E' : '#FFFFFF')
@@ -261,14 +258,14 @@ const TimelineStatusCard = ({
               >
                 <Text
                   className="shrink text-[17px] font-extrabold text-foreground"
-                  style={textColor ? { color: textColor } : undefined}
+                  style={{ color: textColor }}
                   numberOfLines={1}
                 >
                   {displayName}
                 </Text>
                 <Text
                   className="shrink-0 text-[13px] text-muted"
-                  style={mutedColor ? { color: mutedColor } : undefined}
+                  style={{ color: mutedColor }}
                   numberOfLines={1}
                 >
                   {handle}
@@ -292,7 +289,7 @@ const TimelineStatusCard = ({
             {segments.length > 0 ? (
               <JustifiedBodyText
                 segments={segments as JustifiedBodySegment[]}
-                textColor={textColor ?? '#1A1208'}
+                textColor={textColor}
                 accentColor={accent}
                 activeTag={activeTag ?? null}
                 tagActivePillClass={ACTIVE_TAG_PILL_CLASS}
@@ -362,7 +359,7 @@ const TimelineStatusCard = ({
                   accessibilityRole="button"
                   accessibilityLabel="Reply"
                 >
-                  <Reply size={18} color={effectiveMuted} />
+                  <Reply size={18} color={mutedColor} />
                 </Pressable>
                 <Pressable
                   onPress={() => onRepost(status)}
@@ -371,7 +368,7 @@ const TimelineStatusCard = ({
                   accessibilityRole="button"
                   accessibilityLabel="Repost"
                 >
-                  <Repeat2 size={18} color={effectiveMuted} />
+                  <Repeat2 size={18} color={mutedColor} />
                 </Pressable>
                 <Pressable
                   onPress={() => onToggleBookmark(status)}
@@ -387,7 +384,7 @@ const TimelineStatusCard = ({
                     size={18}
                     isFavorited={status.favorited}
                     activeColor={accent}
-                    inactiveColor={effectiveMuted}
+                    inactiveColor={mutedColor}
                   />
                 </Pressable>
                 {canDelete && onDelete ? (
@@ -408,7 +405,7 @@ const TimelineStatusCard = ({
               <View className="ml-3 shrink-0 items-end gap-0.5">
                 <Text
                   className="text-[11px] leading-[14px] text-muted"
-                  style={mutedColor ? { color: mutedColor } : undefined}
+                  style={{ color: mutedColor }}
                 >
                   {timestamp}
                 </Text>
@@ -417,7 +414,7 @@ const TimelineStatusCard = ({
                     className="text-[11px] leading-[14px] text-muted"
                     style={[
                       { maxWidth: 160 * fontSizeScale },
-                      mutedColor ? { color: mutedColor } : null,
+                      { color: mutedColor },
                     ]}
                     numberOfLines={1}
                     ellipsizeMode="tail"

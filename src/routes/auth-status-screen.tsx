@@ -144,10 +144,9 @@ const StatusDetailRoute = () => {
   const insets = useSafeAreaInsets();
   const { height: viewportHeight } = useWindowDimensions();
   const headerHeight = useHeaderHeight();
-  const [accent, background, muted] = useThemeColor([
+  const [accent, background] = useThemeColor([
     'accent',
     'background',
-    'muted',
   ]);
   const routeStatusId = route.params.statusId.trim();
   const routeShadowType: DropShadowBoxType = route.params.shadowType ?? 'accent';
@@ -429,7 +428,6 @@ const StatusDetailRoute = () => {
         key={`${statusId}-${isMainStatus ? 'main' : 'context'}`}
         status={cardStatus}
         accent={accent}
-        muted={muted}
         shadowType={cardShadowType}
         invertColorScheme={isMainStatus}
         isBookmarkPending={pendingBookmarkIds.has(statusId)}
