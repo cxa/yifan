@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
-import { MessageCircle, Repeat2, Trash2 } from 'lucide-react-native';
+import { Reply, Repeat2, Trash2 } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import type { FanfouStatus } from '@/types/fanfou';
@@ -239,7 +239,7 @@ const TimelineStatusCard = ({
             }}
           >
             <View
-              className={`gap-3${snappedBodyWidth ? ' self-center' : ''}`}
+              className={snappedBodyWidth ? 'self-center' : undefined}
               style={snappedBodyWidth ? { width: snappedBodyWidth } : undefined}
             >
             {showAuthor ? (
@@ -268,6 +268,11 @@ const TimelineStatusCard = ({
                 </Text>
               </Pressable>
             ) : null}
+            {/* Body / photo / actions share the regular 12dp rhythm;
+                the author block sits outside this wrapper so its
+                gap to the body can be tighter (mt-1 = 4dp) without
+                making every sibling gap tight too. */}
+            <View className={`gap-3${showAuthor ? ' mt-1' : ''}`}>
             {segments.length > 0 ? (
               <JustifiedBodyText
                 segments={segments as JustifiedBodySegment[]}
@@ -331,20 +336,20 @@ const TimelineStatusCard = ({
                 </View>
               </Pressable>
             ) : null}
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
+            <View className="flex-row items-end justify-between">
+              <View className="flex-row items-center gap-4">
                 <Pressable
                   onPress={() => onReply(status)}
-                  className="p-1.5"
+                  className="pr-1.5 pt-1.5"
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Reply"
                 >
-                  <MessageCircle size={18} color={effectiveMuted} />
+                  <Reply size={18} color={effectiveMuted} />
                 </Pressable>
                 <Pressable
                   onPress={() => onRepost(status)}
-                  className="p-1.5"
+                  className="px-1.5 pt-1.5"
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Repost"
@@ -354,7 +359,7 @@ const TimelineStatusCard = ({
                 <Pressable
                   onPress={() => onToggleBookmark(status)}
                   disabled={isBookmarkPending}
-                  className={`p-1.5 ${isBookmarkPending ? 'opacity-50' : ''}`}
+                  className={`px-1.5 pt-1.5 ${isBookmarkPending ? 'opacity-50' : ''}`}
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -374,7 +379,7 @@ const TimelineStatusCard = ({
                       event.stopPropagation();
                       handleDeletePress();
                     }}
-                    className="p-1.5"
+                    className="px-1.5 pt-1.5"
                     hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={t('statusDeleteTitle')}
@@ -383,7 +388,7 @@ const TimelineStatusCard = ({
                   </Pressable>
                 ) : null}
               </View>
-              <View className="ml-3 shrink-0 items-end">
+              <View className="ml-3 shrink-0 items-end gap-0.5">
                 <Text
                   className="text-[11px] leading-[14px] text-muted"
                   style={mutedColor ? { color: mutedColor } : undefined}
@@ -404,6 +409,7 @@ const TimelineStatusCard = ({
                   </Text>
                 ) : null}
               </View>
+            </View>
             </View>
             </View>
           </View>
