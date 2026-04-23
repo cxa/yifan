@@ -291,6 +291,17 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
     }
   }
 
+  override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+    super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    // Report from onMeasure too, not just onLayout. When the outer wrapper
+    // snaps to a narrower width on the second render (see
+    // timeline-status-card's snappedBodyWidth), Yoga can feed the new
+    // width through onMeasure without producing a bounds change, so
+    // onLayout never fires and the 7th line gets clipped. onMeasure
+    // runs on every measure pass, so reporting here is the reliable hook.
+    reportContentSize(measuredWidth)
+  }
+
   override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
     super.onLayout(changed, l, t, r, b)
     reportContentSize(r - l)
