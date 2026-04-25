@@ -48,49 +48,103 @@ export const notifyUpdateFound = (info: UpdateInfo) => {
 };
 
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
+  if (Platform.OS === 'ios') {
+    // The App Store is the only channel that can install a new build
+    // on the user's device, so it's the source of truth for native
+    // updates. If the Store agrees we're current, fall through to a
+    // GitHub OTA check — JS-only releases ship there before (or
+    // without) the next App Store build.
+    const storeUpdate = await checkAppStoreForUpdate();
+    if (storeUpdate) return storeUpdate;
+    return checkGitHubForOtaUpdate('.ios.jsbundle');
+  }
+  return checkGitHubForUpdate();
+}
+
+async function checkAppStoreForUpdate(): Promise<UpdateInfo | null> {
+  // iTunes Lookup returns the public App Store record for this app id
+  // (CFBundleShortVersionString = package.json `version`, since
+  // bump-version.js syncs MARKETING_VERSION on every release).
+  const res = await fetch(
+    `https://itunes.apple.com/lookup?id=${IOS_APP_ID}`,
+  );
+  if (!res.ok) return null;
+  const data: { results?: { version?: string }[] } = await res.json();
+  const storeVersion = data.results?.[0]?.version;
+  if (!storeVersion) return null;
+  if (!isNewer(storeVersion, CURRENT_VERSION)) return null;
+  return { version: storeVersion, updateType: 'native' };
+}
+
+type LatestRelease = {
+  tag_name: string;
+  assets: { name: string; browser_download_url: string }[];
+};
+
+async function fetchLatestRelease(): Promise<LatestRelease | null> {
   const res = await fetch(
     `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
     { headers: { Accept: 'application/vnd.github+json' } },
   );
   if (!res.ok) return null;
+  return res.json();
+}
 
-  const release: {
-    tag_name: string;
-    assets: { name: string; browser_download_url: string }[];
-  } = await res.json();
+async function readManifest(release: LatestRelease): Promise<{ minNativeVersion: string } | null> {
+  const asset = release.assets.find(a => a.name === 'manifest.json');
+  if (!asset) return null;
+  const res = await fetch(asset.browser_download_url);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function checkGitHubForUpdate(): Promise<UpdateInfo | null> {
+  const release = await fetchLatestRelease();
+  if (!release) return null;
 
   const latestVersion = release.tag_name.replace(/^v/, '');
   if (!isNewer(latestVersion, CURRENT_VERSION)) return null;
 
   // manifest.json declares minNativeVersion for this release.
   // Absent on older releases — treat as native update required for backward compat.
-  const manifestAsset = release.assets.find(a => a.name === 'manifest.json');
-  let needsNativeUpdate = true;
-  if (manifestAsset) {
-    const manifestRes = await fetch(manifestAsset.browser_download_url);
-    if (manifestRes.ok) {
-      const manifest: { minNativeVersion: string } = await manifestRes.json();
-      needsNativeUpdate = isNewer(manifest.minNativeVersion, NATIVE_VERSION);
-    }
-  }
+  const manifest = await readManifest(release);
+  const needsNativeUpdate = manifest
+    ? isNewer(manifest.minNativeVersion, NATIVE_VERSION)
+    : true;
 
   if (needsNativeUpdate) {
-    if (Platform.OS === 'ios') {
-      // iOS: direct to App Store
-      return { version: latestVersion, updateType: 'native' };
-    }
-    // Android: download APK
     const apkAsset = release.assets.find(a => a.name.endsWith('.apk'));
     if (!apkAsset) return null;
     return { version: latestVersion, updateType: 'native', apkUrl: apkAsset.browser_download_url };
   }
 
-  // JS-only OTA — find platform bundle (named yifan.{version}.ios/android.jsbundle)
-  const bundleAsset = release.assets.find(a =>
-    Platform.OS === 'ios'
-      ? a.name.endsWith('.ios.jsbundle')
-      : a.name.endsWith('.android.jsbundle'),
-  );
+  const bundleAsset = release.assets.find(a => a.name.endsWith('.android.jsbundle'));
+  if (!bundleAsset) return null;
+
+  return {
+    version: latestVersion,
+    updateType: 'js',
+    bundleUrl: bundleAsset.browser_download_url,
+  };
+}
+
+async function checkGitHubForOtaUpdate(bundleSuffix: string): Promise<UpdateInfo | null> {
+  // Used by iOS as the JS-only fallback after the App Store reports no
+  // native bump. Returns OTA only — never an APK / native install
+  // path, because iOS users can't sideload from GitHub anyway.
+  const release = await fetchLatestRelease();
+  if (!release) return null;
+
+  const latestVersion = release.tag_name.replace(/^v/, '');
+  if (!isNewer(latestVersion, CURRENT_VERSION)) return null;
+
+  // Without a manifest we can't know if the bundle is OTA-safe for
+  // this nativeVersion — skip rather than guess.
+  const manifest = await readManifest(release);
+  if (!manifest) return null;
+  if (isNewer(manifest.minNativeVersion, NATIVE_VERSION)) return null;
+
+  const bundleAsset = release.assets.find(a => a.name.endsWith(bundleSuffix));
   if (!bundleAsset) return null;
 
   return {
