@@ -1,2 +1,2 @@
-• Build fix so Android can install again on the latest toolchain
-• Internal text-rendering cleanup — no visible change
+• New app icon
+• Fixed long CJK status cards on Android losing the last line under justify
