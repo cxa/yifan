@@ -134,6 +134,7 @@ type BaseTranslations = {
   statusMissingId: string;
   conversationLoading: string;
   statusVia: string;
+  statusRepostFrom: string;
 
   // Search screen
   searchPlaceholder: string;
@@ -456,6 +457,7 @@ const enUS: BaseTranslations = {
   statusMissingId: 'Missing post ID.',
   conversationLoading: 'Loading conversation…',
   statusVia: 'via {{source}}',
+  statusRepostFrom: 'Reposted from @{{name}}',
 
   // Search screen
   searchPlaceholder: 'Search posts…',
@@ -778,6 +780,7 @@ const zhCN: BaseTranslations = {
   statusMissingId: '缺少动态 ID。',
   conversationLoading: '加载对话中…',
   statusVia: '来自{{source}}',
+  statusRepostFrom: '转自 @{{name}}',
 
   // Search screen
   searchPlaceholder: '搜索消息…',

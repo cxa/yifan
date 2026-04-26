@@ -145,6 +145,19 @@ class YifanJustifiedTextView(context: Context) : AppCompatTextView(context) {
       builder.append(text)
       val end = builder.length
 
+      // Always anchor the base color via a ForegroundColorSpan so the
+      // visible color doesn't depend on RN prop setter order. Without
+      // this, the first rebuildText (triggered when `segments` arrives
+      // before `textColor`) renders with the default 0xFF000000, and on
+      // dark-themed cards the text reads as black-on-near-black until
+      // the next setter fires a re-render — which on virtualized lists
+      // can be skipped entirely. mention / tag / link cases below add
+      // their own ForegroundColorSpan that visually overrides this base
+      // for those ranges.
+      builder.setSpan(
+          ForegroundColorSpan(textColorValue),
+          start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+
       when (type) {
         "mention" -> {
           val screenName = seg["screenName"] as? String ?: ""

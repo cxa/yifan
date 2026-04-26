@@ -173,6 +173,9 @@ const TimelineStatusCard = ({
   const handle = `@${userId}`;
   const avatarUrl = user.profile_image_url;
   const photoUrl = getStatusPhotoUrl(status);
+  const isRepost = Boolean(status.repost_status_id);
+  const repostScreenName = status.repost_screen_name ?? '';
+  const repostUserId = status.repost_user_id ?? '';
   const segments = parseHtmlToSegments(status.text || status.status);
   const timestamp = formatTimestamp(status.created_at);
   const sourceClient = parseHtmlToText(status.source).trim();
@@ -280,12 +283,34 @@ const TimelineStatusCard = ({
             <View
               className={`gap-3${
                 showAuthor
-                  ? segments.length > 0
+                  ? segments.length > 0 || isRepost
                     ? ' mt-1'
                     : ' mt-3'
                   : ''
               }`}
             >
+            {isRepost && repostScreenName ? (
+              <Pressable
+                onPress={event => {
+                  event.stopPropagation();
+                  if (repostUserId) {
+                    onPressMention(repostUserId);
+                  }
+                }}
+                className="flex-row items-center gap-1.5"
+                accessibilityRole="button"
+                accessibilityLabel={t('statusRepostFrom', { name: repostScreenName })}
+              >
+                <Repeat2 size={12} color={mutedColor} />
+                <Text
+                  className="text-[12px] leading-[16px] text-muted"
+                  style={{ color: mutedColor }}
+                  numberOfLines={1}
+                >
+                  {t('statusRepostFrom', { name: repostScreenName })}
+                </Text>
+              </Pressable>
+            ) : null}
             {segments.length > 0 ? (
               <JustifiedBodyText
                 segments={segments as JustifiedBodySegment[]}
