@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Pressable, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { G, Path } from 'react-native-svg';
 import { useThemeColor } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
@@ -30,7 +30,7 @@ import { Text } from '@/components/app-text';
 import { FallingLeaves } from '@/components/falling-leaves';
 import {
   LAUNCH_CONTENT_VIEWPORT,
-  LAUNCH_FAN_PATH,
+  LAUNCH_FAN_LOGO_PATHS,
   LAUNCH_POEM_PATH,
   LAUNCH_POEM_EN_PATH,
 } from '@/components/launch-content-paths';
@@ -234,7 +234,15 @@ const LoginView = () => {
             height={LAUNCH_CONTENT_VIEWPORT.height}
             viewBox={`0 0 ${LAUNCH_CONTENT_VIEWPORT.width} ${LAUNCH_CONTENT_VIEWPORT.height}`}
           >
-            <Path d={LAUNCH_FAN_PATH} fill={inkColor} />
+            {/* Fit the 1024x1024 logo SVG so its visible glyph (~656px wide
+                in source) lands at ~74.7px in this viewport — the same size
+                the previous font-glyph fan occupied. SVG whitespace is
+                preserved at its designed proportion. */}
+            <G transform="translate(100.81 -3.20) scale(0.114)">
+              {LAUNCH_FAN_LOGO_PATHS.map(d => (
+                <Path key={d} d={d} fill={inkColor} />
+              ))}
+            </G>
             <Path d={poemPath} fill={inkColor} fillOpacity={0.8} />
           </Svg>
         </View>
