@@ -1,6 +1,6 @@
-<p align="center">
+<div>
   <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="一饭" width="128" height="128" />
-</p>
+</div>
 
 # 一饭
 
