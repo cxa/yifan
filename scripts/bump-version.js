@@ -71,13 +71,6 @@ function hasNativeChanges() {
   }
 }
 
-function getGitCommitCount() {
-  return parseInt(
-    execSync('git rev-list --count HEAD', { cwd: ROOT, encoding: 'utf8' }).trim(),
-    10,
-  );
-}
-
 const version = getNextVersion();
 const versionCode = versionToCode(version);
 const bumpNative = hasNativeChanges();
@@ -105,14 +98,12 @@ updateFile(path.join(ROOT, 'android/app/build.gradle'), c =>
     .replace(/versionName "[^"]+"/, `versionName "${version}"`),
 );
 
-// ios/yifan.xcodeproj/project.pbxproj
-// Update MARKETING_VERSION and CURRENT_PROJECT_VERSION for all targets
-const buildNumber = getGitCommitCount();
+// ios/yifan.xcodeproj/project.pbxproj — only MARKETING_VERSION.
+// CFBundleVersion is injected at build time by the "Set Build Number from Git"
+// shell-script build phase, so CURRENT_PROJECT_VERSION in pbxproj is decorative
+// and intentionally left alone (writing it would dirty git for no payoff).
 updateFile(path.join(ROOT, 'ios/yifan.xcodeproj/project.pbxproj'), c =>
-  c
-    .replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${version};`)
-    .replace(/CURRENT_PROJECT_VERSION = \d+;/g, `CURRENT_PROJECT_VERSION = ${buildNumber};`),
+  c.replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${version};`),
 );
 
-console.log(`iOS build number: ${buildNumber}`);
 console.log('Done.');
