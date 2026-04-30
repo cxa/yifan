@@ -13,6 +13,7 @@ import NeobrutalActivityIndicator, {
 } from '@/components/neobrutal-activity-indicator';
 import { usePullScrollY } from '@/components/use-pull-to-refresh';
 import {
+  useIsFocused,
   useNavigation,
   useScrollToTop,
   type NavigationProp,
@@ -42,6 +43,7 @@ import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useRefreshOnFocus } from '@/query/use-refresh-on-focus';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
 import {
@@ -101,11 +103,15 @@ const mergeTimelineItems = (
   }
   return merged;
 };
+const HOME_TIMELINE_KEY_ROOT = 'timeline' as const;
+const HOME_TIMELINE_KEY_SCOPE = 'home' as const;
+
 const AuthHomeRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
   const authUserId = auth.accessToken?.userId ?? null;
   const queryClient = useQueryClient();
+  const isFocused = useIsFocused();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
   const [accent, background, muted] = useThemeColor([
     'accent',
@@ -318,7 +324,7 @@ const AuthHomeRoute = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['timeline', 'home', authUserId ?? ''],
+    queryKey: [HOME_TIMELINE_KEY_ROOT, HOME_TIMELINE_KEY_SCOPE, authUserId ?? ''],
     queryFn: async () => {
       if (!authUserId) {
         return [];
@@ -330,8 +336,10 @@ const AuthHomeRoute = () => {
       return normalizeTimelineItems(data);
     },
     enabled: Boolean(authUserId),
+    subscribed: isFocused,
     retry: 1,
   });
+  useRefreshOnFocus([HOME_TIMELINE_KEY_ROOT, HOME_TIMELINE_KEY_SCOPE, authUserId ?? '']);
   const errorMessage = error ? t('homeLoadFailed') : null;
   const technicalError = error instanceof Error ? error.message : null;
   useEffect(() => {

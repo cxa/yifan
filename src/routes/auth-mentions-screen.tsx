@@ -15,6 +15,7 @@ import {
   usePullRefreshState,
 } from '@/components/use-pull-to-refresh';
 import {
+  useIsFocused,
   useNavigation,
   useScrollToTop,
   type NavigationProp,
@@ -42,6 +43,7 @@ import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { AlertCircle, AtSign } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
 import { useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useRefreshOnFocus } from '@/query/use-refresh-on-focus';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
@@ -87,11 +89,15 @@ const mergeTimelineItems = (
   }
   return merged;
 };
+const MENTIONS_KEY_ROOT = 'timeline' as const;
+const MENTIONS_KEY_SCOPE = 'mentions' as const;
+
 const MentionsRoute = () => {
   const { t } = useTranslation();
   const auth = useAuthSession();
   const authUserId = auth.accessToken?.userId ?? null;
   const queryClient = useQueryClient();
+  const isFocused = useIsFocused();
   const navigation = useNavigation<BottomTabNavigationProp<AuthTabParamList>>();
   const [accent, background] = useThemeColor([
     'accent',
@@ -250,7 +256,7 @@ const MentionsRoute = () => {
     error,
     refetch,
   } = useQuery<FanfouStatus[]>({
-    queryKey: ['timeline', 'mentions', authUserId ?? ''],
+    queryKey: [MENTIONS_KEY_ROOT, MENTIONS_KEY_SCOPE, authUserId ?? ''],
     queryFn: async () => {
       if (!authUserId) {
         return [];
@@ -262,8 +268,10 @@ const MentionsRoute = () => {
       return normalizeTimelineItems(data);
     },
     enabled: Boolean(authUserId),
+    subscribed: isFocused,
     retry: 1,
   });
+  useRefreshOnFocus([MENTIONS_KEY_ROOT, MENTIONS_KEY_SCOPE, authUserId ?? '']);
   useEffect(() => {
     if (!queryItems) {
       return;

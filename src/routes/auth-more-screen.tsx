@@ -275,8 +275,16 @@ const MoreRouteContent = ({
     });
   });
 
+  // Skip the first focus (mount) — the query is already fetching there.
+  // Only invalidate on subsequent focus returns (e.g. user came back from
+  // editing their profile or settings).
+  const firstFocusRef = useRef(true);
   useEffect(() => {
     if (!isFocused) {
+      return;
+    }
+    if (firstFocusRef.current) {
+      firstFocusRef.current = false;
       return;
     }
     invalidateFocusedAccountQuery();
