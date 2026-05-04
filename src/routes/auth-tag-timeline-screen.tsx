@@ -214,6 +214,7 @@ const TagTimelineRoute = () => {
   const {
     data: queryItems,
     isLoading,
+    isLoadingError,
     error,
     refetch,
   } = useQuery<FanfouStatus[]>({
@@ -236,8 +237,10 @@ const TagTimelineRoute = () => {
     setTimelineItems(queryItems);
     setHasReachedTimelineEnd(false);
   }, [queryItems]);
-  const errorMessage = error ? t('tagTimelineLoadFailed') : null;
-  const technicalError = error instanceof Error ? error.message : null;
+  // Only surface initial-load failures — silently swallow refetch errors so a
+  // background-to-foreground timeout doesn't paste a banner over cached items.
+  const errorMessage = isLoadingError ? t('tagTimelineLoadFailed') : null;
+  const technicalError = isLoadingError && error instanceof Error ? error.message : null;
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     return deleteStatus({

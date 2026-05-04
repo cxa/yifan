@@ -253,6 +253,7 @@ const MentionsRoute = () => {
   const {
     data: queryItems,
     isLoading,
+    isLoadingError,
     error,
     refetch,
   } = useQuery<FanfouStatus[]>({
@@ -279,8 +280,11 @@ const MentionsRoute = () => {
     setTimelineItems(queryItems);
     setHasReachedTimelineEnd(false);
   }, [queryItems]);
-  const errorMessage = error ? t('mentionsLoadFailed') : null;
-  const technicalError = error instanceof Error ? error.message : null;
+  // Only surface initial-load failures. A background-to-foreground refetch
+  // that times out keeps the previous cache, so silently swallow rather than
+  // showing a banner over content the user already has.
+  const errorMessage = isLoadingError ? t('mentionsLoadFailed') : null;
+  const technicalError = isLoadingError && error instanceof Error ? error.message : null;
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);
     return deleteStatus({

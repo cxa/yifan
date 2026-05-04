@@ -147,6 +147,7 @@ const PhotosRouteContent = ({
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
+    isLoadingError,
     error,
     refetch,
   } = useInfiniteQuery<
@@ -195,8 +196,10 @@ const PhotosRouteContent = ({
     retry: 1,
   });
   const items = (data?.pages ?? []).flatMap(pageItems => pageItems.items);
-  const errorMessage = error ? t('photosLoadFailed') : null;
-  const technicalError = error instanceof Error ? error.message : null;
+  // Only surface initial-load failures — silently swallow refetch errors so a
+  // background-to-foreground timeout doesn't paste a banner over cached items.
+  const errorMessage = isLoadingError ? t('photosLoadFailed') : null;
+  const technicalError = isLoadingError && error instanceof Error ? error.message : null;
   const { isPullRefreshing, handlePullRefresh } = usePullRefreshState(refetch);
   const refreshControl = (
     <RefreshControl

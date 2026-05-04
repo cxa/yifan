@@ -167,7 +167,7 @@ const PublicTimelineRoute = () => {
     setPhotoViewerOriginRect(null);
   };
 
-  const { data: queryItems, isLoading, error, refetch } = useQuery<FanfouStatus[]>({
+  const { data: queryItems, isLoading, isLoadingError, error, refetch } = useQuery<FanfouStatus[]>({
     queryKey: ['timeline', 'public'],
     queryFn: async () => {
       const data = await get('/statuses/public_timeline', {
@@ -185,8 +185,10 @@ const PublicTimelineRoute = () => {
     setHasReachedTimelineEnd(false);
   }, [queryItems]);
 
-  const errorMessage = error ? t('publicTimelineLoadFailed') : null;
-  const technicalError = error instanceof Error ? error.message : null;
+  // Only surface initial-load failures — silently swallow refetch errors so a
+  // background-to-foreground timeout doesn't paste a banner over cached items.
+  const errorMessage = isLoadingError ? t('publicTimelineLoadFailed') : null;
+  const technicalError = isLoadingError && error instanceof Error ? error.message : null;
 
   const handleDeleteStatus = (status: FanfouStatus) => {
     const statusId = getStatusId(status);

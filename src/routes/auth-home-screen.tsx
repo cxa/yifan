@@ -321,6 +321,7 @@ const AuthHomeRoute = () => {
     dataUpdatedAt,
     isPending,
     isLoading,
+    isLoadingError,
     error,
     refetch,
   } = useQuery({
@@ -340,8 +341,11 @@ const AuthHomeRoute = () => {
     retry: 1,
   });
   useRefreshOnFocus([HOME_TIMELINE_KEY_ROOT, HOME_TIMELINE_KEY_SCOPE, authUserId ?? '']);
-  const errorMessage = error ? t('homeLoadFailed') : null;
-  const technicalError = error instanceof Error ? error.message : null;
+  // Only surface initial-load failures. A background-to-foreground refetch
+  // that times out keeps the previous cache, so the user already has content
+  // — silently swallow rather than scaring them with an error banner.
+  const errorMessage = isLoadingError ? t('homeLoadFailed') : null;
+  const technicalError = isLoadingError && error instanceof Error ? error.message : null;
   useEffect(() => {
     if (initialItems.length === 0) {
       return;
