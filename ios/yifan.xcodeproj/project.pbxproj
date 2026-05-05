@@ -463,7 +463,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2604.30;
+				MARKETING_VERSION = 2605.05;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -496,7 +496,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2604.30;
+				MARKETING_VERSION = 2605.05;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -686,7 +686,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = YifanShareExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 2604.30;
+				MARKETING_VERSION = 2605.05;
 				PRODUCT_BUNDLE_IDENTIFIER = im.cxa.fanatter.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -709,7 +709,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = YifanShareExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 2604.30;
+				MARKETING_VERSION = 2605.05;
 				PRODUCT_BUNDLE_IDENTIFIER = im.cxa.fanatter.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
