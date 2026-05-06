@@ -1,3 +1,1 @@
-- Returning to the foreground no longer flashes "timeline load failed" — the message only appears when there is genuinely nothing cached to show.
-- Home and Mentions tabs now auto-refresh the timeline when you switch back to them.
-- After the network reconnects, stale queries refetch automatically instead of staying stuck.
+Routine updates and bug fixes.
