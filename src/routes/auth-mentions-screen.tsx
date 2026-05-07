@@ -42,7 +42,8 @@ import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-sha
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { AlertCircle, AtSign } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
-import { useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useStatusFilterEffect, useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 import { useRefreshOnFocus } from '@/query/use-refresh-on-focus';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
@@ -112,6 +113,8 @@ const MentionsRoute = () => {
     getTabBarOccludedHeight(insets.bottom);
   const [timelineItems, setTimelineItems] = useState<FanfouStatus[]>([]);
   useUserFilterEffect(setTimelineItems);
+  useStatusFilterEffect(setTimelineItems);
+  const visibleTimelineItems = useFilterHiddenStatuses(timelineItems);
   const listRef = useRef<FlatList<FanfouStatus>>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasReachedTimelineEnd, setHasReachedTimelineEnd] = useState(false);
@@ -346,7 +349,7 @@ const MentionsRoute = () => {
   const timelineListSettings = useTimelineListSettings(insets);
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
-    renderedItems: timelineItems,
+    renderedItems: visibleTimelineItems,
     sourceItems: queryItems,
   });
   return (
@@ -358,7 +361,7 @@ const MentionsRoute = () => {
         <FlatList
           ref={listRef}
           className="bg-background"
-          data={timelineItems}
+          data={visibleTimelineItems}
           keyExtractor={item => getStatusId(item)}
           refreshControl={refreshControl}
           onScroll={scrollHandler}

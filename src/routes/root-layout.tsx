@@ -14,6 +14,7 @@ import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-c
 import { HeroUINativeProvider } from 'heroui-native';
 import ToastManagerSync from '@/components/toast-manager-sync';
 import AppUpdateDialog from '@/components/app-update-dialog';
+import ReportStatusSheet from '@/components/report-status-sheet';
 import QueryProvider from '@/query/query-provider';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
 import {
@@ -114,7 +115,10 @@ const RootLayout = ({ children }: RootLayoutProps) => {
             >
               <ToastManagerSync />
               <AppUpdateDialog />
-              <QueryProvider>{children}</QueryProvider>
+              <QueryProvider>
+                {children}
+                <ReportStatusSheet />
+              </QueryProvider>
             </HeroUINativeProvider>
             {snapshotUri && (
               <Animated.View

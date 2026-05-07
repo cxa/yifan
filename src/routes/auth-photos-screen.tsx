@@ -47,6 +47,7 @@ import useUserTimelineHeader from '@/navigation/use-user-timeline-header';
 import { useTimelineListSettings } from '@/components/timeline-list-settings';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
 const hasPhoto = (status: FanfouStatus) =>
@@ -195,7 +196,8 @@ const PhotosRouteContent = ({
         : undefined,
     retry: 1,
   });
-  const items = (data?.pages ?? []).flatMap(pageItems => pageItems.items);
+  const rawItems = (data?.pages ?? []).flatMap(pageItems => pageItems.items);
+  const items = useFilterHiddenStatuses(rawItems);
   // Only surface initial-load failures — silently swallow refetch errors so a
   // background-to-foreground timeout doesn't paste a banner over cached items.
   const errorMessage = isLoadingError ? t('photosLoadFailed') : null;

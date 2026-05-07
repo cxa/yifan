@@ -127,6 +127,89 @@ export const filterBlockedUserFromCaches = (
   emitUserFiltered(userId, 'all');
 };
 
+type StatusFilteredListener = (statusId: string) => void;
+const statusFilteredListeners = new Set<StatusFilteredListener>();
+
+const emitStatusFiltered = (statusId: string) => {
+  for (const listener of statusFilteredListeners) {
+    listener(statusId);
+  }
+};
+
+/**
+ * Subscribe a local `FanfouStatus[]` state setter so it immediately
+ * removes a status that was just hidden (e.g. reported in review mode).
+ */
+export const useStatusFilterEffect = (
+  setter: Dispatch<SetStateAction<FanfouStatus[]>>,
+) => {
+  useEffect(() => {
+    const listener: StatusFilteredListener = statusId => {
+      setter(prev => prev.filter(s => s.id !== statusId));
+    };
+    statusFilteredListeners.add(listener);
+    return () => {
+      statusFilteredListeners.delete(listener);
+    };
+  }, [setter]);
+};
+
+const filterStatusesById = (
+  statuses: FanfouStatus[],
+  statusId: string,
+): FanfouStatus[] => statuses.filter(s => s.id !== statusId);
+
+const filterInfiniteQueryCachesById = (
+  queryClient: QueryClient,
+  statusId: string,
+) => {
+  const cache = queryClient.getQueryCache();
+  for (const query of cache.getAll()) {
+    if (!isStatusRelatedQueryKey(query.queryKey)) {
+      continue;
+    }
+    const data = query.state.data;
+    if (
+      data == null ||
+      typeof data !== 'object' ||
+      !('pages' in data) ||
+      !Array.isArray((data as { pages: unknown[] }).pages)
+    ) {
+      continue;
+    }
+    const infiniteData = data as { pages: unknown[]; pageParams: unknown[] };
+    let changed = false;
+    const nextPages = infiniteData.pages.map(page => {
+      if (!isStatusArray(page)) {
+        return page;
+      }
+      const filtered = filterStatusesById(page, statusId);
+      if (filtered.length !== page.length) {
+        changed = true;
+      }
+      return filtered;
+    });
+    if (changed) {
+      queryClient.setQueryData(query.queryKey, {
+        ...infiniteData,
+        pages: nextPages,
+      });
+    }
+  }
+};
+
+/**
+ * Hide a single status from every timeline cache + local state.
+ * Used by the in-app Report flow (review mode).
+ */
+export const filterHiddenStatusFromCaches = (
+  queryClient: QueryClient,
+  statusId: string,
+) => {
+  filterInfiniteQueryCachesById(queryClient, statusId);
+  emitStatusFiltered(statusId);
+};
+
 /**
  * Unfollow: remove the user only from the home feed local state.
  * Other timelines (public, mentions, search, tags) are unaffected.

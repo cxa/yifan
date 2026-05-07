@@ -43,7 +43,8 @@ import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-sha
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import { AlertCircle, Hash } from 'lucide-react-native';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
-import { useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useStatusFilterEffect, useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
 import {
   TIMELINE_INITIAL_PAGE_SIZE,
@@ -128,6 +129,8 @@ const TagTimelineRoute = () => {
   });
   const [timelineItems, setTimelineItems] = useState<FanfouStatus[]>([]);
   useUserFilterEffect(setTimelineItems);
+  useStatusFilterEffect(setTimelineItems);
+  const visibleTimelineItems = useFilterHiddenStatuses(timelineItems);
   const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null);
   const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
   const [photoViewerOriginRect, setPhotoViewerOriginRect] = useState<PhotoViewerOriginRect | null>(null);
@@ -309,7 +312,7 @@ const TagTimelineRoute = () => {
   };
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
-    renderedItems: timelineItems,
+    renderedItems: visibleTimelineItems,
     sourceItems: queryItems,
   });
   if (!routeTag) {
@@ -329,7 +332,7 @@ const TagTimelineRoute = () => {
         <Animated.FlatList
           ref={listRef}
           className="flex-1 bg-background"
-          data={timelineItems}
+          data={visibleTimelineItems}
           keyExtractor={item => getStatusId(item)}
           refreshControl={refreshControl}
           onScroll={scrollHandler}

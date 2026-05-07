@@ -27,7 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from 'heroui-native';
 import ErrorBanner from '@/components/error-banner';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { AlertCircle } from 'lucide-react-native';
+import { AlertCircle, EyeOff } from 'lucide-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthSession } from '@/auth/auth-session';
@@ -44,6 +44,7 @@ import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
 import TimelineStatusCard from '@/components/timeline-status-card';
+import { useFilterHiddenStatuses, useHiddenStatuses } from '@/settings/hidden-statuses';
 import {
   AUTH_PROFILE_ROUTE,
   AUTH_STACK_ROUTE,
@@ -215,16 +216,19 @@ const StatusDetailRoute = () => {
     },
     enabled: Boolean(routeStatusId),
   });
-  const contextItems = contextStatuses ?? [];
-  const conversationItems = mergeConversationStatuses(
-    contextItems,
-    status ?? null,
+  const contextItems = useFilterHiddenStatuses(contextStatuses ?? []);
+  const conversationItems = useFilterHiddenStatuses(
+    mergeConversationStatuses(contextItems, status ?? null),
   );
+  const hiddenStatusIds = useHiddenStatuses();
   const mainStatus = (() => {
+    if (routeStatusId && hiddenStatusIds.has(routeStatusId)) {
+      return null;
+    }
     const fromConversation = conversationItems.find(
       item => getStatusId(item) === routeStatusId,
     );
-    return fromConversation ?? status;
+    return fromConversation ?? status ?? null;
   })();
   const mainStatusId = mainStatus ? getStatusId(mainStatus) : routeStatusId;
   const { beforeStatuses, afterStatuses } = (() => {
@@ -485,12 +489,20 @@ const StatusDetailRoute = () => {
           ) : null}
 
           {!mainStatus && !isStatusLoading && !isContextLoading ? (
-            <TimelineEmptyPlaceholder
-              icon={AlertCircle}
-              message={statusErrorMessage ?? t('statusLoadFailed')}
-              detail={statusTechnicalError}
-              tone="danger"
-            />
+            routeStatusId && hiddenStatusIds.has(routeStatusId) ? (
+              <TimelineEmptyPlaceholder
+                icon={EyeOff}
+                message={t('statusHiddenTitle')}
+                detail={t('statusHiddenDetail')}
+              />
+            ) : (
+              <TimelineEmptyPlaceholder
+                icon={AlertCircle}
+                message={statusErrorMessage ?? t('statusLoadFailed')}
+                detail={statusTechnicalError}
+                tone="danger"
+              />
+            )
           ) : null}
 
           {mainStatus ? (

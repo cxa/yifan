@@ -56,6 +56,7 @@ import {
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 import { CARD_PASTEL_CYCLE, type DropShadowBoxType } from '@/components/drop-shadow-box';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 const TIMELINE_PAGE_SIZE = 60;
 const normalizeTimelineItems = (value: unknown): FanfouStatus[] =>
   Array.isArray(value) ? (value as FanfouStatus[]) : [];
@@ -176,7 +177,8 @@ const MyTimelineRouteContent = ({
       lastPage.length === TIMELINE_PAGE_SIZE ? lastPageParam + 1 : undefined,
     retry: 1,
   });
-  const items = (queryData?.pages ?? []).flatMap(pageItems => pageItems);
+  const rawItems = (queryData?.pages ?? []).flatMap(pageItems => pageItems);
+  const items = useFilterHiddenStatuses(rawItems);
   // Only surface initial-load failures — silently swallow refetch errors so a
   // background-to-foreground timeout doesn't paste a banner over cached items.
   const errorMessage = isLoadingError ? t('timelineLoadFailed') : null;

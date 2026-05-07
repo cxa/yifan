@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
-import { Reply, Repeat2, Trash2 } from 'lucide-react-native';
+import { Reply, Repeat2, Trash2, Flag } from 'lucide-react-native';
 import { Dialog, useThemeColor } from 'heroui-native';
 import { useTranslation } from 'react-i18next';
 import type { FanfouStatus } from '@/types/fanfou';
@@ -9,6 +9,8 @@ import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-tra
 import { Text } from '@/components/app-text';
 import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
+import { useReviewMode } from '@/services/review-mode';
+import { openReportSheet } from '@/components/report-status-sheet';
 import JustifiedBodyText, {
   type JustifiedBodySegment,
 } from '@/components/justified-body-text';
@@ -135,6 +137,7 @@ const TimelineStatusCard = ({
     'danger',
     'accent-foreground',
   ]);
+  const inReviewMode = useReviewMode();
   const fontFamily = useAppFontFamily();
   const fontSizeScale = useAppFontSizeScale();
   // Body column / CJK snap / justify-text all reference this effective
@@ -412,6 +415,20 @@ const TimelineStatusCard = ({
                     inactiveColor={mutedColor}
                   />
                 </Pressable>
+                {inReviewMode ? (
+                  <Pressable
+                    onPress={event => {
+                      event.stopPropagation();
+                      openReportSheet(status);
+                    }}
+                    className="px-1.5 pt-1.5"
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('reportSheetTitle')}
+                  >
+                    <Flag size={18} color={mutedColor} />
+                  </Pressable>
+                ) : null}
                 {canDelete && onDelete ? (
                   <Pressable
                     onPress={event => {

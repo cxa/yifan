@@ -43,6 +43,22 @@ type BaseTranslations = {
   termsAgeHeading: string;
   termsAgeBody: string;
   termsFooter: string;
+  // Report sheet (review mode)
+  reportSheetTitle: string;
+  reportSheetDescription: string;
+  reportReasonSpam: string;
+  reportReasonHarassment: string;
+  reportReasonHate: string;
+  reportReasonSexual: string;
+  reportReasonViolence: string;
+  reportReasonOther: string;
+  reportSubmit: string;
+  reportSubmitting: string;
+  reportCancel: string;
+  reportSentTitle: string;
+  reportSentMessage: string;
+  statusHiddenTitle: string;
+  statusHiddenDetail: string;
   // Tab labels
   tabHome: string;
   tabMentions: string;
@@ -359,11 +375,27 @@ const enUS: BaseTranslations = {
     'You can block abusive users directly from their profile in *Yifan*. Blocked users will be removed from your feed immediately.',
   termsReportingHeading: 'Reporting Content',
   termsReportingBody:
-    "To report content that violates community standards, please use Fanfou's official reporting tools at fanfou.com.",
+    "Tap the flag icon on any post to report it. Reported posts are hidden from your feed immediately, and we review every report within 24 hours. You can also use Fanfou's official reporting tools at fanfou.com for platform-wide takedowns.",
   termsAgeHeading: 'Age Requirement',
   termsAgeBody: 'You must be at least 13 years old to use this app.',
   termsFooter:
     'By tapping "I Agree," you confirm that you have read and accept these terms.',
+  // Report sheet (review mode)
+  reportSheetTitle: 'Report Post',
+  reportSheetDescription: 'Why are you reporting this post?',
+  reportReasonSpam: 'Spam or scam',
+  reportReasonHarassment: 'Harassment or bullying',
+  reportReasonHate: 'Hate speech',
+  reportReasonSexual: 'Nudity or sexual content',
+  reportReasonViolence: 'Violence or threats',
+  reportReasonOther: 'Something else',
+  reportSubmit: 'Submit Report',
+  reportSubmitting: 'Submitting…',
+  reportCancel: 'Cancel',
+  reportSentTitle: 'Report received',
+  reportSentMessage: "We'll review it within 24 hours.",
+  statusHiddenTitle: 'Objectionable content',
+  statusHiddenDetail: 'You reported this post.',
 
   // Tab labels
   tabHome: 'Home',
@@ -683,10 +715,26 @@ const zhCN: BaseTranslations = {
   termsBlockingHeading: '屏蔽用户',
   termsBlockingBody: '你可以在用户资料页直接屏蔽滥用行为的用户，被屏蔽的用户将立即从你的信息流中移除。',
   termsReportingHeading: '举报内容',
-  termsReportingBody: '如需举报违反社区准则的内容，请使用饭否官方举报工具（fanfou.com）。',
+  termsReportingBody: '点击任意消息上的旗帜图标即可举报，被举报的消息会立即从你的信息流中隐藏，我们会在 24 小时内审核处理。如需平台级下架，也可前往饭否官方举报工具（fanfou.com）。',
   termsAgeHeading: '年龄要求',
   termsAgeBody: '使用本应用须年满 13 周岁。',
   termsFooter: '点击「同意」即表示您已阅读并接受上述条款。',
+  // Report sheet (review mode)
+  reportSheetTitle: '举报这条消息',
+  reportSheetDescription: '请选择举报原因：',
+  reportReasonSpam: '垃圾广告或诈骗',
+  reportReasonHarassment: '骚扰或欺凌',
+  reportReasonHate: '仇恨言论',
+  reportReasonSexual: '色情或裸露内容',
+  reportReasonViolence: '暴力或威胁',
+  reportReasonOther: '其他',
+  reportSubmit: '提交举报',
+  reportSubmitting: '提交中…',
+  reportCancel: '取消',
+  reportSentTitle: '已收到举报',
+  reportSentMessage: '我们会在 24 小时内审核处理。',
+  statusHiddenTitle: '不良内容',
+  statusHiddenDetail: '你已举报这条内容。',
 
   // Tab labels
   tabHome: '首页',

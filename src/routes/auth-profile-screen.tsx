@@ -39,8 +39,10 @@ import {
   filterBlockedUserFromCaches,
   filterUnfollowedUserFromHome,
   refetchStatusRelatedQueries,
+  useStatusFilterEffect,
   useUserFilterEffect,
 } from '@/query/status-query-invalidation';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 import { Text } from '@/components/app-text';
 import ComposerModal, {
   type ComposerModalSubmitPayload,
@@ -280,6 +282,8 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
     [],
   );
   useUserFilterEffect(setRecentStatusItems);
+  useStatusFilterEffect(setRecentStatusItems);
+  const visibleRecentStatusItems = useFilterHiddenStatuses(recentStatusItems);
   useEffect(() => {
     if (!recentStatuses) {
       return;
@@ -911,7 +915,7 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
       : null;
   const isHydratingRecentStatuses = isHydratingTimeline({
     isLoading: isRecentStatusesLoading,
-    renderedItems: recentStatusItems,
+    renderedItems: visibleRecentStatusItems,
     sourceItems: recentStatuses,
   });
   if (!accessToken) {
@@ -1181,14 +1185,14 @@ const ProfileRouteContent = ({ routeUserId }: ProfileRouteContentProps) => {
 
                   {!isRecentStatusesLoading &&
                     !isHydratingRecentStatuses &&
-                    recentStatusItems.length === 0 &&
+                    visibleRecentStatusItems.length === 0 &&
                     !recentStatusesErrorMessage ? (
                     <TimelineEmptyPlaceholder icon={Clock} message={t('recentActivityEmpty')} compact />
                   ) : null}
 
-                  {recentStatusItems.length > 0 ? (
+                  {visibleRecentStatusItems.length > 0 ? (
                     <View>
-                      {recentStatusItems.map((status, index) => (
+                      {visibleRecentStatusItems.map((status, index) => (
                         <React.Fragment key={getStatusId(status)}>
                           {index > 0 ? (
                             <View style={getTimelineItemSeparatorStyle()} />

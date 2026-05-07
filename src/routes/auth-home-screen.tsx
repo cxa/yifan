@@ -42,7 +42,8 @@ import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
 import TimelineStatusCard from '@/components/timeline-status-card';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
 import TimelineSkeletonList from '@/components/timeline-skeleton-list';
-import { useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useStatusFilterEffect, useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 import { useRefreshOnFocus } from '@/query/use-refresh-on-focus';
 import TimelineTitleHeader from '@/components/timeline-title-header';
 import { isHydratingTimeline } from '@/components/timeline-hydration';
@@ -354,6 +355,8 @@ const AuthHomeRoute = () => {
     setHasReachedTimelineEnd(false);
   }, [dataUpdatedAt]);
   useUserFilterEffect(setTimelineItems, 'home');
+  useStatusFilterEffect(setTimelineItems);
+  const visibleTimelineItems = useFilterHiddenStatuses(timelineItems);
   const fetchLatest = async () => {
     if (!authUserId || isFetchingLatest || isLoading) {
       return;
@@ -469,7 +472,7 @@ const AuthHomeRoute = () => {
   const timelineListSettings = useTimelineListSettings(insets);
   const isHydratingTimelineItems = isHydratingTimeline({
     isLoading,
-    renderedItems: timelineItems,
+    renderedItems: visibleTimelineItems,
     sourceItems: initialItems,
   });
   const timelineContentContainerStyle = {
@@ -487,7 +490,7 @@ const AuthHomeRoute = () => {
       >
         <FlatList
           ref={listRef}
-          data={timelineItems}
+          data={visibleTimelineItems}
           keyExtractor={item => getStatusId(item)}
           refreshControl={refreshControl}
           onScroll={scrollHandler}

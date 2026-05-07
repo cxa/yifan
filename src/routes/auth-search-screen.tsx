@@ -17,7 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import TimelineEmptyPlaceholder from '@/components/timeline-empty-placeholder';
-import { useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useStatusFilterEffect, useUserFilterEffect } from '@/query/status-query-invalidation';
+import { useFilterHiddenStatuses } from '@/settings/hidden-statuses';
 import { useAuthSession } from '@/auth/auth-session';
 import { get } from '@/auth/fanfou-client';
 import { Text, TextInput } from '@/components/app-text';
@@ -119,6 +120,8 @@ const SearchRoute = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FanfouStatus[]>([]);
   useUserFilterEffect(setResults);
+  useStatusFilterEffect(setResults);
+  const visibleResults = useFilterHiddenStatuses(results);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
 
@@ -277,7 +280,7 @@ const SearchRoute = () => {
       >
         <Animated.FlatList
           style={styles.flex}
-          data={results}
+          data={visibleResults}
           keyExtractor={item => getStatusId(item)}
           onScroll={scrollHandler}
           scrollEventThrottle={timelineListSettings.scrollEventThrottle}
