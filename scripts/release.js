@@ -13,6 +13,7 @@ const readline = require('readline');
 
 const ROOT = path.resolve(__dirname, '..');
 const RELEASE_NOTES_PATH = path.join(ROOT, 'RELEASE_NOTES.md');
+const IOS_APP_STORE_URL = 'https://apps.apple.com/us/app/id541110403';
 
 function run(cmd, opts) {
   return execSync(cmd, { cwd: ROOT, encoding: 'utf8', stdio: 'inherit', ...opts });
@@ -49,11 +50,13 @@ async function main() {
   const enChangelog = fs.readFileSync(path.join(ROOT, '.changelog', 'en.txt'), 'utf8').trim();
 
   // Step 4: Write RELEASE_NOTES.md for editing
-  fs.writeFileSync(RELEASE_NOTES_PATH, enChangelog + '\n');
+  const iosFooter = `\n---\n\niOS: ${IOS_APP_STORE_URL}\n`;
+  const notes = enChangelog + '\n' + iosFooter;
+  fs.writeFileSync(RELEASE_NOTES_PATH, notes);
   console.log(`\nRelease notes written to RELEASE_NOTES.md`);
   console.log('Edit the file before confirming if needed.\n');
   console.log('--- RELEASE_NOTES.md ---');
-  console.log(enChangelog);
+  console.log(notes);
   console.log();
 
   // Step 5: Confirm
