@@ -1,3 +1,1 @@
-- Added an in-app reporting flow with a 24-hour triage SLA. While a build is under App Review, every post shows a flag icon; tapping it opens a reason picker, and the reported post is hidden from the feed immediately. (Required for App Review Guideline 1.2 compliance.)
-- Status detail screen now shows an "Objectionable content" placeholder for posts you have reported.
-- EULA copy refreshed to describe the new in-app reporting mechanism.
+• gate on sandbox receipt; never flip Android
