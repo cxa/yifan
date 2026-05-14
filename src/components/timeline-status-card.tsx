@@ -9,7 +9,7 @@ import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-tra
 import { Text } from '@/components/app-text';
 import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
-import { useReviewMode } from '@/services/review-mode';
+import { IN_REVIEW_MODE } from '@/services/review-mode';
 import { openReportSheet } from '@/components/report-status-sheet';
 import JustifiedBodyText, {
   type JustifiedBodySegment,
@@ -137,7 +137,6 @@ const TimelineStatusCard = ({
     'danger',
     'accent-foreground',
   ]);
-  const inReviewMode = useReviewMode();
   const fontFamily = useAppFontFamily();
   const fontSizeScale = useAppFontSizeScale();
   // Body column / CJK snap / justify-text all reference this effective
@@ -415,7 +414,7 @@ const TimelineStatusCard = ({
                     inactiveColor={mutedColor}
                   />
                 </Pressable>
-                {inReviewMode ? (
+                {IN_REVIEW_MODE ? (
                   <Pressable
                     onPress={event => {
                       event.stopPropagation();
