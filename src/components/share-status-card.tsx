@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import FaceDetection, { type Face } from '@react-native-ml-kit/face-detection';
+import QRCode from 'react-native-qrcode-svg';
 import type { FanfouStatus } from '@/types/fanfou';
 import {
   CARD_BG_DARK,
@@ -73,6 +74,15 @@ const AVATAR_BG_LIGHT = '#0000001A';
 const AVATAR_BG_DARK = '#00000033';
 const PHOTO_BG_LIGHT = '#0000000F';
 const PHOTO_BG_DARK = '#00000033';
+const QR_FOREGROUND = '#111111';
+const QR_BACKGROUND = '#FFFFFF';
+const FOOTER_SEPARATOR_LIGHT = '#0000001A';
+const FOOTER_SEPARATOR_DARK = '#FFFFFF24';
+const IOS_DOWNLOAD_URL = 'https://apps.apple.com/app/id541110403';
+const ANDROID_DOWNLOAD_URL = 'https://github.com/cxa/yifan/releases';
+const YIFAN_LOGO_SOURCE = require(
+  '../../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png',
+);
 
 export const resolveShareCardBackground = (
   color: ShareCardColor,
@@ -163,6 +173,18 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     const muted = isDark ? MUTED_DARK : MUTED_LIGHT;
     const avatarBg = isDark ? AVATAR_BG_DARK : AVATAR_BG_LIGHT;
     const photoBg = isDark ? PHOTO_BG_DARK : PHOTO_BG_LIGHT;
+    const footerSeparator = isDark
+      ? FOOTER_SEPARATOR_DARK
+      : FOOTER_SEPARATOR_LIGHT;
+    const bodyText = parseHtmlToText(status.text || status.status);
+    const photoUrl =
+      status.photo?.largeurl ||
+      status.photo?.imageurl ||
+      status.photo?.thumburl;
+    const timestamp = formatFullTimestamp(status.created_at);
+    const user = status.user;
+    const displayName = user.screen_name || user.name || user.id;
+    const handle = `@${user.id}`;
 
     // Linear scale based on a 360pt design baseline so the card renders
     // crisply at whatever width the host hands us (preview or capture).
@@ -175,6 +197,7 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     const handleSize = 13 * s;
     const bodySize =
       (aspect === '9:16' ? 22 : aspect === '3:4' ? 20 : 18) * s;
+    const isCompactFooter = aspect === '1:1';
     const bodyLineHeight = bodySize * 1.55;
     const headerGap = 12 * s;
     const handleMarginTop = 2 * s;
@@ -184,19 +207,28 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     const timestampSize = 12 * s;
     const timestampMarginTop = 18 * s;
     const timestampLineHeight = Math.round(timestampSize * 1.4);
-    // Reserve a slot at the bottom of the card for the timestamp, big enough
-    // to clear the text line height plus its visual breathing room above.
-    const timestampSlot = timestampLineHeight + timestampMarginTop;
-
-    const bodyText = parseHtmlToText(status.text || status.status);
-    const photoUrl =
-      status.photo?.largeurl ||
-      status.photo?.imageurl ||
-      status.photo?.thumburl;
-    const timestamp = formatFullTimestamp(status.created_at);
-    const user = status.user;
-    const displayName = user.screen_name || user.name || user.id;
-    const handle = `@${user.id}`;
+    const qrSize = Math.max(
+      isCompactFooter ? 22 : 24,
+      (isCompactFooter ? 24 : 30) * s,
+    );
+    const qrQuietZone = Math.max(1, 2 * s);
+    const qrGap = (isCompactFooter ? 5 : 6) * s;
+    const qrLabelSize = Math.max(6, (isCompactFooter ? 6 : 7) * s);
+    const qrLabelLineHeight = Math.ceil(qrLabelSize * 1.1);
+    const qrLabelMarginTop = (isCompactFooter ? 1.5 : 2) * s;
+    const qrBlockWidth = qrSize * 2 + qrGap;
+    const qrBlockHeight = qrSize + qrLabelMarginTop + qrLabelLineHeight;
+    const logoSize = qrSize;
+    const logoRadius = (isCompactFooter ? 7 : 8) * s;
+    const footerGap = (isCompactFooter ? 8 : 12) * s;
+    const footerSeparatorHeight = StyleSheet.hairlineWidth;
+    const footerSeparatorBottom = pad + qrBlockHeight + footerGap;
+    const timestampFlowHeight = timestamp
+      ? timestampMarginTop + timestampLineHeight
+      : 0;
+    // The timestamp belongs to the content flow; only the logo/QR row reserves
+    // the bottom-right card area.
+    const bottomSlot = qrBlockHeight + footerGap * 2 + footerSeparatorHeight;
 
     // In auto mode the card grows to fit the photo, so use the photo's real
     // aspect ratio (clamped to a sane range) — that keeps the image visible
@@ -241,8 +273,8 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     // Measure the header and text so we can explicitly compute the photo's
     // maxHeight. Flex:1 + paddingBottom on iOS doesn't reliably clamp a
     // photo container whose underlying Image has a large intrinsic content
-    // size — without this explicit cap the photo overflows downward and
-    // sits on top of the absolutely-positioned timestamp.
+    // size — without this explicit cap the photo overflows downward into
+    // the timestamp and bottom QR slot.
     const [headerHeight, setHeaderHeight] = useState(0);
     const [textHeight, setTextHeight] = useState(0);
     const photoMaxHeight =
@@ -251,8 +283,9 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
             0,
             height -
               pad * 2 -
-              timestampSlot -
+              bottomSlot -
               headerHeight -
+              timestampFlowHeight -
               (bodyText ? bodyMarginTop + textHeight + bodyGap : bodyMarginTop),
           )
         : undefined;
@@ -350,9 +383,9 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
             borderRadius: radius,
             padding: pad,
             // Reserve the bottom slot via paddingBottom so the timestamp,
-            // which is absolutely positioned, can never be pushed out by a
-            // greedy flex:1 photo with a tall intrinsic image.
-            paddingBottom: timestamp ? pad + timestampSlot : pad,
+            // which follows the content, and the QR pair cannot collide
+            // with a greedy flex:1 photo with a tall intrinsic image.
+            paddingBottom: pad + bottomSlot,
           },
         ]}
       >
@@ -443,15 +476,15 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
 
         {timestamp ? (
           <RNText
+            numberOfLines={1}
             style={[
               styles.timestamp,
               {
                 color: muted,
                 fontSize: timestampSize,
                 lineHeight: timestampLineHeight,
-                left: pad,
-                right: pad,
-                bottom: pad,
+                marginTop: timestampMarginTop,
+                marginRight: qrBlockWidth + qrGap,
               },
               fontFamily ? { fontFamily } : null,
             ]}
@@ -459,12 +492,131 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
             {timestamp}
           </RNText>
         ) : null}
+
+        <View
+          style={[
+            styles.footerSeparator,
+            {
+              left: pad,
+              right: pad,
+              bottom: footerSeparatorBottom,
+              height: footerSeparatorHeight,
+              backgroundColor: footerSeparator,
+            },
+          ]}
+        />
+
+        <View
+          style={[
+            styles.downloadRow,
+            {
+              left: pad,
+              right: pad,
+              bottom: pad,
+              height: qrBlockHeight,
+            },
+          ]}
+        >
+          <Image
+            source={YIFAN_LOGO_SOURCE}
+            style={[
+              styles.downloadLogo,
+              {
+                width: logoSize,
+                height: logoSize,
+                borderRadius: logoRadius,
+              },
+            ]}
+          />
+
+          <View
+            style={[
+              styles.downloadQrGroup,
+              {
+                gap: qrGap,
+              },
+            ]}
+          >
+            <DownloadQr
+              label="iOS"
+              value={IOS_DOWNLOAD_URL}
+              size={qrSize}
+              quietZone={qrQuietZone}
+              labelSize={qrLabelSize}
+              labelLineHeight={qrLabelLineHeight}
+              labelMarginTop={qrLabelMarginTop}
+              labelColor={muted}
+            />
+            <DownloadQr
+              label="Android"
+              value={ANDROID_DOWNLOAD_URL}
+              size={qrSize}
+              quietZone={qrQuietZone}
+              labelSize={qrLabelSize}
+              labelLineHeight={qrLabelLineHeight}
+              labelMarginTop={qrLabelMarginTop}
+              labelColor={muted}
+            />
+          </View>
+        </View>
       </View>
     );
   },
 );
 
 ShareStatusCard.displayName = 'ShareStatusCard';
+
+type DownloadQrProps = {
+  label: string;
+  value: string;
+  size: number;
+  quietZone: number;
+  labelSize: number;
+  labelLineHeight: number;
+  labelMarginTop: number;
+  labelColor: string;
+};
+
+const DownloadQr = ({
+  label,
+  value,
+  size,
+  quietZone,
+  labelSize,
+  labelLineHeight,
+  labelMarginTop,
+  labelColor,
+}: DownloadQrProps) => (
+  <View
+    style={[
+      styles.downloadQrItem,
+      { minHeight: size + labelMarginTop + labelLineHeight },
+    ]}
+  >
+    <QRCode
+      value={value}
+      size={size}
+      quietZone={quietZone}
+      color={QR_FOREGROUND}
+      backgroundColor={QR_BACKGROUND}
+      ecl="M"
+    />
+    <RNText
+      numberOfLines={1}
+      style={[
+        styles.downloadQrLabel,
+        {
+          color: labelColor,
+          fontSize: labelSize,
+          lineHeight: labelLineHeight,
+          marginTop: labelMarginTop,
+        },
+      ]}
+    >
+      {label}
+    </RNText>
+  </View>
+);
 
 const styles = StyleSheet.create({
   card: {
@@ -498,10 +650,33 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   timestamp: {
-    position: 'absolute',
     fontWeight: '500',
     letterSpacing: 0.2,
     textAlign: 'left',
+  },
+  footerSeparator: {
+    position: 'absolute',
+  },
+  downloadRow: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  downloadQrGroup: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexShrink: 0,
+  },
+  downloadLogo: {
+    flexShrink: 0,
+  },
+  downloadQrItem: {
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  downloadQrLabel: {
+    fontWeight: '700',
   },
 });
 
