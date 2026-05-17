@@ -122,6 +122,7 @@ The visual language is warm, playful, and handcrafted — pastel card colors on 
   3. Writes `RELEASE_NOTES.md` — edit before confirming.
   4. Commit, tag, push.
 - The GitHub Release workflow reads `RELEASE_NOTES.md` for release notes.
+- App Store Connect-facing text must never mention Android, Google Play, APKs, or Android download/QR-code availability. This includes release notes, review notes, metadata, screenshots, preview text, and any `asc`-submitted fields. Reword cross-platform changes as iOS-only or omit the Android-specific detail for App Store Connect.
 - Version format `YYMM.DD`; same-day re-releases append `.1`, `.2`, … (e.g. `2604.10.1`).
 
 ## Documentation Hygiene
