@@ -28,6 +28,7 @@ import ShareStatusCard, {
   resolveShareCardBackground,
   type ShareCardAspect,
   type ShareCardColor,
+  type ShareCardCorners,
   type ShareCardTheme,
 } from '@/components/share-status-card';
 import { get } from '@/auth/fanfou-client';
@@ -76,6 +77,7 @@ const StatusShareCardRoute = () => {
   };
   const [theme, setTheme] = useState<ShareCardTheme>('light');
   const [color, setColor] = useState<ShareCardColor>('cream');
+  const [corners, setCorners] = useState<ShareCardCorners>('rounded');
 
   // Black on light reads as a dark card on a bright page — visually jarring
   // and useless for the bright-themed sharing scenarios we want to support.
@@ -192,6 +194,7 @@ const StatusShareCardRoute = () => {
             aspect={aspect}
             theme={theme}
             color={color}
+            corners={corners}
             width={cardWidth}
           />
         </View>
@@ -239,6 +242,35 @@ const StatusShareCardRoute = () => {
                 label={t('shareCardThemeDark')}
                 active={theme === 'dark'}
                 onPress={() => setTheme('dark')}
+                accent={accent}
+                foreground={foreground}
+                muted={muted}
+                background={background}
+                fontFamily={fontFamily}
+              />
+            </View>
+          </ControlGroup>
+
+          <ControlGroup
+            label={t('shareCardCornersLabel')}
+            fontFamily={fontFamily}
+            color={foreground}
+          >
+            <View style={styles.chipRow}>
+              <ChipButton
+                label={t('shareCardCornersRounded')}
+                active={corners === 'rounded'}
+                onPress={() => setCorners('rounded')}
+                accent={accent}
+                foreground={foreground}
+                muted={muted}
+                background={background}
+                fontFamily={fontFamily}
+              />
+              <ChipButton
+                label={t('shareCardCornersSquare')}
+                active={corners === 'square'}
+                onPress={() => setCorners('square')}
                 accent={accent}
                 foreground={foreground}
                 muted={muted}

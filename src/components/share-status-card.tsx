@@ -19,6 +19,7 @@ import { getIntlLocale } from '@/i18n/intl-locale';
 
 export type ShareCardAspect = 'auto' | '1:1' | '3:4' | '9:16';
 export type ShareCardTheme = 'light' | 'dark';
+export type ShareCardCorners = 'rounded' | 'square';
 export type ShareCardColor =
   | 'cream'
   | 'coral'
@@ -141,11 +142,12 @@ type ShareStatusCardProps = {
   aspect: ShareCardAspect;
   theme: ShareCardTheme;
   color: ShareCardColor;
+  corners: ShareCardCorners;
   width: number;
 };
 
 const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
-  ({ status, aspect, theme, color, width }, ref) => {
+  ({ status, aspect, theme, color, corners, width }, ref) => {
     const fontFamily = useAppFontFamily() ?? undefined;
     const aspectEntry =
       SHARE_CARD_ASPECTS.find(a => a.key === aspect) ?? SHARE_CARD_ASPECTS[0];
@@ -165,7 +167,8 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     // crisply at whatever width the host hands us (preview or capture).
     const s = width / 360;
     const pad = 28 * s;
-    const radius = 28 * s;
+    const isSquare = corners === 'square';
+    const radius = isSquare ? 0 : 28 * s;
     const avatarSize = 52 * s;
     const nameSize = 18 * s;
     const handleSize = 13 * s;
@@ -176,7 +179,7 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     const handleMarginTop = 2 * s;
     const bodyMarginTop = 22 * s;
     const bodyGap = 18 * s;
-    const photoRadius = 18 * s;
+    const photoRadius = isSquare ? 0 : 18 * s;
     const timestampSize = 12 * s;
     const timestampMarginTop = 18 * s;
     const timestampLineHeight = Math.round(timestampSize * 1.4);

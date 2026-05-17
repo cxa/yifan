@@ -162,6 +162,9 @@ type BaseTranslations = {
   shareCardThemeLabel: string;
   shareCardThemeLight: string;
   shareCardThemeDark: string;
+  shareCardCornersLabel: string;
+  shareCardCornersRounded: string;
+  shareCardCornersSquare: string;
   shareCardColorLabel: string;
   shareCardShareButton: string;
   shareCardSharing: string;
@@ -516,6 +519,9 @@ const enUS: BaseTranslations = {
   shareCardThemeLabel: 'Theme',
   shareCardThemeLight: 'Light',
   shareCardThemeDark: 'Dark',
+  shareCardCornersLabel: 'Corners',
+  shareCardCornersRounded: 'Rounded',
+  shareCardCornersSquare: 'Square',
   shareCardColorLabel: 'Color',
   shareCardShareButton: 'Share',
   shareCardSharing: 'Preparing…',
@@ -870,6 +876,9 @@ const zhCN: BaseTranslations = {
   shareCardThemeLabel: '主题',
   shareCardThemeLight: '亮色',
   shareCardThemeDark: '暗色',
+  shareCardCornersLabel: '圆角',
+  shareCardCornersRounded: '圆角',
+  shareCardCornersSquare: '直角',
   shareCardColorLabel: '颜色',
   shareCardShareButton: '分享',
   shareCardSharing: '生成中…',
