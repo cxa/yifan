@@ -1,3 +1,4 @@
+import React
 import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -29,6 +30,39 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       launchOptions: appDelegate.launchOptions
     )
     scheduleLaunchScreenFallbackHide()
+
+    // Forward URLs that arrived as the cold-launch trigger (e.g. share
+    // extension fired `yifan://compose` while the host wasn't running).
+    // Scene-based apps short-circuit AppDelegate.application(_:open:options:),
+    // so without this RCTLinkingManager never sees the URL and JS Linking
+    // listeners stay silent.
+    for urlContext in connectionOptions.urlContexts {
+      forwardURLToLinkingManager(urlContext.url)
+    }
+  }
+
+  // Warm-launch URL deliveries (the host app is already running). Same
+  // story: AppDelegate.application(_:open:options:) is bypassed in
+  // scene-based apps, so we have to hand the URL to RCTLinkingManager
+  // ourselves.
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    for urlContext in URLContexts {
+      forwardURLToLinkingManager(urlContext.url)
+    }
+  }
+
+  // NSUserActivity-based deep links (universal links, Handoff). Not
+  // strictly required for the share-extension flow, but cheap insurance.
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    RCTLinkingManager.application(
+      UIApplication.shared,
+      continue: userActivity,
+      restorationHandler: { _ in }
+    )
+  }
+
+  private func forwardURLToLinkingManager(_ url: URL) {
+    RCTLinkingManager.application(UIApplication.shared, open: url, options: [:])
   }
 
   deinit {

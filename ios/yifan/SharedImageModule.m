@@ -1,5 +1,7 @@
 #import <React/RCTBridgeModule.h>
+#import <React/RCTUtils.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
 @interface SharedImageModule : NSObject <RCTBridgeModule>
 @end
@@ -20,6 +22,77 @@ static NSString *YFSharedDataPrefixHex(NSData *data, NSUInteger maxLength) {
 @implementation SharedImageModule
 
 RCT_EXPORT_MODULE()
+
+RCT_EXPORT_METHOD(sharedContainerPath:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  NSURL *containerURL = [[NSFileManager defaultManager]
+    containerURLForSecurityApplicationGroupIdentifier:@"group.im.cxa.fanatter"];
+  resolve(containerURL ? containerURL.path : [NSNull null]);
+}
+
+RCT_EXPORT_METHOD(shareStatusCardImage:(NSString *)fileUrl
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  NSURL *url = [fileUrl hasPrefix:@"/"]
+    ? [NSURL fileURLWithPath:fileUrl]
+    : [NSURL URLWithString:fileUrl];
+  if (!url) {
+    reject(@"INVALID_URL", @"Invalid status card image URL", nil);
+    return;
+  }
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIViewController *controller = RCTPresentedViewController();
+    if (!controller) {
+      reject(@"NO_VIEW_CONTROLLER", @"Unable to present share sheet", nil);
+      return;
+    }
+
+    UIActivityViewController *shareController =
+      [[UIActivityViewController alloc] initWithActivityItems:@[url]
+                                        applicationActivities:nil];
+
+    __block BOOL didSettle = NO;
+    void (^settle)(BOOL, NSString *, NSError *) =
+      ^(BOOL completed, NSString *activityType, NSError *activityError) {
+        if (didSettle) {
+          return;
+        }
+        didSettle = YES;
+
+        if (activityError) {
+          reject(@"SHARE_FAILED", activityError.localizedDescription, activityError);
+          return;
+        }
+
+        resolve(@{
+          @"action": completed ? @"sharedAction" : @"dismissedAction",
+          @"activityType": activityType ?: (id)[NSNull null],
+        });
+      };
+
+    shareController.completionWithItemsHandler =
+      ^(UIActivityType activityType, BOOL completed, NSArray *returnedItems, NSError *activityError) {
+        settle(completed, activityType, activityError);
+      };
+
+    UIPopoverPresentationController *popover = shareController.popoverPresentationController;
+    if (popover) {
+      popover.sourceView = controller.view;
+      popover.sourceRect = CGRectMake(
+        CGRectGetMidX(controller.view.bounds),
+        CGRectGetMaxY(controller.view.bounds),
+        1,
+        1
+      );
+      popover.permittedArrowDirections = 0;
+    }
+
+    [controller presentViewController:shareController animated:YES completion:nil];
+  });
+}
 
 // Read a specific file by name and delete it.
 RCT_EXPORT_METHOD(readAndClear:(NSString *)fileName

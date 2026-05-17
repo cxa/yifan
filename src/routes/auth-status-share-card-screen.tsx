@@ -17,7 +17,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useThemeColor } from 'heroui-native';
-import { AlertCircle } from 'lucide-react-native';
+import { AlertCircle, Share as ShareIcon } from 'lucide-react-native';
 
 import { Text } from '@/components/app-text';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
@@ -34,7 +34,11 @@ import ShareStatusCard, {
 import { get } from '@/auth/fanfou-client';
 import { useAppFontFamily } from '@/settings/app-font-preference';
 import { showVariantToast } from '@/utils/toast-alert';
-import { shareCapturedImage } from '@/utils/share-captured-image';
+import {
+  shareCapturedImage,
+  YIFAN_SHARE_EXTENSION_ACTIVITY_TYPE,
+} from '@/utils/share-captured-image';
+import { checkIOSPendingAfterShareSheetDismissal } from '@/hooks/use-share-intent';
 import type {
   AuthStackParamList,
 } from '@/navigation/types';
@@ -121,16 +125,12 @@ const StatusShareCardRoute = () => {
     if (!cardRef.current || isSharing) return;
     setIsSharing(true);
     try {
-      await shareCapturedImage(cardRef);
-      // Pop back to the source screen as soon as the system share sheet
-      // resolves. If the user picked Fanfou itself, the share extension
-      // has already queued the image and ShareIntentComposer will fire
-      // shortly — letting that modal land on the stable source screen
-      // rather than racing the share-card screen's own lifecycle avoids
-      // a modal-stacking flicker where the composer pops up and dismisses
-      // immediately.
-      if (navigation.canGoBack()) {
-        navigation.goBack();
+      const result = await shareCapturedImage(cardRef);
+      if (
+        result.action === 'sharedAction' &&
+        result.activityType === YIFAN_SHARE_EXTENSION_ACTIVITY_TYPE
+      ) {
+        checkIOSPendingAfterShareSheetDismissal();
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -334,6 +334,7 @@ const StatusShareCardRoute = () => {
             { backgroundColor: accent },
           ]}
         >
+          <ShareIcon size={17} color={SHARE_BTN_LABEL} />
           <Text style={[styles.shareBtnText, fontFamily ? { fontFamily } : null]}>
             {isSharing ? t('shareCardSharing') : t('shareCardShareButton')}
           </Text>
@@ -478,9 +479,14 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0,0,0,0.06)',
   },
   shareBtn: {
+    minHeight: 48,
+    flexDirection: 'row',
+    gap: 8,
     borderRadius: 9999,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   shareBtnDisabled: {
     opacity: 0.6,

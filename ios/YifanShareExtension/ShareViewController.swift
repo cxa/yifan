@@ -5,6 +5,8 @@ import AVFoundation
 class ShareViewController: UIViewController {
   private let appGroupID = "group.im.cxa.fanatter"
   private let appURLScheme = "yifan://compose"
+  private let internalStatusCardFilePrefix = "share_status_card_"
+  private var shouldReturnToHostWithoutOpeningApp = false
 
   private static let maxGifDimension: CGFloat = 480
   private static let maxGifFrames = 60
@@ -111,6 +113,28 @@ class ShareViewController: UIViewController {
 
     writeDebugLog("No supported attachment type found.")
     complete(success: false)
+  }
+
+  private func markInternalStatusCardShareIfNeeded(fileName: String?) {
+    guard
+      let fileName,
+      fileName.hasPrefix(internalStatusCardFilePrefix)
+    else { return }
+
+    shouldReturnToHostWithoutOpeningApp = true
+    writeDebugLog("Detected internal status-card share: \(fileName)")
+  }
+
+  private func finishAfterWritingSharedContent() {
+    DispatchQueue.main.async {
+      if self.shouldReturnToHostWithoutOpeningApp {
+        self.writeDebugLog("Completed internal status-card share without opening main app.")
+        self.complete(success: true)
+        return
+      }
+
+      self.openMainAppAndComplete()
+    }
   }
 
   // MARK: - Live Photo handling
@@ -468,6 +492,7 @@ class ShareViewController: UIViewController {
     let typeID = imageTypeIDs.first { provider.hasItemConformingToTypeIdentifier($0) }
       ?? UTType.image.identifier
 
+    markInternalStatusCardShareIfNeeded(fileName: provider.suggestedName)
     writeDebugLog("Loading image representation: \(typeID)")
     provider.loadItem(forTypeIdentifier: typeID) { [weak self] data, _ in
       guard let self else { return }
@@ -475,6 +500,7 @@ class ShareViewController: UIViewController {
       var imageData: Data?
       var sourceExtension: String?
       if let url = data as? URL {
+        self.markInternalStatusCardShareIfNeeded(fileName: url.lastPathComponent)
         self.writeDebugLog("Image representation URL: \(url.path)")
         imageData = try? Data(contentsOf: url)
         sourceExtension = url.pathExtension
@@ -528,7 +554,7 @@ class ShareViewController: UIViewController {
       writeDebugLog(
         "Wrote share-image-\(timestamp).\(ext): \(data.count) bytes, magic: \(Self.dataPrefixHex(data))."
       )
-      DispatchQueue.main.async { self.openMainAppAndComplete() }
+      finishAfterWritingSharedContent()
     } catch {
       writeDebugLog("Failed to write shared image: \(error.localizedDescription)")
       complete(success: false)
@@ -587,7 +613,7 @@ class ShareViewController: UIViewController {
     let dest = container.appendingPathComponent("share-text-\(timestamp).txt")
     do {
       try text.write(to: dest, atomically: true, encoding: .utf8)
-      DispatchQueue.main.async { self.openMainAppAndComplete() }
+      finishAfterWritingSharedContent()
     } catch {
       complete(success: false)
     }

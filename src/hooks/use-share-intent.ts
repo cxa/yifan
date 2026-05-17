@@ -4,6 +4,11 @@ import { setShareIntentPhoto, setShareIntentText } from '@/stores/share-intent-s
 
 const SHARE_IMAGE_SCHEME = 'yifan://share-image';
 const SHARE_TEXT_SCHEME = 'yifan://share-text';
+// iOS share extension's external-share signal that it just wrote a pending
+// image/text to the App Group container — see ShareViewController.openMainAppAndComplete().
+const IOS_COMPOSE_SCHEME = 'yifan://compose';
+const IOS_PENDING_RETRY_DELAYS_MS = [250, 750] as const;
+const IOS_SHARE_SHEET_DISMISSAL_CHECK_DELAYS_MS = [350, 900, 1600, 3000] as const;
 
 type SharedImageResult = {
   base64: string;
@@ -106,19 +111,67 @@ async function resolveAndroidShareURL(url: string): Promise<void> {
   }
 }
 
+// Run checkIOSPending on a short staircase of delays. The share extension
+// signals the host via `yifan://compose` *right after* writing the file to
+// the App Group container, but the filesystem write isn't always visible
+// to the host process on the very first read (volume cache, sandbox sync).
+// Three tries within a second is enough to absorb that without polling
+// forever.
+const scheduleIOSPendingChecks = (delays: readonly number[]) => {
+  if (Platform.OS !== 'ios') {
+    return;
+  }
+
+  checkIOSPending();
+  delays.forEach(delay => {
+    setTimeout(() => {
+      checkIOSPending();
+    }, delay);
+  });
+};
+
+export const checkIOSPendingWithRetries = () => {
+  scheduleIOSPendingChecks(IOS_PENDING_RETRY_DELAYS_MS);
+};
+
+export const checkIOSPendingAfterShareSheetDismissal = () => {
+  if (Platform.OS !== 'ios') {
+    return;
+  }
+
+  IOS_SHARE_SHEET_DISMISSAL_CHECK_DELAYS_MS.forEach(delay => {
+    setTimeout(() => {
+      checkIOSPending();
+    }, delay);
+  });
+};
+
 export const useShareIntent = () => {
   useEffect(() => {
     if (Platform.OS === 'ios') {
       // Check once on mount (cold start or already foregrounded)
       checkIOSPending();
 
-      // Re-check every time the app comes to the foreground
-      const sub = AppState.addEventListener('change', state => {
+      // Re-check every time the app comes to the foreground. This catches
+      // the common case where the share extension backgrounded the host.
+      const appStateSub = AppState.addEventListener('change', state => {
         if (state === 'active') {
-          checkIOSPending();
+          checkIOSPendingWithRetries();
         }
       });
-      return () => sub.remove();
+
+      // Also listen for the `yifan://compose` deep link the share extension
+      // fires after writing an external pending file.
+      const urlSub = Linking.addEventListener('url', ({ url }) => {
+        if (url && url.startsWith(IOS_COMPOSE_SCHEME)) {
+          checkIOSPendingWithRetries();
+        }
+      });
+
+      return () => {
+        appStateSub.remove();
+        urlSub.remove();
+      };
     } else {
       // Android: listen to yifan:// deep links
       Linking.getInitialURL().then(url => {
