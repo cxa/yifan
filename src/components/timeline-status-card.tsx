@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
 import { Reply, Repeat2, Share, Share2, Trash2, Flag } from 'lucide-react-native';
@@ -10,6 +10,7 @@ const ShareIcon = Platform.OS === 'ios' ? Share : Share2;
 import { Dialog, useThemeColor } from 'heroui-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { normalizeFanfouImageUrl } from '@/utils/normalize-fanfou-image-url';
 import { AUTH_STACK_ROUTE } from '@/navigation/route-names';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
@@ -86,6 +87,16 @@ const FOREGROUND_DARK  = '#F2EDE8';
 const MUTED_LIGHT      = '#7C7268';
 const MUTED_DARK       = '#9C9288';
 
+const MAX_PHOTO_RETRIES = 2;
+const PHOTO_RETRY_DELAY_MS = 600;
+// Fresco occasionally swallows fetch failures without firing onError —
+// the request sits in its native pool forever, the JS-side Image never
+// resolves, and the shimmer never dismisses. A wall-clock fallback lets
+// us treat "didn't load in 5s" as a failure too, so the retry path kicks
+// in even when no callback fires. 5s is chosen to clear normal CDN
+// latency on a 4G/wifi connection with comfortable headroom.
+const PHOTO_LOAD_TIMEOUT_MS = 5000;
+
 const TAG_PILL_CLASS = 'bg-accent/15 text-accent px-2 py-0.5 rounded-full';
 const ACTIVE_TAG_PILL_CLASS =
   'bg-accent text-accent-foreground px-2 py-0.5 rounded-full';
@@ -102,10 +113,12 @@ const getStatusPhotoUrl = (status: FanfouStatus): string | null => {
     }
     return null;
   };
-  return getUrl(
-    status.photo?.largeurl,
-    status.photo?.imageurl,
-    status.photo?.thumburl,
+  return normalizeFanfouImageUrl(
+    getUrl(
+      status.photo?.largeurl,
+      status.photo?.imageurl,
+      status.photo?.thumburl,
+    ),
   );
 };
 const TimelineStatusCard = ({
@@ -157,6 +170,12 @@ const TimelineStatusCard = ({
   const photoRef = useRef<View>(null);
   const [photoAspectRatio, setPhotoAspectRatio] = useState<number | null>(null);
   const [photoLoaded, setPhotoLoaded] = useState(false);
+  // Photo CDNs (photo[1-4].fanfou.com) speak only plain HTTP and are
+  // intermittently flaky. Fresco doesn't retry image fetches on its own,
+  // so a single transient blip leaves a card stuck on the shimmer until
+  // the user scrolls the cell off-screen. Re-mount the Image with a
+  // bumped key on each error up to MAX_PHOTO_RETRIES.
+  const [photoAttempt, setPhotoAttempt] = useState(0);
   const [bodyColumnWidth, setBodyColumnWidth] = useState<number | null>(null);
   // Snap the body column to a multiple of the body font size so CJK
   // text reaches the same right edge on every line. iOS uses the
@@ -182,8 +201,20 @@ const TimelineStatusCard = ({
   const screenName = user.screen_name;
   const userId = user.id;
   const handle = `@${userId}`;
-  const avatarUrl = user.profile_image_url;
+  const avatarUrl = normalizeFanfouImageUrl(user.profile_image_url) ?? undefined;
   const photoUrl = getStatusPhotoUrl(status);
+  // Wall-clock timeout that catches Fresco's silent stalls (no onError,
+  // no onLoad). Reset whenever the photo URL or attempt count changes so
+  // every retry starts a fresh timer.
+  useEffect(() => {
+    if (!photoUrl || photoLoaded || photoAttempt >= MAX_PHOTO_RETRIES) {
+      return;
+    }
+    const id = setTimeout(() => {
+      setPhotoAttempt(prev => prev + 1);
+    }, PHOTO_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [photoUrl, photoLoaded, photoAttempt]);
   const isRepost = Boolean(status.repost_status_id);
   const repostScreenName = status.repost_screen_name ?? '';
   const repostUserId = status.repost_user_id ?? '';
@@ -409,6 +440,11 @@ const TimelineStatusCard = ({
                 >
                   <Image
                     source={{ uri: photoUrl }}
+                    // Bumped on each retry so RN re-mounts the Image
+                    // and Fresco re-issues the network request (Fresco
+                    // never caches error responses, so this actually
+                    // hits the network again).
+                    key={`${photoUrl}#${photoAttempt}`}
                     className="h-full w-full"
                     resizeMode="cover"
                     onLoad={event => {
@@ -417,6 +453,20 @@ const TimelineStatusCard = ({
                         setPhotoAspectRatio(width / height);
                       }
                       setPhotoLoaded(true);
+                    }}
+                    onError={() => {
+                      if (photoAttempt < MAX_PHOTO_RETRIES) {
+                        setTimeout(
+                          () => setPhotoAttempt(prev => prev + 1),
+                          PHOTO_RETRY_DELAY_MS,
+                        );
+                      } else {
+                        // Out of retries — dismiss the shimmer so the
+                        // card doesn't sit spinning forever. The user
+                        // sees the cream/secondary fill instead of an
+                        // infinite loading state.
+                        setPhotoLoaded(true);
+                      }
                     }}
                   />
                   <ImageShimmerPlaceholder visible={!photoLoaded} />
