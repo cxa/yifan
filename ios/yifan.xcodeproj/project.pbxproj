@@ -10,6 +10,7 @@
 		0C80B921A6F3F58F76C31292 /* libPods-yifan.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-yifan.a */; };
 		0CABF40211831DF1F9871DFE /* SharedImageModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 5080FB480965F660C48256DD /* SharedImageModule.m */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1A2B3C4D5E6F0123456789AC /* ReceiptEnvironmentModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0123456789AB /* ReceiptEnvironmentModule.m */; };
 		220E9887B3681CC851FBA84F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A3598DFB9E9827C88B83589 /* Foundation.framework */; };
 		455C6C7150B1FF2B2795EF3A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		58F1D19B4302418A1A5C0F2F /* YifanShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8440FA41927A6976F40C6B0C /* YifanShareExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -26,7 +27,6 @@
 		B5C6D7E8F9A00718293B4C5E /* YifanJustifiedTextManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F00718293A4B5E /* YifanJustifiedTextManager.m */; };
 		C3D4E5F60718293A4B6C7D8E /* Huiwen-MinchoGBK-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B6C7D8D /* Huiwen-MinchoGBK-Regular.ttf */; };
 		D4E5F6A7B8C90718293D4E5F /* AppStoreProductModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C90718293D4E5E /* AppStoreProductModule.m */; };
-		1A2B3C4D5E6F0123456789AC /* ReceiptEnvironmentModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0123456789AB /* ReceiptEnvironmentModule.m */; };
 		F1A2B3C4D5E60718293A4B5C /* FanfouSecretsLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60718293A4B5D /* FanfouSecretsLoader.m */; };
 /* End PBXBuildFile section */
 
@@ -59,6 +59,7 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = yifan/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = yifan/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = yifan/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1A2B3C4D5E6F0123456789AB /* ReceiptEnvironmentModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ReceiptEnvironmentModule.m; path = yifan/ReceiptEnvironmentModule.m; sourceTree = "<group>"; };
 		3A3598DFB9E9827C88B83589 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		3B4392A12AC88292D35C810B /* Pods-yifan.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-yifan.debug.xcconfig"; path = "Target Support Files/Pods-yifan/Pods-yifan.debug.xcconfig"; sourceTree = "<group>"; };
 		5080FB480965F660C48256DD /* SharedImageModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = SharedImageModule.m; path = yifan/SharedImageModule.m; sourceTree = "<group>"; };
@@ -80,7 +81,6 @@
 		C3D4E5F60718293A4B6C7D8D /* Huiwen-MinchoGBK-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file.ttf; name = "Huiwen-MinchoGBK-Regular.ttf"; path = "../assets/shared/fonts/Huiwen-MinchoGBK-Regular.ttf"; sourceTree = "<group>"; };
 		D1E2F3A4B5C60718293D4E5F /* EnvSecrets.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EnvSecrets.h; path = yifan/EnvSecrets.h; sourceTree = "<group>"; };
 		D4E5F6A7B8C90718293D4E5E /* AppStoreProductModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppStoreProductModule.m; path = yifan/AppStoreProductModule.m; sourceTree = "<group>"; };
-		1A2B3C4D5E6F0123456789AB /* ReceiptEnvironmentModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ReceiptEnvironmentModule.m; path = yifan/ReceiptEnvironmentModule.m; sourceTree = "<group>"; };
 		E1F2A3B4C5D60718293E4F5A /* EnvSecrets.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EnvSecrets.m; path = yifan/EnvSecrets.m; sourceTree = "<group>"; };
 		E575E65630B259AF57A231DC /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };

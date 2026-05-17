@@ -5,7 +5,12 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+# Bumped from RN's `min_ios_version_supported` (15.1) so that pods like
+# GoogleMLKit/FaceDetection (requires iOS 15.5+) can install. App target is
+# already 16.0 in the Xcode project, so this doesn't shut out any device
+# we weren't already excluding.
+APP_IOS_TARGET = '16.0'
+platform :ios, APP_IOS_TARGET
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -35,13 +40,13 @@ target 'yifan' do
       target.build_configurations.each do |config|
         config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
         config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = APP_IOS_TARGET
       end
     end
     # Patch MinimumOSVersion into prebuilt framework Info.plists (e.g. hermesvm.framework)
     # directly in the Pods directory, before Xcode embeds and signs them.
     # A post-build Run Script approach would modify already-signed frameworks and break codesign.
-    min_os = min_ios_version_supported.to_s
+    min_os = APP_IOS_TARGET.to_s
     Dir.glob(File.join(installer.sandbox.root, '**/*.framework/Info.plist')) do |plist|
       existing = `/usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "#{plist}" 2>/dev/null`.strip
       if existing.empty?

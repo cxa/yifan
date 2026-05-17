@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   Platform,
@@ -6,6 +6,7 @@ import {
   Text as RNText,
   View,
 } from 'react-native';
+import FaceDetection, { type Face } from '@react-native-ml-kit/face-detection';
 import type { FanfouStatus } from '@/types/fanfou';
 import {
   CARD_BG_DARK,
@@ -201,10 +202,38 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
     // aspect ratio (clamped to a sane range) — that keeps the image visible
     // in full with no cropping. Fixed-aspect modes ignore this because the
     // photo gets a flex:1 box whose shape is whatever the card has left.
-    const [photoAspect, setPhotoAspect] = useState<number | null>(null);
+    const [intrinsic, setIntrinsic] =
+      useState<{ w: number; h: number } | null>(null);
+    const photoAspect = intrinsic ? intrinsic.w / intrinsic.h : null;
     const autoPhotoAspectRatio = photoAspect
       ? Math.min(Math.max(photoAspect, 0.4), 2.4)
       : 4 / 3;
+
+    // Face-aware crop for fixed aspects: detect faces once the photo URL is
+    // known, then shift the cover-scaled image so the union of all face
+    // bounding boxes stays inside the container. Auto mode renders the
+    // whole image at its natural aspect, so faces are always visible there.
+    const [faces, setFaces] = useState<Face[] | null>(null);
+    useEffect(() => {
+      if (!photoUrl) {
+        setFaces(null);
+        return;
+      }
+      let cancelled = false;
+      FaceDetection.detect(photoUrl, {
+        performanceMode: 'fast',
+        minFaceSize: 0.1,
+      })
+        .then(detected => {
+          if (!cancelled) setFaces(detected);
+        })
+        .catch(() => {
+          if (!cancelled) setFaces([]);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [photoUrl]);
 
     // Measure the header and text so we can explicitly compute the photo's
     // maxHeight. Flex:1 + paddingBottom on iOS doesn't reliably clamp a
@@ -224,6 +253,58 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
               (bodyText ? bodyMarginTop + textHeight + bodyGap : bodyMarginTop),
           )
         : undefined;
+
+    // Smart crop math: derive the image's display rect inside the cover
+    // container, then shift it so the union of face bounding boxes sits
+    // near the container center (clamped so we never expose container bg).
+    const photoContainerW = width - pad * 2;
+    const photoContainerH = isAuto
+      ? photoContainerW / autoPhotoAspectRatio
+      : photoMaxHeight ?? 0;
+    let smartImageStyle: {
+      position: 'absolute';
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    } | null = null;
+    if (
+      !isAuto &&
+      intrinsic &&
+      photoContainerH > 0 &&
+      faces &&
+      faces.length > 0
+    ) {
+      const minX = Math.min(...faces.map(f => f.frame.left));
+      const minY = Math.min(...faces.map(f => f.frame.top));
+      const maxX = Math.max(...faces.map(f => f.frame.left + f.frame.width));
+      const maxY = Math.max(...faces.map(f => f.frame.top + f.frame.height));
+      const faceCenterX = (minX + maxX) / 2;
+      const faceCenterY = (minY + maxY) / 2;
+      const scale = Math.max(
+        photoContainerW / intrinsic.w,
+        photoContainerH / intrinsic.h,
+      );
+      const displayW = intrinsic.w * scale;
+      const displayH = intrinsic.h * scale;
+      const targetLeft = photoContainerW / 2 - faceCenterX * scale;
+      const targetTop = photoContainerH / 2 - faceCenterY * scale;
+      const imageLeft = Math.min(
+        0,
+        Math.max(photoContainerW - displayW, targetLeft),
+      );
+      const imageTop = Math.min(
+        0,
+        Math.max(photoContainerH - displayH, targetTop),
+      );
+      smartImageStyle = {
+        position: 'absolute',
+        left: imageLeft,
+        top: imageTop,
+        width: displayW,
+        height: displayH,
+      };
+    }
 
     return (
       <View
@@ -323,12 +404,12 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
           >
             <Image
               source={{ uri: photoUrl }}
-              style={StyleSheet.absoluteFill}
+              style={smartImageStyle ?? StyleSheet.absoluteFill}
               resizeMode="cover"
               onLoad={event => {
                 const { width: w, height: h } = event.nativeEvent.source;
                 if (w > 0 && h > 0) {
-                  setPhotoAspect(w / h);
+                  setIntrinsic({ w, h });
                 }
               }}
             />

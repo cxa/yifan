@@ -34,6 +34,7 @@
     "@formatjs/intl-relativetimeformat": "^12.3.1",
     "@gorhom/bottom-sheet": "^5.2.9",
     "@react-native-community/netinfo": "^12.0.1",
+    "@react-native-ml-kit/face-detection": "^2.0.1",
     "@react-native/new-app-screen": "^0.85.3",
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/native": "^7.2.2",
