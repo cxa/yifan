@@ -1,4 +1,3 @@
-
 # <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="一饭" width="128" height="128" />
 
 一饭，A React Native client for [Fanfou](https://fanfou.com), the Chinese microblogging platform.
