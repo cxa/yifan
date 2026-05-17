@@ -16,7 +16,13 @@ import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
 import { Text } from '@/components/app-text';
-import { CARD_BG_LIGHT, CARD_BG_DARK, type DropShadowBoxType } from '@/components/drop-shadow-box';
+import {
+  CARD_BG_DARK,
+  CARD_BG_LIGHT,
+  PLAIN_CARD_BG_DARK,
+  PLAIN_CARD_BG_LIGHT,
+  type DropShadowBoxType,
+} from '@/components/drop-shadow-box';
 import FavoriteHeartIcon from '@/components/favorite-heart-icon';
 import { IN_REVIEW_MODE } from '@/services/review-mode';
 import { openReportSheet } from '@/components/report-status-sheet';
@@ -153,7 +159,7 @@ const TimelineStatusCard = ({
   const mutedColor = effectiveIsDark ? MUTED_DARK : MUTED_LIGHT;
   const themePreference = useAppThemePreference();
   const cardBgColor = themePreference === APP_THEME_OPTION.PLAIN
-    ? (effectiveIsDark ? '#1E1E1E' : '#FFFFFF')
+    ? (effectiveIsDark ? PLAIN_CARD_BG_DARK : PLAIN_CARD_BG_LIGHT)
     : (effectiveIsDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
   const [danger, accentForeground] = useThemeColor([
     'danger',
@@ -258,38 +264,34 @@ const TimelineStatusCard = ({
         className="rounded-3xl p-4 shadow-card active:scale-[0.98] active:opacity-75 dark:shadow-none"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
-        {(canDelete && onDelete) || invertColorScheme ? (
-          <View style={styles.topRightActions}>
-            {canDelete && onDelete ? (
-              <Pressable
-                onPress={event => {
-                  event.stopPropagation();
-                  handleDeletePress();
-                }}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel={t('statusDeleteTitle')}
-                style={styles.topRightAction}
-              >
-                <Trash2 size={16} color={danger} />
-              </Pressable>
-            ) : null}
-            {invertColorScheme ? (
-              <Pressable
-                onPress={event => {
-                  event.stopPropagation();
-                  handleShareCard();
-                }}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel={t('shareCardMenuShare')}
-                style={styles.topRightAction}
-              >
-                <ShareIcon size={16} color={mutedColor} />
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
+        <View style={styles.topRightActions}>
+          {canDelete && onDelete ? (
+            <Pressable
+              onPress={event => {
+                event.stopPropagation();
+                handleDeletePress();
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('statusDeleteTitle')}
+              style={styles.topRightAction}
+            >
+              <Trash2 size={16} color={danger} />
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={event => {
+              event.stopPropagation();
+              handleShareCard();
+            }}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('shareCardMenuShare')}
+            style={styles.topRightAction}
+          >
+            <ShareIcon size={16} color={mutedColor} />
+          </Pressable>
+        </View>
         <View className={showAvatar ? 'flex-row gap-4' : undefined}>
           {showAvatar ? (
             <Pressable

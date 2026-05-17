@@ -12,6 +12,8 @@ import {
   CARD_BG_DARK,
   CARD_BG_LIGHT,
   CARD_PASTEL_CYCLE,
+  PLAIN_CARD_BG_DARK,
+  PLAIN_CARD_BG_LIGHT,
   SHIMMER_HIGHLIGHT_DARK,
   SHIMMER_HIGHLIGHT_LIGHT,
   SKELETON_BAR_FALLBACK_DARK,
@@ -126,16 +128,17 @@ const TimelineSkeletonCard = ({
   const isDark = useEffectiveIsDark();
   const themePreference = useAppThemePreference();
   const isPlain = themePreference === APP_THEME_OPTION.PLAIN;
-  const [themeBackground] = useThemeColor(['background']);
+  const [themeBorder] = useThemeColor(['border']);
   const shadowType = CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length];
   const cardBg = isPlain
-    ? themeBackground
+    ? (isDark ? PLAIN_CARD_BG_DARK : PLAIN_CARD_BG_LIGHT)
     : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType];
   const barColor = isPlain
     ? undefined
     : (isDark ? CARD_BAR_DARK : CARD_BAR_LIGHT)[shadowType];
   const avatarFallback = barColor
     ?? (isDark ? SKELETON_BAR_FALLBACK_DARK : SKELETON_BAR_FALLBACK_LIGHT);
+  const plainCardEdgeStyle = isPlain ? { borderColor: themeBorder } : null;
   const barCount = (showAuthor ? 1 : 0) + lineCount;
   const shimmerIndex = Math.floor(Math.random() * Math.max(barCount, 1));
 
@@ -163,7 +166,12 @@ const TimelineSkeletonCard = ({
   return (
     <View
       className="relative rounded-3xl px-5 py-6 overflow-hidden"
-      style={[{ backgroundColor: cardBg }, styles.card]}
+      style={[
+        { backgroundColor: cardBg },
+        styles.card,
+        isPlain ? styles.plainCardEdge : null,
+        plainCardEdgeStyle,
+      ]}
     >
       {message ? (
         <Text className="text-[14px] text-muted">{message}</Text>
@@ -185,6 +193,9 @@ const TimelineSkeletonCard = ({
 const styles = StyleSheet.create({
   card: {
     borderCurve: 'continuous',
+  },
+  plainCardEdge: {
+    borderWidth: StyleSheet.hairlineWidth,
   },
   sweep: {
     position: 'absolute',

@@ -48,6 +48,8 @@ import DropShadowBox, {
   CARD_PASTEL_CYCLE,
   PAPER_STOCK_DARK,
   PAPER_STOCK_LIGHT,
+  PLAIN_CARD_BG_DARK,
+  PLAIN_CARD_BG_LIGHT,
   type DropShadowBoxType,
 } from '@/components/drop-shadow-box';
 import RuledPaperText from '@/components/ruled-paper-text';
@@ -275,7 +277,7 @@ const MessageSkeletonCard = ({
   const paperFill = isDark ? PAPER_STOCK_DARK : PAPER_STOCK_LIGHT;
   const skeletonBgStyle = {
     backgroundColor: isPlain
-      ? (isDark ? '#1E1E1E' : '#FFFFFF')
+      ? (isDark ? PLAIN_CARD_BG_DARK : PLAIN_CARD_BG_LIGHT)
       : paperFill,
   };
   const stampPaperColor = isPlain ? paperFill : pastelFill;
@@ -365,7 +367,7 @@ const MessageCard = ({
   const paperFill = isDark ? PAPER_STOCK_DARK : PAPER_STOCK_LIGHT;
   const cardBgStyle = {
     backgroundColor: isPlain
-      ? (isDark ? '#1E1E1E' : '#FFFFFF')
+      ? (isDark ? PLAIN_CARD_BG_DARK : PLAIN_CARD_BG_LIGHT)
       : paperFill,
   };
   const stampPaperColor = isPlain ? paperFill : pastelFill;

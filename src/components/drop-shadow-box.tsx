@@ -46,6 +46,11 @@ export const CARD_BG_DARK: Record<DropShadowBoxType, string> = {
   success: '#1A4538',
 };
 
+/** Plain-theme card backgrounds. Keep real cards and skeleton cards aligned
+ * so loading states do not flash to a different surface when data resolves. */
+export const PLAIN_CARD_BG_LIGHT = '#FFFFFF';
+export const PLAIN_CARD_BG_DARK = '#1E1E1E';
+
 /** Subtle tint of each card bg — used for skeleton bars and any decorative
  * shape that should sit barely-darker than the card while staying in the
  * same hue family. Kept gentle so skeletons read as ghosted, not heavy. */

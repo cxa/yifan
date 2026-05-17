@@ -39,6 +39,8 @@ import DropShadowBox, {
   CARD_BG_DARK,
   CARD_BG_LIGHT,
   CARD_PASTEL_CYCLE,
+  PLAIN_CARD_BG_DARK,
+  PLAIN_CARD_BG_LIGHT,
 } from '@/components/drop-shadow-box';
 import { countSkeletonItemsForHeight } from '@/components/timeline-skeleton-list';
 import NativeEdgeScrollShadow from '@/components/native-edge-scroll-shadow';
@@ -194,7 +196,7 @@ const UserListRoute = () => {
               CARD_PASTEL_CYCLE[index % CARD_PASTEL_CYCLE.length];
             const cardBgStyle = {
               backgroundColor: isPlain
-                ? (isDark ? '#1E1E1E' : '#FFFFFF')
+                ? (isDark ? PLAIN_CARD_BG_DARK : PLAIN_CARD_BG_LIGHT)
                 : (isDark ? CARD_BG_DARK : CARD_BG_LIGHT)[shadowType],
             };
             return (
