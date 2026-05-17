@@ -47,7 +47,6 @@ const normalizeStatus = (value: unknown): FanfouStatus | null =>
   isRecord(value) ? (value as FanfouStatus) : null;
 
 const HORIZONTAL_PADDING = 20;
-const PREVIEW_MAX_HEIGHT = 480;
 const SWATCH_INACTIVE_BORDER = 'rgba(0,0,0,0.12)';
 const SHARE_BTN_LABEL = '#FFFFFF';
 
@@ -123,6 +122,16 @@ const StatusShareCardRoute = () => {
     setIsSharing(true);
     try {
       await shareCapturedImage(cardRef);
+      // Pop back to the source screen as soon as the system share sheet
+      // resolves. If the user picked Fanfou itself, the share extension
+      // has already queued the image and ShareIntentComposer will fire
+      // shortly — letting that modal land on the stable source screen
+      // rather than racing the share-card screen's own lifecycle avoids
+      // a modal-stacking flicker where the composer pops up and dismisses
+      // immediately.
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       showVariantToast('danger', t('shareCardFailedTitle'), message);
@@ -170,16 +179,10 @@ const StatusShareCardRoute = () => {
     );
   }
 
-  const aspectEntry =
-    SHARE_CARD_ASPECTS.find(item => item.key === aspect) ??
-    SHARE_CARD_ASPECTS[0];
-  const previewMaxWidth = viewportWidth - HORIZONTAL_PADDING * 2;
-  // Auto-height cards just use the full preview width and let the
-  // ScrollView absorb whatever vertical content height the card needs.
-  const cardWidth =
-    aspectEntry.ratio === null
-      ? previewMaxWidth
-      : Math.min(previewMaxWidth, PREVIEW_MAX_HEIGHT / aspectEntry.ratio);
+  // Always fill the available preview width regardless of aspect, even
+  // when the resulting card is much taller than the viewport — the
+  // ScrollView absorbs the overflow so the user can scroll the preview.
+  const cardWidth = viewportWidth - HORIZONTAL_PADDING * 2;
 
   return (
     <View

@@ -171,21 +171,28 @@ const ShareIntentComposer = () => {
 
   useEffect(() => {
     if (auth.status !== 'authenticated') return;
+    if (visible) return;
+    // Snapshot the inbound intent into local state before clearing the
+    // external store. Doing the clear inside the same effect tick races
+    // with the just-issued setVisible(true) — on iOS the Modal can flicker
+    // open then immediately dismiss when the share-extension flow re-fires
+    // the AppState 'active' transition while we're still committing. By
+    // gating on `visible` and clearing the store *after* the open state
+    // commits (in handleClose / handleSubmit), the modal stays put.
     if (shareIntent.photo) {
       setInitialPhoto(shareIntent.photo);
       setVisible(true);
-      clearShareIntent();
     } else if (shareIntent.text) {
       setInitialText(shareIntent.text);
       setVisible(true);
-      clearShareIntent();
     }
-  }, [shareIntent.photo, shareIntent.text, auth.status]);
+  }, [shareIntent.photo, shareIntent.text, auth.status, visible]);
 
   const handleClose = () => {
     setVisible(false);
     setInitialPhoto(null);
     setInitialText('');
+    clearShareIntent();
   };
   const handleSubmit = ({ text, photo }: ComposerModalSubmitPayload) => {
     const hasPhoto = Boolean(photo?.uri);
@@ -194,6 +201,7 @@ const ShareIntentComposer = () => {
     setVisible(false);
     setInitialPhoto(null);
     setInitialText('');
+    clearShareIntent();
     executeComposerSend(
       () =>
         statusUpdateMutation.mutateAsync({
