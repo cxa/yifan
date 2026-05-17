@@ -90,8 +90,8 @@ android {
         applicationId "im.cxa.fanatter"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 26051400
-        versionName "2605.14"
+        versionCode 26051700
+        versionName "2605.17"
         buildConfigField "String", "NATIVE_VERSION", "\"${pkg.nativeVersion}\""
     }
     signingConfigs {
