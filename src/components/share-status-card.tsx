@@ -220,9 +220,12 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
         return;
       }
       let cancelled = false;
+      // Accurate + small minFaceSize catches partially-visible faces and
+      // smaller subjects that the fast/0.1 default misses. Cost is a few
+      // hundred ms more on first load, which is fine for a share preview.
       FaceDetection.detect(photoUrl, {
-        performanceMode: 'fast',
-        minFaceSize: 0.1,
+        performanceMode: 'accurate',
+        minFaceSize: 0.05,
       })
         .then(detected => {
           if (!cancelled) setFaces(detected);
@@ -255,8 +258,17 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
         : undefined;
 
     // Smart crop math: derive the image's display rect inside the cover
-    // container, then shift it so the union of face bounding boxes sits
-    // near the container center (clamped so we never expose container bg).
+    // container, then shift it so the focal point sits near the container
+    // center (clamped so we never expose container bg).
+    //
+    // Focal point sourcing, in order:
+    //   1. Union center of detected faces.
+    //   2. Fallback heuristic — when the source is meaningfully more
+    //      portrait than the container, bias toward the upper third.
+    //      That's where subjects typically sit in portrait photos, and
+    //      it salvages cases where face detection comes up empty
+    //      (no face, occluded face, or a body-only crop).
+    //   3. Plain center (yoga default).
     const photoContainerW = width - pad * 2;
     const photoContainerH = isAuto
       ? photoContainerW / autoPhotoAspectRatio
@@ -268,42 +280,55 @@ const ShareStatusCard = React.forwardRef<View, ShareStatusCardProps>(
       width: number;
       height: number;
     } | null = null;
-    if (
-      !isAuto &&
-      intrinsic &&
-      photoContainerH > 0 &&
-      faces &&
-      faces.length > 0
-    ) {
-      const minX = Math.min(...faces.map(f => f.frame.left));
-      const minY = Math.min(...faces.map(f => f.frame.top));
-      const maxX = Math.max(...faces.map(f => f.frame.left + f.frame.width));
-      const maxY = Math.max(...faces.map(f => f.frame.top + f.frame.height));
-      const faceCenterX = (minX + maxX) / 2;
-      const faceCenterY = (minY + maxY) / 2;
-      const scale = Math.max(
-        photoContainerW / intrinsic.w,
-        photoContainerH / intrinsic.h,
-      );
-      const displayW = intrinsic.w * scale;
-      const displayH = intrinsic.h * scale;
-      const targetLeft = photoContainerW / 2 - faceCenterX * scale;
-      const targetTop = photoContainerH / 2 - faceCenterY * scale;
-      const imageLeft = Math.min(
-        0,
-        Math.max(photoContainerW - displayW, targetLeft),
-      );
-      const imageTop = Math.min(
-        0,
-        Math.max(photoContainerH - displayH, targetTop),
-      );
-      smartImageStyle = {
-        position: 'absolute',
-        left: imageLeft,
-        top: imageTop,
-        width: displayW,
-        height: displayH,
-      };
+    if (!isAuto && intrinsic && photoContainerH > 0 && faces !== null) {
+      let focalX = intrinsic.w / 2;
+      let focalY = intrinsic.h / 2;
+      let usedFocal = false;
+      if (faces.length > 0) {
+        const minX = Math.min(...faces.map(f => f.frame.left));
+        const minY = Math.min(...faces.map(f => f.frame.top));
+        const maxX = Math.max(...faces.map(f => f.frame.left + f.frame.width));
+        const maxY = Math.max(
+          ...faces.map(f => f.frame.top + f.frame.height),
+        );
+        focalX = (minX + maxX) / 2;
+        focalY = (minY + maxY) / 2;
+        usedFocal = true;
+      } else {
+        const imageAspect = intrinsic.w / intrinsic.h;
+        const containerAspect = photoContainerW / photoContainerH;
+        if (imageAspect < containerAspect * 0.75) {
+          // Image is noticeably more portrait than the container —
+          // bias toward the upper third to surface likely subjects.
+          focalY = intrinsic.h * 0.33;
+          usedFocal = true;
+        }
+      }
+      if (usedFocal) {
+        const scale = Math.max(
+          photoContainerW / intrinsic.w,
+          photoContainerH / intrinsic.h,
+        );
+        const displayW = intrinsic.w * scale;
+        const displayH = intrinsic.h * scale;
+        const targetLeft = photoContainerW / 2 - focalX * scale;
+        const targetTop = photoContainerH / 2 - focalY * scale;
+        const imageLeft = Math.min(
+          0,
+          Math.max(photoContainerW - displayW, targetLeft),
+        );
+        const imageTop = Math.min(
+          0,
+          Math.max(photoContainerH - displayH, targetTop),
+        );
+        smartImageStyle = {
+          position: 'absolute',
+          left: imageLeft,
+          top: imageTop,
+          width: displayW,
+          height: displayH,
+        };
+      }
     }
 
     return (
