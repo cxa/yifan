@@ -1,9 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import ImageShimmerPlaceholder from '@/components/image-shimmer-placeholder';
-import { Reply, Repeat2, Trash2, Flag } from 'lucide-react-native';
+import { Reply, Repeat2, Share, Share2, Trash2, Flag } from 'lucide-react-native';
+
+// Use the platform-idiomatic share glyph: iOS uses the box+up-arrow
+// (matches SF Symbol `square.and.arrow.up`), Android uses the
+// three-node Material share mark.
+const ShareIcon = Platform.OS === 'ios' ? Share : Share2;
 import { Dialog, useThemeColor } from 'heroui-native';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { AUTH_STACK_ROUTE } from '@/navigation/route-names';
+import type { AuthStackParamList } from '@/navigation/types';
 import type { FanfouStatus } from '@/types/fanfou';
 import type { PhotoViewerOriginRect } from '@/components/photo-viewer-shared-transition';
 import { Text } from '@/components/app-text';
@@ -121,6 +129,7 @@ const TimelineStatusCard = ({
   onDelete,
 }: TimelineStatusCardProps) => {
   const { t } = useTranslation();
+  const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const isDark = useEffectiveIsDark();
   const effectiveIsDark = invertColorScheme ? !isDark : isDark;
   // Pastel card fills need a specific contrast-safe pair; derive the
@@ -205,14 +214,51 @@ const TimelineStatusCard = ({
     }
     setIsDeleteDialogOpen(nextIsOpen);
   };
+  const handleShareCard = () => {
+    navigation.navigate(AUTH_STACK_ROUTE.STATUS_SHARE_CARD, { statusId });
+  };
   return (
     <>
       <Pressable
         onPress={() => onPressStatus(statusId, shadowType)}
+        onLongPress={handleShareCard}
+        delayLongPress={400}
         unstable_pressDelay={100}
         className="rounded-3xl p-4 shadow-card active:scale-[0.98] active:opacity-75 dark:shadow-none"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
+        {(canDelete && onDelete) || invertColorScheme ? (
+          <View style={styles.topRightActions}>
+            {canDelete && onDelete ? (
+              <Pressable
+                onPress={event => {
+                  event.stopPropagation();
+                  handleDeletePress();
+                }}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('statusDeleteTitle')}
+                style={styles.topRightAction}
+              >
+                <Trash2 size={16} color={danger} />
+              </Pressable>
+            ) : null}
+            {invertColorScheme ? (
+              <Pressable
+                onPress={event => {
+                  event.stopPropagation();
+                  handleShareCard();
+                }}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('shareCardMenuShare')}
+                style={styles.topRightAction}
+              >
+                <ShareIcon size={16} color={mutedColor} />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
         <View className={showAvatar ? 'flex-row gap-4' : undefined}>
           {showAvatar ? (
             <Pressable
@@ -428,20 +474,6 @@ const TimelineStatusCard = ({
                     <Flag size={18} color={mutedColor} />
                   </Pressable>
                 ) : null}
-                {canDelete && onDelete ? (
-                  <Pressable
-                    onPress={event => {
-                      event.stopPropagation();
-                      handleDeletePress();
-                    }}
-                    className="px-1.5 pt-1.5"
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('statusDeleteTitle')}
-                  >
-                    <Trash2 size={18} color={danger} />
-                  </Pressable>
-                ) : null}
               </View>
               <View className="ml-3 shrink-0 items-end gap-0.5">
                 <Text
@@ -540,6 +572,17 @@ const styles = StyleSheet.create({
   },
   photoPlaceholder: {
     height: 220,
+  },
+  topRightActions: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    gap: 2,
+    zIndex: 2,
+  },
+  topRightAction: {
+    padding: 6,
   },
 });
 export default TimelineStatusCard;

@@ -43,6 +43,7 @@ import AuthMessagesRoute from '@/routes/auth-messages-screen';
 import AuthPhotosRoute from '@/routes/auth-photos-screen';
 import AuthProfileRoute from '@/routes/auth-profile-screen';
 import AuthStatusRoute from '@/routes/auth-status-screen';
+import AuthStatusShareCardRoute from '@/routes/auth-status-share-card-screen';
 import AuthTagRoute from '@/routes/auth-tag-timeline-screen';
 import AuthPublicTimelineRoute from '@/routes/auth-public-timeline-screen';
 import AuthSearchRoute from '@/routes/auth-search-screen';
@@ -72,6 +73,7 @@ const AUTH_NATIVE_HEADER_ROUTES = new Set<keyof AuthStackParamList>([
   AUTH_STACK_ROUTE.PROFILE,
   AUTH_STACK_ROUTE.EDIT_PROFILE,
   AUTH_STACK_ROUTE.STATUS,
+  AUTH_STACK_ROUTE.STATUS_SHARE_CARD,
   // Tag is a nested single-screen stack; surfacing the header on the
   // outer AuthStack is what gives us the native back button, since the
   // inner stack's DETAIL is always the initial route and has nothing
@@ -283,6 +285,11 @@ const AuthStackNavigator = () => {
           name={AUTH_STACK_ROUTE.STATUS}
           component={StatusStackNavigator}
           options={{ title: 'Status' }}
+        />
+        <AuthStack.Screen
+          name={AUTH_STACK_ROUTE.STATUS_SHARE_CARD}
+          component={AuthStatusShareCardRoute}
+          options={{ title: 'Share' }}
         />
         <AuthStack.Screen
           name={AUTH_STACK_ROUTE.TAG_TIMELINE}

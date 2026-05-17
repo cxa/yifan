@@ -152,6 +152,21 @@ type BaseTranslations = {
   statusVia: string;
   statusRepostFrom: string;
 
+  // Share card screen
+  shareCardScreenTitle: string;
+  shareCardMenuTitle: string;
+  shareCardMenuShare: string;
+  shareCardMenuCancel: string;
+  shareCardSizeLabel: string;
+  shareCardAspectAuto: string;
+  shareCardThemeLabel: string;
+  shareCardThemeLight: string;
+  shareCardThemeDark: string;
+  shareCardColorLabel: string;
+  shareCardShareButton: string;
+  shareCardSharing: string;
+  shareCardFailedTitle: string;
+
   // Search screen
   searchPlaceholder: string;
   searchHint: string;
@@ -491,6 +506,21 @@ const enUS: BaseTranslations = {
   statusVia: 'via {{source}}',
   statusRepostFrom: 'Reposted from @{{name}}',
 
+  // Share card screen
+  shareCardScreenTitle: 'Share as image',
+  shareCardMenuTitle: 'Share this post',
+  shareCardMenuShare: 'Make share card',
+  shareCardMenuCancel: 'Cancel',
+  shareCardSizeLabel: 'Size',
+  shareCardAspectAuto: 'Auto',
+  shareCardThemeLabel: 'Theme',
+  shareCardThemeLight: 'Light',
+  shareCardThemeDark: 'Dark',
+  shareCardColorLabel: 'Color',
+  shareCardShareButton: 'Share',
+  shareCardSharing: 'Preparing…',
+  shareCardFailedTitle: 'Could not create card',
+
   // Search screen
   searchPlaceholder: 'Search posts…',
   searchHint: 'Type to search posts',
@@ -829,6 +859,21 @@ const zhCN: BaseTranslations = {
   conversationLoading: '加载对话中…',
   statusVia: '来自{{source}}',
   statusRepostFrom: '转自 @{{name}}',
+
+  // Share card screen
+  shareCardScreenTitle: '分享为图片',
+  shareCardMenuTitle: '分享这条消息',
+  shareCardMenuShare: '生成分享卡片',
+  shareCardMenuCancel: '取消',
+  shareCardSizeLabel: '尺寸',
+  shareCardAspectAuto: '自适应',
+  shareCardThemeLabel: '主题',
+  shareCardThemeLight: '亮色',
+  shareCardThemeDark: '暗色',
+  shareCardColorLabel: '颜色',
+  shareCardShareButton: '分享',
+  shareCardSharing: '生成中…',
+  shareCardFailedTitle: '生成卡片失败',
 
   // Search screen
   searchPlaceholder: '搜索消息…',

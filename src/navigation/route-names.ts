@@ -14,6 +14,7 @@ export const AUTH_STACK_ROUTE = {
   PROFILE: 'Profile',
   EDIT_PROFILE: 'EditProfile',
   STATUS: 'Status',
+  STATUS_SHARE_CARD: 'StatusShareCard',
   TAG_TIMELINE: 'TagTimeline',
   PUBLIC_TIMELINE: 'PublicTimeline',
   SEARCH: 'Search',
