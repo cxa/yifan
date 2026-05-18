@@ -14,6 +14,13 @@ static NSString *const kSegmentTypeLink = @"link";
 @interface YifanJustifiedTextView () <UIGestureRecognizerDelegate>
 @property (nonatomic, copy) NSAttributedString *attributedText;
 @property (nonatomic, strong) UITapGestureRecognizer *tap;
+// Last (width, height) we sent up via onContentSizeChange. Cached so
+// the multiple dispatch paths (setBounds, layoutSubviews,
+// rebuildAttributedText) don't fire redundant events when the
+// measurement hasn't actually changed. Mirrors the Android side's
+// lastReportedWidth/Height dedupe.
+@property (nonatomic, assign) CGFloat lastReportedWidth;
+@property (nonatomic, assign) CGFloat lastReportedHeight;
 // Range of the currently pressed segment, or {NSNotFound, 0} if no
 // press is active. Drives the tap highlight in drawRect:.
 @property (nonatomic, assign) NSRange pressedRange;
@@ -36,6 +43,8 @@ static NSString *const kSegmentTypeLink = @"link";
     _lineHeight = 24;
     _justify = YES;
     _pressedRange = NSMakeRange(NSNotFound, 0);
+    _lastReportedWidth = -1;
+    _lastReportedHeight = -1;
     self.backgroundColor = [UIColor clearColor];
     self.opaque = NO;
     self.contentMode = UIViewContentModeRedraw;
@@ -248,6 +257,24 @@ static NSString *const kSegmentTypeLink = @"link";
   [self invalidateIntrinsicContentSize];
   [self setNeedsDisplay];
   [self setNeedsLayout];
+  // Text / font / line-height changed: invalidate the dedupe so the
+  // next reportContentSize actually fires even if the old (stale)
+  // measurement happens to numerically match.
+  self.lastReportedWidth = -1;
+  self.lastReportedHeight = -1;
+  // Belt-and-braces: if our bounds are already known, push a fresh
+  // content size up to JS now rather than waiting for the next
+  // layoutSubviews. Under Fabric interop, prop setters can run after
+  // the first layoutSubviews pass (so reportContentSize there saw an
+  // empty attributedText and bailed) and setNeedsLayout doesn't
+  // always trigger a follow-up layout pass when this view is mounted
+  // inside Reanimated's Animated.View (as in the FlatList timeline).
+  // Without this, the JS-side wrapper stays pinned at its initial
+  // lineHeight*2 estimate and the third line of CJK body text gets
+  // clipped — even though the native side measures it correctly.
+  if (self.bounds.size.width > 0) {
+    [self reportContentSize];
+  }
 }
 
 #pragma mark - Drawing
@@ -380,6 +407,15 @@ static NSString *const kSegmentTypeLink = @"link";
   [super setBounds:bounds];
   if (!CGRectEqualToRect(old, bounds)) {
     [self setNeedsDisplay];
+    // Belt-and-braces: report content size on every bounds change too,
+    // not just from layoutSubviews. Under Fabric interop, layoutSubviews
+    // can fail to fire after Yoga updates this view's bounds when the
+    // host sits inside Reanimated's Animated.View — the symptom is the
+    // timeline status card clipping its third line because the JS-side
+    // wrapper height never grows past its lineHeight*2 estimate.
+    if (bounds.size.width > 0) {
+      [self reportContentSize];
+    }
   }
 }
 
@@ -393,6 +429,16 @@ static NSString *const kSegmentTypeLink = @"link";
   CGFloat width = self.bounds.size.width;
   if (width <= 0) return;
   CGSize s = [self measuredSizeForWidth:width];
+  // Dedupe against the last reported size — multiple dispatch paths
+  // (setBounds, layoutSubviews, rebuildAttributedText) can converge
+  // on the same measurement and would otherwise spam JS with
+  // identical events.
+  if (fabs(width - self.lastReportedWidth) < 0.5 &&
+      fabs(s.height - self.lastReportedHeight) < 0.5) {
+    return;
+  }
+  self.lastReportedWidth = width;
+  self.lastReportedHeight = s.height;
   self.onContentSizeChange(@{@"width" : @(width), @"height" : @(s.height)});
 }
 
