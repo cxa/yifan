@@ -80,7 +80,7 @@ const StatusShareCardRoute = () => {
   };
   const [theme, setTheme] = useState<ShareCardTheme>('light');
   const [color, setColor] = useState<ShareCardColor>('cream');
-  const [corners, setCorners] = useState<ShareCardCorners>('rounded');
+  const [corners, setCorners] = useState<ShareCardCorners>('square');
 
   // Black on light reads as a dark card on a bright page — visually jarring
   // and useless for the bright-themed sharing scenarios we want to support.

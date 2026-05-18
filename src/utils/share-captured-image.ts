@@ -66,6 +66,16 @@ export const captureShareCardImage = async (
     format: 'png',
     quality: 1,
     result: 'tmpfile',
+    // Route iOS through CALayer.renderInContext: instead of
+    // drawViewHierarchyInRect. Both target the same view, but the
+    // latter renders backgroundColor as a full rectangle ignoring
+    // cornerRadius — so the exported PNG comes out as an opaque
+    // pastel block even when corners are rounded, and reposting the
+    // card into the timeline shows the bleed past its rounded shape.
+    // renderInContext honors cornerRadius for the layer's own fill.
+    // Trade-off: no CAGradientLayer / no scroll-content expansion,
+    // neither of which the share card uses.
+    useRenderInContext: true,
   });
 
   // captureRef returns a path on Android and a file:// URI on iOS; normalize
