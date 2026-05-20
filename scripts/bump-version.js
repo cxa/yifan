@@ -106,4 +106,18 @@ updateFile(path.join(ROOT, 'ios/yifan.xcodeproj/project.pbxproj'), c =>
   c.replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${version};`),
 );
 
+// ios/yifan/Info.plist NativeVersion — must track package.json's nativeVersion
+// so AppDelegate's OTA bundle resolver (which compares against this Info.plist
+// key) accepts bundles built for this native binary. Skipping this caused the
+// 2605.18 App Store loop where Info.plist stayed at 2604.11 while package.json
+// bumped to 2605.18, and every OTA was wiped on restart by the resolver.
+if (bumpNative) {
+  updateFile(path.join(ROOT, 'ios/yifan/Info.plist'), c =>
+    c.replace(
+      /(<key>NativeVersion<\/key>\s*<string>)[^<]+(<\/string>)/,
+      `$1${version}$2`,
+    ),
+  );
+}
+
 console.log('Done.');

@@ -3,8 +3,18 @@ import RNBlobUtil from 'react-native-blob-util';
 import RNRestart from 'react-native-restart';
 
 const CURRENT_VERSION: string = (require('../../package.json') as { version: string }).version;
-const NATIVE_VERSION: string = (require('../../package.json') as { nativeVersion: string })
-  .nativeVersion;
+
+// On iOS, prefer the device's actual native binary version (Info.plist NativeVersion).
+// package.json's `nativeVersion` is a build-time target — it can be ahead of what's
+// actually shipped on App Store, causing OTA bundles to claim compatibility they
+// don't have. Reading from Info.plist at runtime keeps the check honest.
+const iosRuntimeNativeVersion: string | undefined = (
+  NativeModules.AppStoreProductModule as { nativeVersion?: string } | undefined
+)?.nativeVersion || undefined;
+const NATIVE_VERSION: string =
+  Platform.OS === 'ios' && iosRuntimeNativeVersion
+    ? iosRuntimeNativeVersion
+    : (require('../../package.json') as { nativeVersion: string }).nativeVersion;
 
 const GITHUB_OWNER = 'cxa';
 const GITHUB_REPO = 'yifan';

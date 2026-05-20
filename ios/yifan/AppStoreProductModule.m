@@ -17,6 +17,11 @@ RCT_EXPORT_MODULE();
   return dispatch_get_main_queue();
 }
 
+- (NSDictionary *)constantsToExport {
+  NSString *nativeVersion = [NSBundle mainBundle].infoDictionary[@"NativeVersion"] ?: @"";
+  return @{ @"nativeVersion": nativeVersion };
+}
+
 - (UIViewController *)rootViewController {
   for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
     if (![scene isKindOfClass:[UIWindowScene class]]) continue;
