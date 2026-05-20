@@ -20,7 +20,16 @@ if (Platform.OS !== 'web') {
 
 onlineManager.setEventListener(setOnline =>
   NetInfo.addEventListener(state => {
-    setOnline(Boolean(state.isConnected));
+    // On Android cold start NetInfo can fire with `isConnected: null` while
+    // it is still resolving. Coercing `null` to `false` flips onlineManager
+    // to offline, so the home timeline's first fetch (and every pull-to-
+    // refresh during that window) gets paused — the user sees an empty
+    // screen until NetInfo eventually reports `true`. Only update when we
+    // have a definite boolean; keep React Query on its default-online state
+    // until NetInfo gives a real answer.
+    if (state.isConnected === true || state.isConnected === false) {
+      setOnline(state.isConnected);
+    }
   }),
 );
 
