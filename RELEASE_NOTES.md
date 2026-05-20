@@ -1,5 +1,4 @@
-• Fix: timeline cards sometimes clipped the last line of body text.
-• Polish share cards: default to square corners; rounded exports now keep transparency outside the corners.
+• treat NetInfo unknown state as no-change, not offline
 
 ---
 
