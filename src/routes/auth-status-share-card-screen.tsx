@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,7 +18,13 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useThemeColor } from 'heroui-native';
-import { AlertCircle, Share as ShareIcon } from 'lucide-react-native';
+import { AlertCircle, Share, Share2 } from 'lucide-react-native';
+
+// Platform-idiomatic share glyph — iOS uses the box+up-arrow (SF Symbol
+// `square.and.arrow.up`), Android uses the three-node Material share mark.
+// Matches timeline-status-card.tsx so the share entry point and the share
+// card screen agree on what "share" looks like.
+const ShareIcon = Platform.OS === 'ios' ? Share : Share2;
 
 import { Text } from '@/components/app-text';
 import NeobrutalActivityIndicator from '@/components/neobrutal-activity-indicator';
