@@ -264,34 +264,36 @@ const TimelineStatusCard = ({
         className="rounded-3xl p-4 shadow-card active:scale-[0.98] active:opacity-75 dark:shadow-none"
         style={[{ backgroundColor: cardBgColor }, styles.card]}
       >
-        <View style={styles.topRightActions}>
-          {canDelete && onDelete ? (
+        {showAvatar ? (
+          <View style={styles.topRightActions}>
+            {canDelete && onDelete ? (
+              <Pressable
+                onPress={event => {
+                  event.stopPropagation();
+                  handleDeletePress();
+                }}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('statusDeleteTitle')}
+                style={styles.topRightAction}
+              >
+                <Trash2 size={16} color={danger} />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={event => {
                 event.stopPropagation();
-                handleDeletePress();
+                handleShareCard();
               }}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel={t('statusDeleteTitle')}
+              accessibilityLabel={t('shareCardMenuShare')}
               style={styles.topRightAction}
             >
-              <Trash2 size={16} color={danger} />
+              <ShareIcon size={16} color={mutedColor} />
             </Pressable>
-          ) : null}
-          <Pressable
-            onPress={event => {
-              event.stopPropagation();
-              handleShareCard();
-            }}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t('shareCardMenuShare')}
-            style={styles.topRightAction}
-          >
-            <ShareIcon size={16} color={mutedColor} />
-          </Pressable>
-        </View>
+          </View>
+        ) : null}
         <View className={showAvatar ? 'flex-row gap-4' : undefined}>
           {showAvatar ? (
             <Pressable
@@ -524,6 +526,34 @@ const TimelineStatusCard = ({
                     accessibilityLabel={t('reportSheetTitle')}
                   >
                     <Flag size={18} color={mutedColor} />
+                  </Pressable>
+                ) : null}
+                {!showAvatar ? (
+                  <Pressable
+                    onPress={event => {
+                      event.stopPropagation();
+                      handleShareCard();
+                    }}
+                    className="px-1.5 pt-1.5"
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('shareCardMenuShare')}
+                  >
+                    <ShareIcon size={18} color={mutedColor} />
+                  </Pressable>
+                ) : null}
+                {!showAvatar && canDelete && onDelete ? (
+                  <Pressable
+                    onPress={event => {
+                      event.stopPropagation();
+                      handleDeletePress();
+                    }}
+                    className="px-1.5 pt-1.5"
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('statusDeleteTitle')}
+                  >
+                    <Trash2 size={18} color={danger} />
                   </Pressable>
                 ) : null}
               </View>
