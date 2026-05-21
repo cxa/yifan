@@ -201,6 +201,13 @@ const TimelineStatusCard = ({
     : null;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [authorBlockHeight, setAuthorBlockHeight] = useState(0);
+  // A single-line author row sits at ~one bold-display-name line tall
+  // (~22dp at default font scale). When flex-wrap pushes the handle to
+  // its own line below the display name, the block grows past that,
+  // and the body needs the same breathing room a repost label would
+  // have provided.
+  const isHandleWrapped = authorBlockHeight > bodyLineHeight + 8;
   const statusId = getStatusId(status);
   const user = status.user;
   const displayName = user.screen_name || user.name;
@@ -338,19 +345,32 @@ const TimelineStatusCard = ({
                   event.stopPropagation();
                   onPressProfile(userId);
                 }}
+                onLayout={event => {
+                  const next = event.nativeEvent.layout.height;
+                  setAuthorBlockHeight(previous =>
+                    previous === next ? previous : next,
+                  );
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`Open profile ${screenName || userId}`}
-                className="flex-row items-baseline gap-2"
+                // pr-14 reserves space for the absolutely-positioned
+                // top-right delete/share icons so the handle text doesn't
+                // slide under them. flex-wrap + neither child shrinking
+                // lets the handle drop to its own line when display name
+                // and handle can't share a row.
+                className={`flex-row items-baseline gap-x-2 gap-y-0.5 flex-wrap${
+                  showAvatar ? ' pr-14' : ''
+                }`}
               >
                 <Text
-                  className="shrink text-[17px] font-extrabold text-foreground"
+                  className="text-[17px] font-extrabold text-foreground"
                   style={{ color: textColor }}
                   numberOfLines={1}
                 >
                   {displayName}
                 </Text>
                 <Text
-                  className="shrink-0 text-[13px] text-muted"
+                  className="text-[13px] text-muted"
                   style={{ color: mutedColor }}
                   numberOfLines={1}
                 >
@@ -362,13 +382,17 @@ const TimelineStatusCard = ({
                 the author block sits outside this wrapper so its
                 gap to *text* body can stay tight (mt-1 = 4dp) while
                 pure-photo cards still get the normal 12dp separation
-                between the author header and the image. */}
+                between the author header and the image. The same
+                12dp breathing room kicks in when the handle wrapped
+                to its own line — its wrap acts as a soft separator
+                like a repost label would, so the body shouldn't sit
+                jammed under it. */}
             <View
               className={`gap-3${
                 showAuthor
-                  ? segments.length > 0 || isRepost
-                    ? ' mt-1'
-                    : ' mt-3'
+                  ? !isRepost && (segments.length === 0 || isHandleWrapped)
+                    ? ' mt-3'
+                    : ' mt-1'
                   : ''
               }`}
             >
