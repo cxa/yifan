@@ -1,4 +1,4 @@
-• treat NetInfo unknown state as no-change, not offline
+• read iOS native version from Info.plist at runtime
 
 ---
 
