@@ -2,6 +2,11 @@
 
 一饭，A React Native client for [Fanfou](https://fanfou.com), the Chinese microblogging platform.
 
+## Download
+
+- [App Store (iOS)](https://apps.apple.com/us/app/一饭-岁静饭否客户端/id541110403)
+- [APK (Android)](https://github.com/cxa/yifan/releases/download/v2605.21/yifan-2605.21.apk)
+
 ## Requirements
 
 - Node >= 22.11.0

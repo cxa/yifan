@@ -43,6 +43,15 @@ async function main() {
   const newVersion = pkgAfter.version;
   console.log();
 
+  // Step 2b: Update APK download link in README.md
+  const readmePath = path.join(ROOT, 'README.md');
+  const readme = fs.readFileSync(readmePath, 'utf8');
+  const updatedReadme = readme.replace(
+    /https:\/\/github\.com\/cxa\/yifan\/releases\/download\/v[^/]+\/yifan-[^)]+\.apk/g,
+    `https://github.com/cxa/yifan/releases/download/v${newVersion}/yifan-${newVersion}.apk`
+  );
+  fs.writeFileSync(readmePath, updatedReadme);
+
   // Step 3: Generate changelog
   console.log('=== Generating changelog ===');
   run(`node scripts/generate-changelog.js --from ${prevTag}`);
