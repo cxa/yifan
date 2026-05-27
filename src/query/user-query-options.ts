@@ -1,6 +1,32 @@
 import { queryOptions } from '@tanstack/react-query';
+import { pinyin } from 'pinyin-pro';
 import { get } from '@/auth/fanfou-client';
 import type { FanfouUser } from '@/types/fanfou';
+
+// FanfouUser augmented with pre-computed pinyin so matchesMentionNeedle avoids
+// calling getPinyin on every keystroke (once per ~6 000 users = visible lag).
+// Built by `select` in friendsListQueryOptions — runs once on data load, not
+// on every render or keystroke.
+export type IndexedUser = FanfouUser & {
+  readonly _pinyinSyllables: readonly string[]; // ["guo","xiao","pang","pang"]
+  readonly _pinyinInitials: string;             // "gxpp"
+};
+
+export const indexUser = (user: FanfouUser): IndexedUser => {
+  const name = user.name || user.screen_name || '';
+  if (!name) {
+    return { ...user, _pinyinSyllables: [], _pinyinInitials: '' };
+  }
+  const syllables = pinyin(name, { toneType: 'none', separator: ' ' })
+    .toLowerCase()
+    .split(' ')
+    .filter((s): s is string => s.length > 0);
+  return {
+    ...user,
+    _pinyinSyllables: syllables,
+    _pinyinInitials: syllables.map((s: string) => s[0] ?? '').join(''),
+  };
+};
 
 export const userQueryKeys = {
   account: (userId: string) => ['account', userId] as const,
@@ -129,6 +155,10 @@ export const friendsListQueryOptions = (userId: string) =>
   queryOptions({
     queryKey: userQueryKeys.friendsList(userId),
     queryFn: () => fetchAllContacts(userId),
+    // Build the pinyin index once when the data arrives (or is rehydrated from
+    // AsyncStorage). select is memoized by TanStack Query — it only reruns
+    // when the raw FanfouUser[] changes, not on every render.
+    select: (data): IndexedUser[] => data.map(indexUser),
     // Concurrent batch fetch takes ~20-30 s; stale after 4 h so the
     // crawl only runs a few times per day across sessions.
     staleTime: 4 * 60 * 60 * 1000,

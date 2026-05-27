@@ -230,7 +230,9 @@ const ComposerModal = ({
     const remoteExtras = (mentionSearchQuery.data ?? []).filter(
       u => !localIds.has(u.id),
     );
-    return [...localMatches, ...remoteExtras].slice(0, MENTION_SUGGESTIONS_LIMIT);
+    // IndexedUser extends FanfouUser so spreading the two arrays is safe.
+    const combined: FanfouUser[] = [...localMatches, ...remoteExtras];
+    return combined.slice(0, MENTION_SUGGESTIONS_LIMIT);
   })();
 
   const handleSelectMention = (user: FanfouUser) => {

@@ -1,31 +1,25 @@
-import { match as pinyinMatch } from 'pinyin-pro';
-import type { FanfouUser } from '@/types/fanfou';
+import type { IndexedUser } from '@/query/user-query-options';
 
-// Match a user against a lowercase needle, checking:
-//   1. Substring match on id / screen_name / name (covers ASCII logins)
-//   2. Pinyin prefix match on display names (covers Chinese names, e.g. "wan" → 万, "gxpp" → 郭小胖胖)
+// Match a user against a lowercase needle using pre-computed pinyin syllables
+// (built once when the friends list loads) so no dictionary lookups occur on
+// each keystroke. Handles:
+//   1. Substring match on id / display name  (ASCII logins, CJK display names)
+//   2. Syllable-prefix match on pinyin       ("wan" → 万, "guo" → 郭)
+//   3. Initials abbreviation match           ("gxpp" → 郭小胖胖)
 export const matchesMentionNeedle = (
-  user: FanfouUser,
+  user: IndexedUser,
   needle: string,
 ): boolean => {
-  // unique_id is an opaque internal Fanfou ID (~XYRzI14C2g0), not the @handle.
-  // id = login handle, screen_name = display name (same as name on Fanfou).
-  const fields = [user.id, user.screen_name, user.name];
-  return fields.some(field => {
-    if (!field) {
-      return false;
-    }
-    if (field.toLowerCase().includes(needle)) {
-      return true;
-    }
-    return pinyinMatch(field, needle, { precision: 'start' }) !== null;
-  });
+  if (user.id?.toLowerCase().includes(needle)) return true;
+  const name = (user.name || user.screen_name || '').toLowerCase();
+  if (name.includes(needle)) return true;
+  if (user._pinyinSyllables.some(syl => syl.startsWith(needle))) return true;
+  return user._pinyinInitials.startsWith(needle);
 };
 
-// Lower score = higher priority. Used to sort suggestions so direct handle
-// matches (e.g. "wanhuai" for needle "wan") surface before pinyin matches
-// (e.g. "守望者" whose pinyin starts with "wang").
-export const scoreMentionUser = (user: FanfouUser, needle: string): number => {
+// Lower score = higher priority. Direct handle matches surface before pinyin
+// matches (e.g. "wanhuai" for needle "wan" ranks above "守望者").
+export const scoreMentionUser = (user: IndexedUser, needle: string): number => {
   const id = user.id?.toLowerCase() ?? '';
   const display = (user.name || user.screen_name || '').toLowerCase();
   if (id.startsWith(needle)) return 0;
