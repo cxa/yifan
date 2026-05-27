@@ -202,6 +202,12 @@ const TimelineStatusCard = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [authorBlockHeight, setAuthorBlockHeight] = useState(0);
+  // Hide timestamp + via when the action buttons leave less than 60pt for meta.
+  // Start rowWidth large so meta renders optimistically on first pass; the layout
+  // callback corrects it within the same frame batch on most devices.
+  const [bottomRowWidth, setBottomRowWidth] = useState(9999);
+  const [actionsWidth, setActionsWidth] = useState(0);
+  const showBottomMeta = bottomRowWidth - actionsWidth >= 60;
   // A single-line author row sits at ~one bold-display-name line tall
   // (~22dp at default font scale). When flex-wrap pushes the handle to
   // its own line below the display name, the block grows past that,
@@ -501,8 +507,14 @@ const TimelineStatusCard = ({
                 </View>
               </Pressable>
             ) : null}
-            <View className="flex-row items-end justify-between">
-              <View className="flex-row items-center gap-4">
+            <View
+              className="flex-row items-end justify-between"
+              onLayout={e => setBottomRowWidth(e.nativeEvent.layout.width)}
+            >
+              <View
+                className="flex-row items-center gap-4"
+                onLayout={e => setActionsWidth(e.nativeEvent.layout.width)}
+              >
                 <Pressable
                   onPress={() => onReply(status)}
                   className="pr-1.5 pt-1.5"
@@ -581,27 +593,29 @@ const TimelineStatusCard = ({
                   </Pressable>
                 ) : null}
               </View>
-              <View className="ml-3 shrink-0 items-end gap-0.5">
-                <Text
-                  className="text-[11px] leading-[14px] text-muted"
-                  style={{ color: mutedColor }}
-                >
-                  {timestamp}
-                </Text>
-                {viaLabel ? (
+              {showBottomMeta ? (
+                <View className="ml-3 shrink-0 items-end gap-0.5">
                   <Text
                     className="text-[11px] leading-[14px] text-muted"
-                    style={[
-                      { maxWidth: 160 * fontSizeScale },
-                      { color: mutedColor },
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
+                    style={{ color: mutedColor }}
                   >
-                    {viaLabel}
+                    {timestamp}
                   </Text>
-                ) : null}
-              </View>
+                  {viaLabel ? (
+                    <Text
+                      className="text-[11px] leading-[14px] text-muted"
+                      style={[
+                        { maxWidth: 160 * fontSizeScale },
+                        { color: mutedColor },
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {viaLabel}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
             </View>
             </View>
