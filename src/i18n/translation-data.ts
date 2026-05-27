@@ -88,6 +88,7 @@ type BaseTranslations = {
   composerPhotoNeedsText: string;
   composerTextTooLong: string;
   composerLivePhotoStaticHint: string;
+  mentionSuggestionsHint: string;
 
   // Post/send results
   sentTitle: string;
@@ -444,6 +445,7 @@ const enUS: BaseTranslations = {
   composerPhotoNeedsText: 'Please enter some text to go with your photo.',
   composerTextTooLong: 'Text is too long. Please keep it within 140 characters.',
   composerLivePhotoStaticHint: 'This Live Photo was added as a still image. To send it as a GIF, tap the photo button below and pick it again.',
+  mentionSuggestionsHint: 'Type a name to find who you want to @',
 
   // Post/send results
   sentTitle: 'Sent',
@@ -801,6 +803,7 @@ const zhCN: BaseTranslations = {
   composerPhotoNeedsText: '发送图片时请输入文字内容。',
   composerTextTooLong: '内容过长，请控制在 140 字以内。',
   composerLivePhotoStaticHint: '此实况照片已作为静态图添加。如需以 GIF 发送，请点击下方图片按钮重新选取。',
+  mentionSuggestionsHint: '你想要@谁，继续输入TA的名字看看',
 
   // Post/send results
   sentTitle: '已发送',

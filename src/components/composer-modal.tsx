@@ -11,6 +11,7 @@ import {
   StatusBar,
   StyleSheet,
   TextInput as RNTextInput,
+  type TextInputSelectionChangeEvent,
   View,
 } from 'react-native';
 import {
@@ -23,14 +24,21 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch, useThemeColor } from 'heroui-native';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Text, TextInput } from '@/components/app-text';
+import ComposerMentionSuggestions from '@/components/composer-mention-suggestions';
 import {
   pickImageFromLibrary,
   type PickedImage,
 } from '@/utils/pick-image-from-library';
 import { MAX_STATUS_LENGTH } from '@/utils/composer-send';
 import { useEffectiveIsDark } from '@/settings/app-appearance-preference';
+import { useAuthSession } from '@/auth/auth-session';
+import { friendsListQueryOptions, mentionSearchQueryOptions } from '@/query/user-query-options';
+import { detectMentionContext } from '@/utils/detect-mention-context';
+import { matchesMentionNeedle, scoreMentionUser } from '@/utils/match-mention-user';
+import type { FanfouUser } from '@/types/fanfou';
 
 // Submit button color stays in sync with the Compose tab's active pill so
 // "hit post" reads as one unified blue gesture across tab → composer.
@@ -97,6 +105,17 @@ const ComposerModal = ({
   const [quotedPhotoFailed, setQuotedPhotoFailed] = useState(false);
   const [photoAspect, setPhotoAspect] = useState<number | null>(null);
   const [sendAsGif, setSendAsGif] = useState(true);
+  // Selection mirrors the input cursor so the `@` autocomplete knows what
+  // partial token to filter on. `pendingSelection` is set only when we
+  // programmatically move the cursor (after inserting a mention) — it's
+  // a one-shot controlled value that snaps back to undefined so the
+  // input owns its cursor again.
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [pendingSelection, setPendingSelection] = useState<
+    { start: number; end: number } | undefined
+  >(undefined);
+  const auth = useAuthSession();
+  const authUserId = auth.accessToken?.userId ?? '';
   const isSubmitting = controlledIsSubmitting ?? internalIsSubmitting;
   const canDismiss = !isSubmitting && !isPhotoPicking;
   const { height: keyboardHeight, progress: keyboardProgress } =
@@ -149,7 +168,104 @@ const ComposerModal = ({
     setIsPhotoPicking(false);
     setInternalIsSubmitting(false);
     setQuotedPhotoFailed(false);
+    setSelection({ start: initialText.length, end: initialText.length });
   }, [initialText, initialPhoto, resetKey, visible]);
+
+  const mentionContext = detectMentionContext(value, selection.start);
+
+  // Start loading friends as soon as the composer opens so local character
+  // matching has data ready by the time the user types '@'. Cache is 30 min
+  // so re-opens are instant; only the first cold session pays the fetch cost.
+  const friendsQuery = useQuery({
+    ...friendsListQueryOptions(authUserId),
+    enabled: visible && Boolean(authUserId),
+  });
+
+  // Debounce the needle so we don't fire a search request on every keystroke.
+  const mentionPartial = mentionContext ? mentionContext.partial : '';
+  const mentionNeedle = mentionPartial.trim().toLowerCase();
+  const [debouncedNeedle, setDebouncedNeedle] = useState('');
+  useEffect(() => {
+    if (!mentionNeedle) {
+      setDebouncedNeedle('');
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedNeedle(mentionNeedle), 200);
+    return () => clearTimeout(timer);
+  }, [mentionNeedle]);
+
+  // Live search covers non-friends that the local list can't reach.
+  const mentionSearchQuery = useQuery({
+    ...mentionSearchQueryOptions(debouncedNeedle),
+    enabled: Boolean(debouncedNeedle),
+  });
+
+  // True while waiting for any mention data: friends list initial load,
+  // debounce timer, or remote search in flight.
+  const isMentionSearching =
+    Boolean(mentionContext) &&
+    (friendsQuery.isLoading ||
+      (Boolean(mentionNeedle) &&
+        (debouncedNeedle !== mentionNeedle || mentionSearchQuery.isFetching)));
+
+  // Merge friends (instant, local) + search results (debounced, remote).
+  // Friends appear first sorted by relevance (direct handle match → display
+  // name match → pinyin match); search results fill in anyone not already shown.
+  // Cap at 30 to avoid rendering hundreds of rows for broad needles like "wan".
+  const MENTION_SUGGESTIONS_LIMIT = 30;
+  const mentionSuggestions = (() => {
+    if (!mentionContext) {
+      return [];
+    }
+    const allLocal = friendsQuery.data ?? [];
+    const localMatches = mentionNeedle
+      ? allLocal
+          .filter(user => matchesMentionNeedle(user, mentionNeedle))
+          .sort((a, b) => scoreMentionUser(a, mentionNeedle) - scoreMentionUser(b, mentionNeedle))
+      : allLocal;
+    if (!mentionNeedle) {
+      return localMatches.slice(0, MENTION_SUGGESTIONS_LIMIT);
+    }
+    const localIds = new Set(localMatches.map(u => u.id));
+    const remoteExtras = (mentionSearchQuery.data ?? []).filter(
+      u => !localIds.has(u.id),
+    );
+    return [...localMatches, ...remoteExtras].slice(0, MENTION_SUGGESTIONS_LIMIT);
+  })();
+
+  const handleSelectMention = (user: FanfouUser) => {
+    if (!mentionContext) {
+      return;
+    }
+    // user.id is the login handle on Fanfou; screen_name is the display name
+    const handleText = `@${user.id} `;
+    const before = value.slice(0, mentionContext.start);
+    const after = value.slice(mentionContext.end);
+    const next = before + handleText + after;
+    const cursorPos = before.length + handleText.length;
+    setValue(next);
+    setSelection({ start: cursorPos, end: cursorPos });
+    setPendingSelection({ start: cursorPos, end: cursorPos });
+  };
+
+  useEffect(() => {
+    if (!pendingSelection) {
+      return;
+    }
+    // One-shot: clear `pendingSelection` after the input has accepted it
+    // so the user regains cursor control on the next interaction.
+    const id = setTimeout(() => setPendingSelection(undefined), 0);
+    return () => clearTimeout(id);
+  }, [pendingSelection]);
+
+  const handleSelectionChange = (event: TextInputSelectionChangeEvent) => {
+    const next = event.nativeEvent.selection;
+    setSelection(previous =>
+      previous.start === next.start && previous.end === next.end
+        ? previous
+        : next,
+    );
+  };
 
   const handleModalShow = () => {
     // Focus AFTER the Modal's slide-in animation completes on both platforms.
@@ -377,6 +493,8 @@ const ComposerModal = ({
                 ref={inputRef}
                 value={value}
                 onChangeText={setValue}
+                onSelectionChange={handleSelectionChange}
+                selection={pendingSelection}
                 placeholder={placeholder}
                 placeholderTextColor={placeholderColor}
                 multiline
@@ -428,9 +546,23 @@ const ComposerModal = ({
         // freeze — leaving the toolbar stranded mid-screen. Detach it into
         // a plain View pinned at the bottom so it doesn't bounce when the
         // keyboard animation resumes after the picker closes.
-        <View className="bg-background">{renderToolbar()}</View>
+        <View className="bg-background">
+          <ComposerMentionSuggestions
+            suggestions={mentionSuggestions}
+            needle={mentionNeedle}
+            isSearching={isMentionSearching}
+            onSelect={handleSelectMention}
+          />
+          {renderToolbar()}
+        </View>
       ) : (
         <KeyboardStickyView className="bg-background">
+          <ComposerMentionSuggestions
+            suggestions={mentionSuggestions}
+            needle={mentionNeedle}
+            isSearching={isMentionSearching}
+            onSelect={handleSelectMention}
+          />
           {renderToolbar()}
           {/* iOS keyboard has rounded corners at its top-left/right — tiny
               arcs of Modal bg show through the notches. A short bg-background

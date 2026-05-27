@@ -40,6 +40,8 @@ import MoreRoute from '@/routes/auth-more-screen';
 import PhotoViewerModal from '@/components/photo-viewer-modal';
 import { closePhotoViewer, usePhotoViewerStore } from '@/components/photo-viewer-store';
 import { useStatusUpdateMutation } from '@/query/post-mutations';
+import { useQuery } from '@tanstack/react-query';
+import { friendsListQueryOptions } from '@/query/user-query-options';
 const Tab = createBottomTabNavigator<AuthTabParamList>();
 // Bottom tab bar intentionally inverts the app theme — a dark bar in light
 // mode, light bar in dark mode — so the bar reads as a distinct surface
@@ -423,6 +425,14 @@ const AuthIndexRoute = () => {
       <PhotoViewerTabOverlay />
     </>
   );
+  // Prefetch friends list so @-mention autocomplete is warm before the
+  // composer is ever opened. The full crawl takes 2-4 min; starting it
+  // here means most sessions have a ready cache by first compose tap.
+  useQuery({
+    ...friendsListQueryOptions(auth.accessToken?.userId ?? ''),
+    enabled: auth.status === 'authenticated',
+  });
+
   if (auth.status !== 'authenticated') {
     return <LoginView />;
   }
