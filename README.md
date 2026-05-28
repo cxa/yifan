@@ -5,7 +5,7 @@
 ## Download
 
 - [App Store (iOS)](https://apps.apple.com/us/app/一饭-岁静饭否客户端/id541110403)
-- [APK (Android)](https://github.com/cxa/yifan/releases/download/v2605.28.1/yifan-2605.28.1.apk)
+- [APK (Android)](https://github.com/cxa/yifan/releases/download/v2605.28/yifan-2605.28.apk)
 
 ## Requirements
 
