@@ -8,23 +8,28 @@ import type { FanfouUser } from '@/types/fanfou';
 // Built by `select` in friendsListQueryOptions — runs once on data load, not
 // on every render or keystroke.
 export type IndexedUser = FanfouUser & {
-  readonly _pinyinSyllables: readonly string[]; // ["guo","xiao","pang","pang"]
-  readonly _pinyinInitials: string;             // "gxpp"
+  readonly _pinyinSyllables: readonly string[]; // ["guo","xiao","pang"]
+  readonly _pinyinInitials: string;             // "gxp"
+  readonly _pinyinSuffixes: readonly string[];  // ["guoxiaopang","xiaopang","pang"]
 };
 
 export const indexUser = (user: FanfouUser): IndexedUser => {
   const name = user.name || user.screen_name || '';
   if (!name) {
-    return { ...user, _pinyinSyllables: [], _pinyinInitials: '' };
+    return { ...user, _pinyinSyllables: [], _pinyinInitials: '', _pinyinSuffixes: [] };
   }
   const syllables = pinyin(name, { toneType: 'none', separator: ' ' })
     .toLowerCase()
     .split(' ')
     .filter((s): s is string => s.length > 0);
+  // One suffix per syllable boundary: "guoxiaopang", "xiaopang", "pang".
+  // Enables prefix matching from any position, so "@xiaopang" finds 郭小胖.
+  const suffixes = syllables.map((_, i) => syllables.slice(i).join(''));
   return {
     ...user,
     _pinyinSyllables: syllables,
     _pinyinInitials: syllables.map((s: string) => s[0] ?? '').join(''),
+    _pinyinSuffixes: suffixes,
   };
 };
 

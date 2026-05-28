@@ -1,11 +1,11 @@
 import type { IndexedUser } from '@/query/user-query-options';
 
-// Match a user against a lowercase needle using pre-computed pinyin syllables
-// (built once when the friends list loads) so no dictionary lookups occur on
-// each keystroke. Handles:
+// Match a user against a lowercase needle using pre-computed pinyin so no
+// dictionary lookups occur on each keystroke. Handles:
 //   1. Substring match on id / display name  (ASCII logins, CJK display names)
-//   2. Syllable-prefix match on pinyin       ("wan" → 万, "guo" → 郭)
-//   3. Initials abbreviation match           ("gxpp" → 郭小胖胖)
+//   2. Syllable-boundary prefix of pinyin    ("guo" → 郭小胖, "xiao" → 郭小胖,
+//                                             "guoxiao" → 郭小胖, "xiaopang" → 郭小胖)
+//   3. Initials abbreviation match           ("gxp" → 郭小胖)
 export const matchesMentionNeedle = (
   user: IndexedUser,
   needle: string,
@@ -13,7 +13,7 @@ export const matchesMentionNeedle = (
   if (user.id?.toLowerCase().includes(needle)) return true;
   const name = (user.name || user.screen_name || '').toLowerCase();
   if (name.includes(needle)) return true;
-  if (user._pinyinSyllables.some(syl => syl.startsWith(needle))) return true;
+  if (user._pinyinSuffixes.some(suf => suf.startsWith(needle))) return true;
   return user._pinyinInitials.startsWith(needle);
 };
 

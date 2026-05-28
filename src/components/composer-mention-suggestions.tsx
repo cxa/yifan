@@ -13,14 +13,16 @@ import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/app-text';
 import { normalizeFanfouImageUrl } from '@/utils/normalize-fanfou-image-url';
 import type { FanfouUser } from '@/types/fanfou';
+import type { IndexedUser } from '@/query/user-query-options';
 
 type Props = {
-  suggestions: FanfouUser[];
+  suggestions: (FanfouUser | IndexedUser)[];
   needle: string;
   isSearching: boolean;
   onSelect: (user: FanfouUser) => void;
 };
 
+// Highlight a direct ASCII/CJK substring match (used for the login ID).
 const highlightMatch = (text: string, needle: string): React.ReactNode => {
   if (!needle) {
     return text;
@@ -39,6 +41,62 @@ const highlightMatch = (text: string, needle: string): React.ReactNode => {
       {text.slice(idx + needle.length)}
     </>
   );
+};
+
+// Highlight the display name: tries direct substring first, then falls back
+// to pinyin-syllable boundary matching for CJK names (e.g. "guo" → bold "郭").
+const highlightDisplayName = (
+  text: string,
+  needle: string,
+  user: FanfouUser | IndexedUser,
+): React.ReactNode => {
+  if (!needle) return text;
+
+  // Direct substring match (covers CJK character input like "小").
+  const lowerText = text.toLowerCase();
+  const idx = lowerText.indexOf(needle.toLowerCase());
+  if (idx !== -1) {
+    return (
+      <>
+        {text.slice(0, idx)}
+        <Text className="font-semibold text-primary">
+          {text.slice(idx, idx + needle.length)}
+        </Text>
+        {text.slice(idx + needle.length)}
+      </>
+    );
+  }
+
+  // Pinyin match: find which syllable boundary the needle starts at, then
+  // count how many syllables it spans to determine the character range.
+  if ('_pinyinSuffixes' in user && user._pinyinSuffixes.length > 0) {
+    const { _pinyinSuffixes: suffixes, _pinyinSyllables: syllables } = user;
+    for (let startIdx = 0; startIdx < suffixes.length; startIdx++) {
+      if (suffixes[startIdx].startsWith(needle)) {
+        let consumed = 0;
+        let count = 0;
+        for (let i = startIdx; consumed < needle.length && i < syllables.length; i++) {
+          consumed += syllables[i].length;
+          count++;
+        }
+        const endIdx = startIdx + count;
+        if (endIdx > startIdx && endIdx <= text.length) {
+          return (
+            <>
+              {text.slice(0, startIdx)}
+              <Text className="font-semibold text-primary">
+                {text.slice(startIdx, endIdx)}
+              </Text>
+              {text.slice(endIdx)}
+            </>
+          );
+        }
+        break;
+      }
+    }
+  }
+
+  return text;
 };
 
 const ComposerMentionSuggestions = ({
@@ -62,6 +120,7 @@ const ComposerMentionSuggestions = ({
       </Text>
       <ScrollView
         style={styles.scroll}
+        className="bg-background"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -87,7 +146,7 @@ const ComposerMentionSuggestions = ({
                 className="flex-1 text-[14px] text-foreground"
                 numberOfLines={1}
               >
-                {highlightMatch(displayName, needle)}
+                {highlightDisplayName(displayName, needle, user)}
                 {' ('}
                 {highlightMatch(loginId, needle)}
                 {')'}

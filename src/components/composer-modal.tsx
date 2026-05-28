@@ -11,6 +11,7 @@ import {
   StatusBar,
   StyleSheet,
   TextInput as RNTextInput,
+  type LayoutChangeEvent,
   type TextInputSelectionChangeEvent,
   View,
 } from 'react-native';
@@ -21,6 +22,7 @@ import {
 import Animated, {
   interpolate,
   useAnimatedStyle,
+  useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch, useThemeColor } from 'heroui-native';
@@ -140,6 +142,21 @@ const ComposerModal = ({
   const scrollBottomSpacerStyle = useAnimatedStyle(() => ({
     height: Math.abs(keyboardHeight.value),
   }));
+  // Tracks the rendered toolbar height so the suggestion list overlay can be
+  // positioned flush above it. Updated via onLayout on the toolbar Animated.View.
+  const toolbarHeightSV = useSharedValue(50);
+  const handleToolbarLayout = (e: LayoutChangeEvent) => {
+    toolbarHeightSV.value = Math.round(e.nativeEvent.layout.height);
+  };
+  // The suggestion list is positioned as an absolutely-placed overlay outside
+  // the KeyboardStickyView. Keeping it out of the KSV ensures the suggestion
+  // items (avatars, text) never occupy the keyboard's layout-space position
+  // (bottom of screen). The iOS keyboard's vibrancy filter samples that area;
+  // bright content there would lighten the prediction bar and break the match
+  // with bg-background. Only the toolbar (pure bg-background) stays in the KSV.
+  const suggestionListOverlayStyle = useAnimatedStyle(() => ({
+    bottom: Math.abs(keyboardHeight.value) + toolbarHeightSV.value,
+  }));
   const isLivePhotoGif = photo?.mimeType === 'image/gif' && Boolean(photo?.stillImage);
   const effectivePhoto = isLivePhotoGif && !sendAsGif && photo?.stillImage
     ? { ...photo, ...photo.stillImage }
@@ -173,12 +190,12 @@ const ComposerModal = ({
 
   const mentionContext = detectMentionContext(value, selection.start);
 
-  // Start loading friends as soon as the composer opens so local character
-  // matching has data ready by the time the user types '@'. Cache is 30 min
-  // so re-opens are instant; only the first cold session pays the fetch cost.
+  // Subscribe to the friends list so @-mention autocomplete has IndexedUser
+  // data when the user types. The crawl itself is kicked off by AuthLayout
+  // before any composer opens; here we just read from the shared cache.
   const friendsQuery = useQuery({
     ...friendsListQueryOptions(authUserId),
-    enabled: visible && Boolean(authUserId),
+    enabled: Boolean(authUserId),
   });
 
   // Debounce the needle so we don't fire a search request on every keystroke.
@@ -230,9 +247,7 @@ const ComposerModal = ({
     const remoteExtras = (mentionSearchQuery.data ?? []).filter(
       u => !localIds.has(u.id),
     );
-    // IndexedUser extends FanfouUser so spreading the two arrays is safe.
-    const combined: FanfouUser[] = [...localMatches, ...remoteExtras];
-    return combined.slice(0, MENTION_SUGGESTIONS_LIMIT);
+    return [...localMatches, ...remoteExtras].slice(0, MENTION_SUGGESTIONS_LIMIT);
   })();
 
   const handleSelectMention = (user: FanfouUser) => {
@@ -347,6 +362,7 @@ const ComposerModal = ({
 
   const renderToolbar = () => (
     <Animated.View
+      onLayout={handleToolbarLayout}
       className="flex-row items-center gap-2 bg-background px-4 py-3"
       style={[styles.toolbar, { borderTopColor: border }, toolbarPaddingStyle]}
     >
@@ -403,8 +419,9 @@ const ComposerModal = ({
       onShow={handleModalShow}
       onRequestClose={() => canDismiss && onCancel()}
     >
+      <View className="flex-1 bg-background">
       <View
-        className="flex-1 bg-background"
+        className="flex-1"
         style={{ paddingTop: insets.top || StatusBar.currentHeight || 0 }}
       >
           {/* Header */}
@@ -501,6 +518,7 @@ const ComposerModal = ({
                 placeholderTextColor={placeholderColor}
                 multiline
                 textAlignVertical="top"
+                keyboardAppearance={isDark ? 'dark' : 'light'}
                 className="min-h-[160px] py-2 text-[17px] leading-relaxed text-foreground"
                 style={[
                   styles.textInputTransparentBg,
@@ -548,23 +566,9 @@ const ComposerModal = ({
         // freeze — leaving the toolbar stranded mid-screen. Detach it into
         // a plain View pinned at the bottom so it doesn't bounce when the
         // keyboard animation resumes after the picker closes.
-        <View className="bg-background">
-          <ComposerMentionSuggestions
-            suggestions={mentionSuggestions}
-            needle={mentionNeedle}
-            isSearching={isMentionSearching}
-            onSelect={handleSelectMention}
-          />
-          {renderToolbar()}
-        </View>
+        <View>{renderToolbar()}</View>
       ) : (
-        <KeyboardStickyView className="bg-background">
-          <ComposerMentionSuggestions
-            suggestions={mentionSuggestions}
-            needle={mentionNeedle}
-            isSearching={isMentionSearching}
-            onSelect={handleSelectMention}
-          />
+        <KeyboardStickyView>
           {renderToolbar()}
           {/* iOS keyboard has rounded corners at its top-left/right — tiny
               arcs of Modal bg show through the notches. A short bg-background
@@ -576,6 +580,21 @@ const ComposerModal = ({
           ) : null}
         </KeyboardStickyView>
       )}
+      </View>
+      {/* Suggestion list lives outside the KSV so its content (avatars, text)
+          never occupies the keyboard's layout-space position at the screen
+          bottom. The overlay is animated to sit flush above the toolbar. */}
+      <Animated.View
+        style={[styles.suggestionListOverlay, suggestionListOverlayStyle]}
+        pointerEvents="box-none"
+      >
+        <ComposerMentionSuggestions
+          suggestions={mentionSuggestions}
+          needle={mentionNeedle}
+          isSearching={isMentionSearching}
+          onSelect={handleSelectMention}
+        />
+      </Animated.View>
     </Modal>
   );
 };
@@ -613,6 +632,11 @@ const styles = StyleSheet.create({
     right: 0,
     top: '100%',
     height: 16,
+  },
+  suggestionListOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
   },
   charCount: {
     width: 72,

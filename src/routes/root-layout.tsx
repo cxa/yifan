@@ -43,6 +43,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
     const timer = setTimeout(() => StatusBar.setBarStyle(barStyle, false), 0);
     return () => clearTimeout(timer);
   }, [isDark]);
+
   const [snapshotUri, setSnapshotUri] = useState<string | null>(null);
   const pendingUri = useRef<string | null>(null);
   const snapshotOpacity = useSharedValue(0);
