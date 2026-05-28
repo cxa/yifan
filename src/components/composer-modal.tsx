@@ -254,8 +254,7 @@ const ComposerModal = ({
     if (!mentionContext) {
       return;
     }
-    // user.id is the login handle on Fanfou; screen_name is the display name
-    const handleText = `@${user.id} `;
+    const handleText = `@${user.screen_name} `;
     const before = value.slice(0, mentionContext.start);
     const after = value.slice(mentionContext.end);
     const next = before + handleText + after;
