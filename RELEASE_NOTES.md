@@ -1,4 +1,5 @@
-• read iOS native version from Info.plist at runtime
+• 新增 @ 提及自动补全：输入 @ 即可从关注列表搜索好友，支持拼音匹配
+• 修复深色模式下键盘底部出现白色背景条的问题
 
 ---
 
