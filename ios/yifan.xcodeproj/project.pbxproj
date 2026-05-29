@@ -476,7 +476,6 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
-					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = im.cxa.fanatter;
 				PRODUCT_NAME = yifan;
@@ -510,7 +509,6 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
-					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = im.cxa.fanatter;
 				PRODUCT_NAME = yifan;

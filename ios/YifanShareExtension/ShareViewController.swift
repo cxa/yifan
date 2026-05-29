@@ -221,35 +221,40 @@ class ShareViewController: UIViewController {
         Self.firstFile(in: $0, extensions: ["mov", "mp4"])
       }.first
 
-      if let videoURL, let gifData = Self.createGifFromVideo(at: videoURL) {
-        if scoped {
-          url.stopAccessingSecurityScopedResource()
-        }
-        self.writeDebugLog("Found sibling movie and converted to GIF: \(videoURL.lastPathComponent), \(gifData.count) bytes.")
-        self.writeSharedImageData(gifData, extension: "gif")
-        return
-      }
-
+      // Pre-read still image data while the temporary URL is still valid.
       let imageData = try? Data(contentsOf: url)
-      if scoped {
-        url.stopAccessingSecurityScopedResource()
-      }
 
-      guard let imageData else {
-        self.writeDebugLog("Live Photo still data was nil after movie search.")
-        self.loadSharedImage(provider: provider, imageTypeIDs: [UTType.image.identifier])
-        return
-      }
+      Task { @MainActor [weak self] in
+        guard let self else {
+          if scoped { url.stopAccessingSecurityScopedResource() }
+          return
+        }
 
-      let uploadImage = Self.preparedStillImageForUpload(
-        imageData,
-        typeIdentifier: typeID,
-        sourceExtension: url.pathExtension
-      )
-      self.writeDebugLog(
-        "No sibling movie found; using still image as \(uploadImage.ext): \(uploadImage.data.count) bytes."
-      )
-      self.writeSharedImageData(uploadImage.data, extension: uploadImage.ext, livePhotoStaticFallback: true)
+        if let videoURL, let gifData = await Self.createGifFromVideo(at: videoURL) {
+          if scoped { url.stopAccessingSecurityScopedResource() }
+          self.writeDebugLog("Found sibling movie and converted to GIF: \(videoURL.lastPathComponent), \(gifData.count) bytes.")
+          self.writeSharedImageData(gifData, extension: "gif")
+          return
+        }
+
+        if scoped { url.stopAccessingSecurityScopedResource() }
+
+        guard let imageData else {
+          self.writeDebugLog("Live Photo still data was nil after movie search.")
+          self.loadSharedImage(provider: provider, imageTypeIDs: [UTType.image.identifier])
+          return
+        }
+
+        let uploadImage = Self.preparedStillImageForUpload(
+          imageData,
+          typeIdentifier: typeID,
+          sourceExtension: url.pathExtension
+        )
+        self.writeDebugLog(
+          "No sibling movie found; using still image as \(uploadImage.ext): \(uploadImage.data.count) bytes."
+        )
+        self.writeSharedImageData(uploadImage.data, extension: uploadImage.ext, livePhotoStaticFallback: true)
+      }
     }
   }
 
@@ -309,36 +314,47 @@ class ShareViewController: UIViewController {
     let stillURL = Self.firstFile(in: url, extensions: ["heic", "heif", "jpg", "jpeg", "png"])
     writeDebugLog("Live Photo bundle video: \(videoURL?.lastPathComponent ?? "nil"), still: \(stillURL?.lastPathComponent ?? "nil")")
 
-    if let videoURL, let gifData = Self.createGifFromVideo(at: videoURL) {
-      if scoped {
-        url.stopAccessingSecurityScopedResource()
-      }
-      writeDebugLog("Live Photo converted to GIF: \(gifData.count) bytes.")
-      writeSharedImageData(gifData, extension: "gif")
-      return
+    // Pre-read still image data while security scope is active.
+    let stillImageData: (data: Data, typeID: String, ext: String)? = stillURL.flatMap { su in
+      guard let data = try? Data(contentsOf: su) else { return nil }
+      return (
+        data,
+        UTType(filenameExtension: su.pathExtension)?.identifier ?? UTType.image.identifier,
+        su.pathExtension
+      )
     }
 
-    if let stillURL, let imageData = try? Data(contentsOf: stillURL) {
-      if scoped {
-        url.stopAccessingSecurityScopedResource()
+    Task { @MainActor [weak self] in
+      guard let self else {
+        if scoped { url.stopAccessingSecurityScopedResource() }
+        return
       }
-      let uploadImage = Self.preparedStillImageForUpload(
-        imageData,
-        typeIdentifier: UTType(filenameExtension: stillURL.pathExtension)?.identifier ?? UTType.image.identifier,
-        sourceExtension: stillURL.pathExtension
-      )
-      writeDebugLog(
-        "Live Photo GIF conversion failed; using still image as \(uploadImage.ext): \(uploadImage.data.count) bytes."
-      )
-      writeSharedImageData(uploadImage.data, extension: uploadImage.ext, livePhotoStaticFallback: true)
-      return
-    }
 
-    if scoped {
-      url.stopAccessingSecurityScopedResource()
+      if let videoURL, let gifData = await Self.createGifFromVideo(at: videoURL) {
+        if scoped { url.stopAccessingSecurityScopedResource() }
+        writeDebugLog("Live Photo converted to GIF: \(gifData.count) bytes.")
+        writeSharedImageData(gifData, extension: "gif")
+        return
+      }
+
+      if let still = stillImageData {
+        if scoped { url.stopAccessingSecurityScopedResource() }
+        let uploadImage = Self.preparedStillImageForUpload(
+          still.data,
+          typeIdentifier: still.typeID,
+          sourceExtension: still.ext
+        )
+        writeDebugLog(
+          "Live Photo GIF conversion failed; using still image as \(uploadImage.ext): \(uploadImage.data.count) bytes."
+        )
+        writeSharedImageData(uploadImage.data, extension: uploadImage.ext, livePhotoStaticFallback: true)
+        return
+      }
+
+      if scoped { url.stopAccessingSecurityScopedResource() }
+      writeDebugLog("Live Photo bundle had no usable video or still; falling back to image provider.")
+      loadLivePhotoStillAndSearchMovie(provider: provider)
     }
-    writeDebugLog("Live Photo bundle had no usable video or still; falling back to image provider.")
-    loadLivePhotoStillAndSearchMovie(provider: provider)
   }
 
   private func loadSharedMovieAsGif(provider: NSItemProvider) {
@@ -352,26 +368,53 @@ class ShareViewController: UIViewController {
       }
 
       self.writeDebugLog("Movie representation URL: \(url.path)")
+
+      // Copy the temporary file to a persistent location before the callback returns,
+      // since loadFileRepresentation may delete it once the handler exits.
       let scoped = url.startAccessingSecurityScopedResource()
-      let gifData = Self.createGifFromVideo(at: url)
+      let localURL: URL?
+      do {
+        let dest = FileManager.default.temporaryDirectory
+          .appendingPathComponent(UUID().uuidString)
+          .appendingPathExtension(url.pathExtension)
+        try FileManager.default.copyItem(at: url, to: dest)
+        localURL = dest
+      } catch {
+        localURL = nil
+      }
       if scoped {
         url.stopAccessingSecurityScopedResource()
       }
 
-      guard let gifData else {
-        self.writeDebugLog("Movie GIF conversion failed.")
+      guard let localURL else {
+        self.writeDebugLog("Movie GIF conversion failed: could not copy temporary file.")
         self.complete(success: false)
         return
       }
 
-      self.writeDebugLog("Movie converted to GIF: \(gifData.count) bytes.")
-      self.writeSharedImageData(gifData, extension: "gif")
+      Task { @MainActor [weak self] in
+        guard let self else {
+          try? FileManager.default.removeItem(at: localURL)
+          return
+        }
+        let gifData = await Self.createGifFromVideo(at: localURL)
+        try? FileManager.default.removeItem(at: localURL)
+
+        guard let gifData else {
+          self.writeDebugLog("Movie GIF conversion failed.")
+          self.complete(success: false)
+          return
+        }
+
+        self.writeDebugLog("Movie converted to GIF: \(gifData.count) bytes.")
+        self.writeSharedImageData(gifData, extension: "gif")
+      }
     }
   }
 
   // MARK: - GIF conversion
 
-  private static func createGifFromVideo(at videoURL: URL, maxDimension: CGFloat? = nil) -> Data? {
+  private static func createGifFromVideo(at videoURL: URL, maxDimension: CGFloat? = nil) async -> Data? {
     let maxDim = maxDimension ?? maxGifDimension
     let asset = AVURLAsset(url: videoURL)
     let generator = AVAssetImageGenerator(asset: asset)
@@ -380,13 +423,17 @@ class ShareViewController: UIViewController {
     generator.requestedTimeToleranceAfter = .zero
     generator.maximumSize = CGSize(width: maxDim, height: maxDim)
 
-    let durationSeconds = CMTimeGetSeconds(asset.duration)
+    guard let duration = try? await asset.load(.duration) else { return nil }
+    let durationSeconds = CMTimeGetSeconds(duration)
     guard durationSeconds > 0 else { return nil }
 
     // Read native frame rate from the video track
     var nativeFPS = defaultGifFPS
-    if let track = asset.tracks(withMediaType: .video).first, track.nominalFrameRate > 0 {
-      nativeFPS = track.nominalFrameRate
+    if let tracks = try? await asset.loadTracks(withMediaType: .video),
+       let track = tracks.first,
+       let fps = try? await track.load(.nominalFrameRate),
+       fps > 0 {
+      nativeFPS = fps
     }
     let gifFPS = min(nativeFPS, maxGifFPS)
 
@@ -434,7 +481,7 @@ class ShareViewController: UIViewController {
     if normalizedData.count > maxPhotoFileSize && maxDim > 160 {
       let scale = sqrt(Double(maxPhotoFileSize) / Double(normalizedData.count)) * 0.9
       let newDimension = max(CGFloat(Int(maxDim * CGFloat(scale))), 160)
-      if let retry = createGifFromVideo(at: videoURL, maxDimension: newDimension) {
+      if let retry = await createGifFromVideo(at: videoURL, maxDimension: newDimension) {
         return retry
       }
     }
