@@ -13,14 +13,23 @@ const readline = require('readline');
 
 const ROOT = path.resolve(__dirname, '..');
 const RELEASE_NOTES_PATH = path.join(ROOT, 'RELEASE_NOTES.md');
-const IOS_APP_STORE_URL = 'https://apps.apple.com/us/app/id541110403';
+const IOS_APP_STORE_URL =
+  'https://apps.apple.com/app/apple-store/id541110403?pt=259198&ct=github-release&mt=8';
 
 function run(cmd, opts) {
-  return execSync(cmd, { cwd: ROOT, encoding: 'utf8', stdio: 'inherit', ...opts });
+  return execSync(cmd, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    stdio: 'inherit',
+    ...opts,
+  });
 }
 
 function ask(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stderr,
+  });
   return new Promise(resolve => {
     rl.question(question, answer => {
       rl.close();
@@ -31,7 +40,9 @@ function ask(question) {
 
 async function main() {
   // Step 1: Determine previous version for changelog
-  const pkgBefore = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const pkgBefore = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'),
+  );
   const prevTag = `v${pkgBefore.version}`;
   console.log(`Current version: ${pkgBefore.version}\n`);
 
@@ -39,7 +50,9 @@ async function main() {
   console.log('=== Bumping version ===');
   run('node scripts/bump-version.js');
 
-  const pkgAfter = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const pkgAfter = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'),
+  );
   const newVersion = pkgAfter.version;
   console.log();
 
@@ -48,7 +61,7 @@ async function main() {
   const readme = fs.readFileSync(readmePath, 'utf8');
   const updatedReadme = readme.replace(
     /https:\/\/github\.com\/cxa\/yifan\/releases\/download\/v[^/]+\/yifan-[^)]+\.apk/g,
-    `https://github.com/cxa/yifan/releases/download/v${newVersion}/yifan-${newVersion}.apk`
+    `https://github.com/cxa/yifan/releases/download/v${newVersion}/yifan-${newVersion}.apk`,
   );
   fs.writeFileSync(readmePath, updatedReadme);
 
@@ -56,7 +69,9 @@ async function main() {
   console.log('=== Generating changelog ===');
   run(`node scripts/generate-changelog.js --from ${prevTag}`);
 
-  const enChangelog = fs.readFileSync(path.join(ROOT, '.changelog', 'en.txt'), 'utf8').trim();
+  const enChangelog = fs
+    .readFileSync(path.join(ROOT, '.changelog', 'en.txt'), 'utf8')
+    .trim();
 
   // Step 4: Write RELEASE_NOTES.md for editing
   const iosFooter = `\n---\n\niOS: ${IOS_APP_STORE_URL}\n`;
@@ -71,7 +86,9 @@ async function main() {
   // Step 5: Confirm
   const answer = await ask('Commit, tag, and push? [y/N] ');
   if (answer !== 'y' && answer !== 'yes') {
-    console.log('Aborted. Version files have been modified — revert with `git checkout .` if needed.');
+    console.log(
+      'Aborted. Version files have been modified — revert with `git checkout .` if needed.',
+    );
     process.exit(0);
   }
 
@@ -82,7 +99,10 @@ async function main() {
   console.log('\n=== Committing ===');
   run('git add -A');
   const commitMsg = `chore: bump version to ${newVersion}\n\nChangelog:\n${finalNotes}`;
-  spawnSync('git', ['commit', '-m', commitMsg], { cwd: ROOT, stdio: 'inherit' });
+  spawnSync('git', ['commit', '-m', commitMsg], {
+    cwd: ROOT,
+    stdio: 'inherit',
+  });
 
   // Step 7: Tag and push
   console.log('\n=== Tagging and pushing ===');
